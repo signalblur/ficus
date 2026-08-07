@@ -96,20 +96,15 @@ echo "  Total sessions    : ${TOTAL_SESSIONS}"
 echo "  Total CO2         : ${TOTAL_CO2_DISPLAY} CO2"
 echo "  CO2 (${CURRENT_YEAR})       : ${YEAR_CO2_DISPLAY} CO2"
 
-# 6. Next steps (skip if called from install.sh which handles config automatically)
-if [ "${CLAUDE_CARBON_INSTALLER:-}" != "1" ]; then
-  echo ""
-  echo "─────────────────────────────"
-  echo "Next steps:"
-  echo ""
-  echo "1. Add to ${CONFIG_DIR}/settings.json:"
-  echo ""
-  cat <<EOF
+# 6. Next steps
+echo ""
+echo "─────────────────────────────"
+echo "Next steps:"
+echo ""
+echo "1. Add to ${CONFIG_DIR}/settings.json:"
+echo ""
+cat <<EOF
 {
-  "statusLine": {
-    "type": "command",
-    "command": "${PLUGIN_DIR}/scripts/statusline.sh"
-  },
   "hooks": {
     "Stop": [
       {
@@ -136,8 +131,7 @@ if [ "${CLAUDE_CARBON_INSTALLER:-}" != "1" ]; then
   }
 }
 EOF
-  echo ""
-  echo "2. Reload Claude Code to pick up the new status line."
-fi
+echo ""
+echo "2. Reload Claude Code to activate the hooks."
 echo ""
 echo "Setup complete."
