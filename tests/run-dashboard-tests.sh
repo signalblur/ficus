@@ -3,6 +3,13 @@
 # + pinned timestamp -> byte-identical HTML) and fully self-contained (zero
 # external references: no http(s)://, no <link>, no external src=), so it
 # renders with Wi-Fi off.
+#
+# It also locks the structure of the redesigned statement: the meter-reading
+# band and its evidence-grounded equivalences, the carbon balance, the pure
+# dollar ledger (unclamped, so the carbon-negative state is a first-class
+# outcome), the tax audit trail with per-payer attribution and SHA-256, the
+# giving shortlist with a sources + news link per org, and the methodology
+# block. Standing invariants come first; new structure after.
 
 set -u
 
@@ -20,7 +27,16 @@ trap cleanup EXIT
 
 fail=0
 
-# --- fixture DB: sessions + offsets ------------------------------------------
+want() { # want DESCRIPTION PATTERN
+  if grep -q "$2" "$OUT"; then
+    echo "PASS dashboard: $1"
+  else
+    echo "FAIL dashboard: $1 (missing: $2)" >&2
+    fail=1
+  fi
+}
+
+# --- fixture DB: sessions + offsets + donations ------------------------------
 DB="${TMPROOT}/carbon.db"
 export CARBON_LEDGER_DB="$DB"
 # shellcheck source=../scripts/lib/schema.sh
@@ -42,7 +58,9 @@ sqlite3 "$DB" "INSERT INTO sessions (session_id, project, model, input_tokens, o
   ('2026-08-02','tradewater','refrigerant-destruction',200.0,3.00,'prevention','Lies Above Media',
    '/tmp/r2.pdf','def456',1,'','2026-08-02T00:00:00Z');
   INSERT INTO receipt_blobs (offset_id, filename, sha256, content, stored_at) VALUES
-  (1,'2026-08-01-remove-carbon-today-1.pdf','abc123',x'25504446','2026-08-01T00:00:00Z');"
+  (1,'2026-08-01-remove-carbon-today-1.pdf','abc123',x'25504446','2026-08-01T00:00:00Z');
+  INSERT INTO donations (donation_date, org, usd, payer, receipt_path, receipt_sha256, created_at) VALUES
+  ('2026-08-03','naturaland-trust',12.00,'Lies Above Media','/tmp/d1.pdf','fed789','2026-08-03T00:00:00Z');"
 
 export CARBON_LEDGER_DASHBOARD_DIR="${TMPROOT}/dash"
 export CARBON_LEDGER_DASHBOARD_TS="2026-08-06T12:00:00Z"
@@ -67,77 +85,125 @@ else
 fi
 
 # --- zero external references ------------------------------------------------
-# Click-only donation anchors (href="https://...") are allowed; anything the
-# browser would LOAD over the network (stylesheets, scripts, images, imports)
-# is not — the page must still render fully with Wi-Fi off.
-if sed 's/href="https:\/\/[^"]*"//g' "$OUT" |
+# Two narrow, named exceptions, both click-only and neither ever fetched:
+#   href="https://..."        donation, source and news anchors in the markup
+#   "cite_url":"https://..."  the equivalence citations inside the DATA object,
+#                             which the renderer only ever puts on an anchor's
+#                             href — never in a src, a stylesheet or an import.
+# Anything else the browser would LOAD over the network fails the page: it must
+# still render fully with Wi-Fi off, which is also why typography comes from a
+# system-font stack and never a webfont.
+STRIP='s/href="https:\/\/[^"]*"//g; s/"cite_url":"https:\/\/[^"]*"//g'
+if sed "$STRIP" "$OUT" |
   grep -qE 'https?://|<link|src="http|src='"'"'http|@import|url\(http'; then
   echo "FAIL dashboard: external LOADED references found:" >&2
-  sed 's/href="https:\/\/[^"]*"//g' "$OUT" |
+  sed "$STRIP" "$OUT" |
     grep -nE 'https?://|<link|src="http|@import|url\(http' | head -5 >&2
   fail=1
 else
   echo "PASS dashboard: zero loaded external references (offline-safe)"
 fi
+grep -q '@font-face' "$OUT" && {
+  echo "FAIL dashboard: @font-face present — typography must be system fonts only" >&2
+  fail=1
+} || echo "PASS dashboard: no @font-face (system-font stack only)"
 
-# --- content invariants --------------------------------------------------------
-grep -q 'const DATA = ' "$OUT" && echo "PASS dashboard: DATA embedded" || {
-  echo "FAIL dashboard: DATA object missing" >&2
-  fail=1
-}
-grep -q '±50%' "$OUT" && echo "PASS dashboard: caveat present" || {
-  echo "FAIL dashboard: ±50% caveat missing" >&2
-  fail=1
-}
+# --- content invariants ------------------------------------------------------
+want "DATA embedded" 'const DATA = '
+want "caveat present" '±50%'
+want "complete HTML document" '</html>'
 # The fixture's two non-excluded sessions emit 12500 + 2000 = 14500 g = 14.5 kg;
 # the excluded qwen-local row contributes nothing. 14.5 − 10.0 verified removal
 # = 4.5. Folding in the 200 kg prevention purchase would give −195.5, and
 # counting it as "offset progress" would give 0 — both are wrong.
-grep -q '"balance_kg":4.5' "$OUT" &&
-  echo "PASS dashboard: balance = emitted − verified removal only (4.5 kg)" || {
-  echo "FAIL dashboard: balance_kg wrong (want 4.5: 14.5 emitted − 10 removal; prevention must not fold in)" >&2
-  fail=1
-}
-grep -q '</html>' "$OUT" && echo "PASS dashboard: complete HTML document" || {
-  echo "FAIL dashboard: truncated HTML" >&2
-  fail=1
-}
-# --- giving shortlist ----------------------------------------------------------
-# Seven curated donation links, one per ecosystem; click-only anchors.
+want "balance = emitted − verified removal only (4.5 kg)" '"balance_kg":4.5'
+
+# --- real-world equivalences, computed from the DB at generation time --------
+# energy 50522.6 Wh = 50.5226 kWh; at EIA 10,791 kWh/home/yr that is
+#   50.5226 * 365 / 10791 = 1.71 days of an average U.S. home's electricity.
+# water 266127 mL = 266.127 L; at EPA WaterSense 63.6 L/shower = 4.18 showers.
+# co2 14.5 kg; at EPA 0.393 kg CO2e/mile = 36.9 miles driven.
+want "equivalence: home-electricity days" '"home_days":1.71'
+want "equivalence: showers" '"showers":4.18'
+want "equivalence: car miles" '"car_miles":36.9'
+want "equivalence factors carry their source" '"cite"'
+want "equivalence cites EIA" 'eia.gov'
+want "equivalence cites EPA" 'epa.gov'
+
+# --- the dollar ledger: pure dollars, unclamped ------------------------------
+# overall = 14.5 kg = 0.0145 t x $160/t = $2.32.
+# contributed = every dollar given: offsets 1.60 + 3.00, donations 12.00 = $16.60.
+# owed = 2.32 − 16.60 = −$14.28. Clamping at zero would erase the achievement.
+want "dollar ledger overall" '"overall_usd":2.32'
+want "dollar ledger contributed" '"contributed_usd":16.6'
+want "dollar ledger owed is unclamped and negative" '"owed_usd":-14.28'
+want "carbon-negative state is named" 'carbon-negative'
+
+# --- tax audit trail ---------------------------------------------------------
+want "audit trail section" 'id="h-audit"'
+want "per-payer attribution: Signalblur Security" 'Signalblur Security'
+want "per-payer attribution: Lies Above Media" 'Lies Above Media'
+want "receipt SHA-256 recorded" '"receipt_sha256":"abc123"'
+want "donation recorded with payer" '"org":"naturaland-trust"'
+want "tax-year CSV export named" 'offset-export.sh'
+want "retirement id surfaced" 'PURO-1'
+
+# Receipt blobs ride along as base64 so the dashboard alone can hand back the
+# PDF (data: URI + download attribute); rows without a blob carry "".
+want "receipt blob embedded as base64" '"receipt_b64":"JVBERg=="'
+want "blobless purchase carries empty receipt_b64" '"receipt_b64":""'
+want "receipt link is a self-contained data: URI download" 'data:application/pdf;base64'
+
+# --- giving shortlist: donate + sources + news per org -----------------------
 give_missing=0
-for link in removecarbontoday.com tradewater.co/buy-credits \
-  americanrivers.org/donate coralrestoration.org/donate \
+for link in \
+  removecarbontoday.com/collections \
+  removecarbontoday.com/pages/proof-of-removal \
+  puro.earth/insights \
+  tradewater.co/buy-credits \
+  tradewater.co/wp-content/uploads/2024/12 \
+  tradewater.co/press \
+  americanrivers.org/donate \
+  arb.ca.gov/sites/default/files/2026-04 \
+  americanrivers.org/media-center \
+  coralrestoration.org/donate \
+  pmc.ncbi.nlm.nih.gov/articles/PMC11555216 \
+  coralrestoration.org/blog \
   billionoysterproject.org/donate \
-  naturalandtrust.org/donate-now congareelt.org/donate; do
+  pubmed.ncbi.nlm.nih.gov/28747477 \
+  billionoysterproject.org/blog \
+  naturalandtrust.org/donate-now \
+  greenvillejournal.com/outdoors-recreation/naturaland-trust-leads-conservation \
+  naturalandtrust.org/enewsletter \
+  congareelt.org/donate \
+  frontiersin.org/journals/forests-and-global-change \
+  congareelt.org/news; do
   grep -q "$link" "$OUT" || {
-    echo "FAIL dashboard: donation link missing: $link" >&2
+    echo "FAIL dashboard: giving-shortlist link missing: $link" >&2
     give_missing=1
     fail=1
   }
 done
-if [ "$give_missing" = "0" ] && grep -q 'id="h-give"' "$OUT"; then
-  echo "PASS dashboard: giving shortlist present with all seven links"
-elif [ "$give_missing" = "0" ]; then
-  echo "FAIL dashboard: giving section heading (h-give) missing" >&2
-  fail=1
+if [ "$give_missing" = "0" ]; then
+  echo "PASS dashboard: giving shortlist carries donate + sources + news for all seven orgs"
 fi
+want "giving section heading" 'id="h-give"'
+# The ranking research is blunt about reefs; the copy must not launder it.
+want "honest carbon verdict on reef restoration" 'not a carbon'
 
-# Receipt blobs ride along as base64 so the dashboard alone can hand back the
-# PDF (data: URI + download attribute); rows without a blob carry "".
-grep -q '"receipt_b64":"JVBERg=="' "$OUT" &&
-  echo "PASS dashboard: receipt blob embedded as base64" || {
-  echo "FAIL dashboard: receipt blob base64 missing from DATA" >&2
-  fail=1
-}
-grep -q '"receipt_b64":""' "$OUT" &&
-  echo "PASS dashboard: blobless purchase carries empty receipt_b64" || {
-  echo "FAIL dashboard: blobless purchase should carry empty receipt_b64" >&2
-  fail=1
-}
-grep -q 'data:application/pdf;base64' "$OUT" &&
-  echo "PASS dashboard: receipt link is a self-contained data: URI download" || {
-  echo "FAIL dashboard: data: URI receipt download missing" >&2
-  fail=1
-}
+# --- methodology -------------------------------------------------------------
+want "methodology section" 'id="h-method"'
+want "CIF identity stated" 'co2_g / 0.287'
+want "water formula stated" '0.18/1.14'
+want "embodied factor stated" '44.1'
+want "removal-only balance rule restated" 'verified removal'
+
+# --- quality floor: the page's own accessibility scaffolding ------------------
+want "reduced motion honoured" 'prefers-reduced-motion'
+want "print stylesheet present" '@media print'
+want "visible keyboard focus" ':focus-visible'
+want "chart palette tokens documented" '\--viz-1'
+want "single main landmark" '<main'
+want "skip link to the statement" 'class="skip"'
 
 exit "$fail"

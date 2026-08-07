@@ -1,9 +1,12 @@
 /* Renders the statement from DATA. Every value reaches the DOM as a text node
    (Node.append with a string, or textContent) — never as parsed markup — so no
-   ledger string can inject HTML. Charts are inline SVG built through the
-   namespace read off the static <svg> in the skeleton, which keeps the URL of
-   the SVG namespace out of this file: the dashboard must carry zero external
-   references and be openable over file:// with the network off. */
+   ledger string can inject HTML. The only attributes ever built from data are
+   href (set through setAttribute, never parsed) and download.
+
+   Charts are inline SVG built through the namespace read off the static <svg>
+   in the skeleton, which keeps the URL of the SVG namespace out of this file:
+   the dashboard must carry zero external references and be openable over
+   file:// with the network off. */
 (function () {
   "use strict";
   var doc = document, settle = doc.getElementById("c-settle"), NS = settle.namespaceURI;
@@ -21,23 +24,62 @@
     var x = Number(v) || 0, p = Math.abs(x).toFixed(d).split(".");
     return (x < 0 ? "−" : "") + p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",") + (p[1] ? "." + p[1] : "");
   }
+  function usd(v) { var x = Number(v) || 0; return (x < 0 ? "−$" : "$") + num(Math.abs(x), 2); }
   function width(node) { return Math.max(240, Math.round(node.getBoundingClientRect().width) || 720); }
 
-  var T = DATA.totals || {}, OS = DATA.offset_state || {};
-  var months = DATA.monthly || [], models = DATA.by_model || [], buys = DATA.offsets || [];
+  var T = DATA.totals || {}, OS = DATA.offset_state || {}, EQ = DATA.equivalences || {};
+  var C = DATA.constants || {}, COST = DATA.cost || {};
+  var months = DATA.monthly || [], models = DATA.by_model || [];
+  var buys = DATA.offsets || [], gifts = DATA.donations || [];
   var emitted = (Number(T.co2_g) || 0) / 1000;
   var removal = Number(OS.removal_verified_kg) || 0;
   var settled = Math.min(removal, emitted), unsettled = Math.max(emitted - removal, 0);
 
-  /* --- standing text ------------------------------------------------------ */
+  /* --- masthead and standing text ----------------------------------------- */
   set("caveat", DATA.caveat || "");
-  var gen = doc.getElementById("gen");
-  gen.textContent = DATA.generated_at || "";
-  gen.setAttribute("datetime", DATA.generated_at || "");
+  [["gen", DATA.generated_at], ["m-issued", DATA.generated_at]].forEach(function (p) {
+    var n = doc.getElementById(p[0]);
+    n.textContent = p[1] || "";
+    n.setAttribute("datetime", p[1] || "");
+  });
+  set("m-period", months.length
+    ? (months.length === 1 ? String(months[0].month)
+      : String(months[0].month) + " – " + String(months[months.length - 1].month))
+    : "no sessions yet");
+  set("m-sessions", num(T.sessions, 0));
+
+  /* --- SIGNATURE: the three meter readings, each with its equivalence -------
+     The readings are three different units, not a series, so none of them
+     wears a chart color: color would be encoding nothing. Identity comes from
+     the label and the equivalence beneath it. */
+  var reads = doc.getElementById("reads");
+  [["Energy", num((Number(T.energy_wh) || 0) / 1000, 2), "kWh",
+    EQ.home_days, EQ.energy],
+   ["Water", num((Number(T.water_ml) || 0) / 1000, 1), "L",
+    EQ.showers, EQ.water],
+   ["Carbon", num(emitted / 1000, 3), "t CO2e",
+    EQ.car_miles, EQ.co2]
+  ].forEach(function (r) {
+    var f = r[4] || {}, eq = [];
+    if (f.noun) {
+      eq.push("≈ ", h("b", {}, num(r[3], Number(r[3]) >= 10 ? 0 : 2)), " " + f.noun);
+    }
+    var cite = f.cite
+      ? h("span", { class: "read__src" }, f.cite + " · ",
+          f.cite_url ? h("a", { href: f.cite_url }, "source") : null)
+      : null;
+    /* The space between the figure and its unit is a real text node, not a
+       margin: at 320px it is the only break opportunity the pair has, and
+       without it the unit runs off the sheet (SC 1.4.10 Reflow). */
+    reads.append(h("li", { class: "read" },
+      h("p", { class: "read__k" }, r[0]),
+      h("p", { class: "read__v" }, r[1], " ", h("span", { class: "read__u" }, r[2])),
+      h("p", { class: "read__eq" }, make(null, "span", {}, eq), cite)));
+  });
 
   /* --- balance ------------------------------------------------------------ */
-  set("balance-value", num(OS.balance_kg, 2));
-  set("balance-eq", num(emitted, 2) + " kg emitted − " + num(removal, 2) + " kg verified removal"
+  set("bal-value", num(OS.balance_kg, 2));
+  set("bal-eq", num(emitted, 2) + " kg emitted − " + num(removal, 2) + " kg verified removal"
     + (emitted > 0 && unsettled === 0 ? " · fully settled" : ""));
 
   var memo = doc.getElementById("memo-list");
@@ -59,25 +101,37 @@
         h("span", { class: "memo__why" }, r[3]))));
   });
 
-  /* --- lifetime tiles ----------------------------------------------------- */
-  var tiles = doc.getElementById("tiles");
-  [["Operational", num(emitted, 2), "kg CO2e"],
-   ["Embodied", num((Number(T.embodied_g) || 0) / 1000, 2), "kg CO2e"],
-   ["Energy", num((Number(T.energy_wh) || 0) / 1000, 2), "kWh"],
-   ["Water", num((Number(T.water_ml) || 0) / 1000, 1), "L"],
-   ["API value", "$" + num(T.cost_usd, 2), "list price"],
-   ["Sessions", num(T.sessions, 0), "recorded"]
-  ].forEach(function (t) {
-    tiles.append(h("div", { class: "tile" }, h("dt", { class: "tile__k" }, t[0]),
-      h("dd", { class: "tile__v" }, t[1], h("span", { class: "tile__u" }, t[2]))));
+  /* --- the dollar ledger: pure dollars, unclamped -------------------------- */
+  var owed = Number(COST.owed_usd) || 0, negative = owed < 0;
+  if (negative) {
+    doc.getElementById("crow-host").append(
+      h("div", { class: "crow" },
+        h("span", { class: "crow__tag" }, "Carbon-negative"),
+        h("p", {}, "Contributions have passed the cost of everything this account has emitted, by "
+          + usd(Math.abs(owed)) + ". The ledger stays unclamped so the surplus keeps showing.")));
+  }
+  var pair = doc.getElementById("pair");
+  [["Overall", usd(COST.overall_usd), "Everything emitted, priced at the removal rate.", null],
+   ["Contributed", usd(COST.contributed_usd), "Every dollar given: offset purchases and donations, 1:1.", null],
+   ["Owed", usd(owed), negative
+      ? "In credit. Contributions exceed the overall cost."
+      : "Overall minus contributed. Never clamped at zero.", negative ? "owed--neg" : null]
+  ].forEach(function (p) {
+    pair.append(h("div", {}, h("dt", {}, p[0]),
+      h("dd", { class: p[3] }, p[1], h("small", {}, p[2]))));
   });
+  set("rate-note", "Removal rate: " + usd(COST.rate_usd_per_tonne) + " per tonne (data/offset-constants.json). "
+    + "Dollars given never move the tonnes balance above — only verified removal does.");
 
   /* --- tables ------------------------------------------------------------- */
-  function table(caption, cols, rows) {
-    return h("div", { class: "tw" }, h("table", {}, h("caption", {}, caption),
+  /* The wrapper scrolls horizontally on a narrow viewport, so it takes focus:
+     a scrollable region a keyboard user cannot reach is a keyboard trap in
+     reverse (SC 2.1.1 Keyboard; EN 301 549 9.2.1.1). */
+  function table(caption, cols, rows, foot) {
+    return h("div", { class: "tw", tabindex: "0" }, h("table", {}, h("caption", {}, caption),
       h("thead", {}, make(null, "tr", {}, cols.map(function (c) {
         return h("th", { scope: "col", class: c[1] ? "n" : null }, c[0]);
-      }))), make(null, "tbody", {}, rows)));
+      }))), make(null, "tbody", {}, rows), foot || null));
   }
 
   /* --- charts ------------------------------------------------------------- */
@@ -105,7 +159,7 @@
       return;
     }
     var wS = Math.round((settled / emitted) * W), gap = wS > 0 && wS < W ? 2 : 0;
-    if (wS > 0) g.append(s("rect", { class: "m-removed", x: "0", y: "8", width: Math.max(wS - gap, 1), height: bh, rx: "3" }));
+    if (wS > 0) g.append(s("rect", { class: "m-credit", x: "0", y: "8", width: Math.max(wS - gap, 1), height: bh, rx: "3" }));
     if (wS < W) g.append(s("rect", { x: wS, y: "8", width: W - wS, height: bh, rx: "3", fill: "url(#hatch)" }));
     g.append(s("line", { class: "base", x1: "0", y1: "39.5", x2: W, y2: "39.5" }));
     g.append(s("text", { class: "ax", x: "0", y: "50" }, "0"));
@@ -115,13 +169,14 @@
       + (removal > emitted ? " Verified removal exceeds emissions by " + num(removal - emitted, 2) + " kg." : ""));
   }
   var legend = doc.getElementById("settle-legend");
-  [["removed", "Settled by verified removal", settled], ["unsettled", "Unsettled", unsettled]].forEach(function (l) {
+  [["credit", "Settled by verified removal", settled], ["debit", "Unsettled", unsettled]].forEach(function (l) {
     legend.append(h("span", { class: "legend__i" }, h("span", { class: "legend__sw legend__sw--" + l[0] }),
       l[1] + " ", h("span", { class: "legend__v" }, num(l[2], 2) + " kg")));
   });
 
-  /* Monthly columns. One measure, one axis; every column is directly labelled
-     when there is room, and the data table below carries the full numbers. */
+  /* Monthly columns. One measure, one axis, one series — so no legend box; the
+     title names it. Every column is directly labelled when there is room, and
+     the data table below carries the full numbers. */
   var cMonth = months.length ? chart("monthly-body", "c-month", "Operational CO2e by month, in kilograms") : null;
   function drawMonthly() {
     if (!cMonth) return;
@@ -136,7 +191,7 @@
     months.forEach(function (m, i) {
       var v = vals[i], bh = Math.max(Math.round((v / max) * plot), v > 0 ? 2 : 0);
       var x = Math.round(i * step + (step - bw) / 2), y = top + plot - bh;
-      var bar = s("rect", { class: "m-emitted", x: x, y: y, width: Math.round(bw), height: bh, rx: "3" });
+      var bar = s("rect", { class: "m-debit", x: x, y: y, width: Math.round(bw), height: bh, rx: "3" });
       bar.append(s("title", {}, m.month + ": " + num(v, 2) + " kg CO2e"));
       cMonth.g.append(bar);
       if (label) cMonth.g.append(s("text", { class: "val", x: x + bw / 2, y: y - 7, "text-anchor": "middle" }, num(v, 2)));
@@ -148,7 +203,9 @@
       return m.month + " " + num(vals[i], 2); }).join("; ") + ".";
   }
 
-  /* Model families: horizontal bars, ranked, every bar directly labelled. */
+  /* Model families: horizontal bars, ranked, every bar directly labelled. One
+     nominal series, so every bar takes the same slot rather than coloring by
+     value — bar length already carries the magnitude. */
   var cModel = models.length ? chart("model-body", "c-model", "Operational CO2e by model family, in kilograms") : null;
   function drawModel() {
     if (!cModel) return;
@@ -160,7 +217,7 @@
     models.forEach(function (m, i) {
       var y = i * rh + 6, bw = Math.max(Math.round((vals[i] / max) * span), vals[i] > 0 ? 2 : 0);
       cModel.g.append(s("text", { class: "cat", x: "0", y: y + 14, "dominant-baseline": "middle" }, String(m.family)));
-      var bar = s("rect", { class: "m-emitted", x: gut, y: y + 3, width: bw, height: "18", rx: "3" });
+      var bar = s("rect", { class: "m-debit", x: gut, y: y + 3, width: bw, height: "18", rx: "3" });
       bar.append(s("title", {}, m.family + ": " + num(vals[i], 2) + " kg CO2e"));
       cModel.g.append(bar);
       cModel.g.append(s("text", { class: "val", x: gut + bw + 8, y: y + 14, "dominant-baseline": "middle" }, num(vals[i], 2) + " kg"));
@@ -186,10 +243,66 @@
         }))));
   });
 
-  /* --- offset purchases --------------------------------------------------- */
+  /* --- the two figures the reading band does not carry --------------------
+     Energy, water and carbon already lead the page; repeating them here would
+     be decoration. Only embodied CO2e and API value are new information. */
+  var tiles = doc.getElementById("tiles");
+  [["Embodied CO2e", num((Number(T.embodied_g) || 0) / 1000, 2), "kg, hardware manufacture"],
+   ["API value", usd(T.cost_usd), "list price, not money spent"]
+  ].forEach(function (t) {
+    tiles.append(h("div", { class: "tile" }, h("dt", { class: "tile__k" }, t[0]),
+      h("dd", { class: "tile__v" }, t[1], h("span", { class: "tile__u" }, t[2]))));
+  });
+
+  /* --- audit trail: by payer, then the two registers ---------------------- */
+  function payerRoll() {
+    var by = {}, order = [];
+    function slot(p) {
+      var k = String(p || "—");
+      if (!by[k]) { by[k] = { payer: k, on: 0, okg: 0, ousd: 0, dn: 0, dusd: 0 }; order.push(k); }
+      return by[k];
+    }
+    buys.forEach(function (o) {
+      var r = slot(o.payer);
+      r.on += 1; r.okg += Number(o.kg_co2e) || 0; r.ousd += Number(o.usd) || 0;
+    });
+    gifts.forEach(function (g) { var r = slot(g.payer); r.dn += 1; r.dusd += Number(g.usd) || 0; });
+    return order.sort().map(function (k) { return by[k]; });
+  }
+
+  var payerHost = doc.getElementById("payer-body");
+  var roll = payerRoll();
+  if (!roll.length) {
+    payerHost.append(h("p", { class: "empty" }, "Nothing on record yet, so there is no tax year to reconcile."));
+  } else {
+    var tk = 0, tu = 0, td = 0;
+    var prows = roll.map(function (r) {
+      tk += r.okg; tu += r.ousd; td += r.dusd;
+      return h("tr", {}, h("th", { scope: "row" }, r.payer),
+        h("td", { class: "n" }, num(r.on, 0)),
+        h("td", { class: "n" }, num(r.okg, 2)),
+        h("td", { class: "n" }, usd(r.ousd)),
+        h("td", { class: "n" }, num(r.dn, 0)),
+        h("td", { class: "n" }, usd(r.dusd)),
+        h("td", { class: "n" }, usd(r.ousd + r.dusd)));
+    });
+    var foot = h("tfoot", {}, h("tr", {}, h("th", { scope: "row" }, "All payers"),
+      h("td", { class: "n" }, num(buys.length, 0)),
+      h("td", { class: "n" }, num(tk, 2)),
+      h("td", { class: "n" }, usd(tu)),
+      h("td", { class: "n" }, num(gifts.length, 0)),
+      h("td", { class: "n" }, usd(td)),
+      h("td", { class: "n" }, usd(tu + td))));
+    payerHost.append(table("Dollars and tonnes attributed to the entity that paid. One CSV per payer per tax year.",
+      [["Payer"], ["Offsets", 1], [h("span", { class: "cs" }, "kg CO2e"), 1], ["Offset spend", 1],
+       ["Donations", 1], ["Donated", 1], ["Total spend", 1]], prows, foot));
+  }
+
   var offHost = doc.getElementById("offsets-body");
   if (!buys.length) {
-    offHost.append(h("p", { class: "empty" }, "No offsets purchased yet."));
+    offHost.append(h("p", { class: "empty" },
+      "No offset purchases on record. Record the first with scripts/offset-record.sh — it copies the receipt, "
+      + "stores its bytes and SHA-256, and the purchase appears here against its payer."));
   } else {
     var rows = buys.map(function (o) {
       var ok = Number(o.verified) === 1, path = String(o.receipt_path || "");
@@ -201,27 +314,95 @@
         ? "data:application/pdf;base64,"
         : "data:application/octet-stream;base64,";
       var receipt = b64
-        ? h("a", { href: pref + b64, download: fname }, fname)
+        ? h("a", { href: pref + b64, download: fname }, "Download")
         : path
           ? h("a", { href: "file://" + path }, path.split("/").pop())
           : "—";
-      return h("tr", { class: ok ? null : "row--no" },
+      var sha = String(o.receipt_sha256 || "");
+      return h("tr", {},
         h("th", { scope: "row" }, String(o.purchase_date || "—")),
-        h("td", {}, String(o.vendor || "—")),
-        h("td", {}, String(o.pathway || "—")),
+        h("td", {}, String(o.payer || "—")),
+        h("td", {}, String(o.vendor || "—"),
+          h("span", { class: "td__note" }, String(o.pathway || ""))),
         h("td", { class: "n" }, num(o.kg_co2e, 2)),
-        h("td", { class: "n" }, "$" + num(o.usd, 2)),
-        h("td", {}, String(o.category || "—"),
-          String(o.category) === "removal" ? null : h("span", { class: "td__note" }, "does not settle")),
-        h("td", {}, badge),
+        h("td", { class: "n" }, usd(o.usd)),
+        /* Category and status share a cell: at ten columns the receipt column
+           was pushed off the sheet, and these two always read together. */
+        h("td", {}, badge,
+          h("span", { class: "td__note" }, String(o.category || "—")
+            + (String(o.category) === "removal" ? "" : " · does not settle"))),
         h("td", {}, String(o.retirement_id || "—")),
+        h("td", { class: "hash" }, sha || "—"),
         h("td", {}, receipt));
     });
     offHost.append(table(buys.length + " purchase" + (buys.length === 1 ? "" : "s")
-      + " · $" + num(OS.offset_spent_usd, 2) + " spent · newest first.",
-      [["Date"], ["Vendor"], ["Pathway"], [h("span", { class: "cs" }, "kg CO2e"), 1], ["USD", 1], ["Category"], ["Status"],
-       ["Retirement ID"], ["Receipt"]], rows));
+      + " · " + usd(OS.offset_spent_usd) + " spent · newest first. "
+      + "The hash is the SHA-256 of the receipt file as recorded; the download is rebuilt from the stored bytes.",
+      [["Date"], ["Payer"], ["Vendor"], [h("span", { class: "cs" }, "kg CO2e"), 1], ["USD", 1],
+       ["Status"], ["Retirement ID"], ["Receipt hash"], ["Receipt"]], rows));
   }
+
+  var giftHost = doc.getElementById("donations-body");
+  if (!gifts.length) {
+    giftHost.append(h("p", { class: "empty" },
+      "No donations on record. Record one with scripts/donation-record.sh — the dollars subtract from Owed above "
+      + "and never from the tonnes balance."));
+  } else {
+    var grows = gifts.map(function (g) {
+      var sha = String(g.receipt_sha256 || "");
+      return h("tr", {},
+        h("th", { scope: "row" }, String(g.donation_date || "—")),
+        h("td", {}, String(g.payer || "—")),
+        h("td", {}, String(g.org || "—")),
+        h("td", { class: "n" }, usd(g.usd)),
+        h("td", { class: "hash" }, sha || "—"));
+    });
+    giftHost.append(table(gifts.length + " donation" + (gifts.length === 1 ? "" : "s")
+      + " · newest first. Donations reduce the dollar ledger, never the tonnes balance.",
+      [["Date"], ["Payer"], ["Organisation"], ["USD", 1], ["Receipt SHA-256"]], grows));
+  }
+
+  /* --- methodology: static prose, live constants --------------------------- */
+  var meth = doc.getElementById("meth"), F = DATA.formulas || {};
+  [["Operational CO2e",
+    "Estimated from deduplicated token counts by per-model factors in gCO2e per million tokens (Jegham et al. 2025, "
+    + "an arXiv preprint). Cache-read tokens count at " + C.cache_read_factor + " of an input token — an engineering "
+    + "estimate of the decode-phase KV re-read, not a billing ratio. Sonnet is fitted to three published per-query "
+    + "energies; Opus, Haiku and Fable are extrapolated from it, so Fable carries a double extrapolation.", F.co2],
+   ["Energy",
+    "Not a second model. The CO2e factors are facility energy multiplied by the grid carbon-intensity factor, so "
+    + "dividing by that same factor recovers facility energy exactly. The " + C.grid_cif_g_per_wh
+    + " g/Wh figure is the AWS location-based regional intensity the factors were built on; the US average is higher.",
+    F.energy],
+   ["Water",
+    "Two terms, kept PUE-consistent. On-site cooling water applies to IT energy (facility energy divided by PUE "
+    + C.pue + ") at " + C.wue_onsite_l_per_kwh + " L/kWh; off-site generation water applies to the full facility "
+    + "energy at " + C.wue_offsite_l_per_kwh + " L/kWh. L/kWh equals mL/Wh.", F.water],
+   ["Embodied CO2e",
+    "Manufacturing carbon for the hardware, allocated through energy because the ledger stores tokens rather than "
+    + "GPU-seconds. An 8×H100 server over a three-year life at full TDP works out to " + C.embodied_gco2e_per_kwh
+    + " gCO2e/kWh. Full utilisation is the low-side assumption: real utilisation is lower, which raises the figure.",
+    F.embodied],
+   ["Carbon balance",
+    "Emitted minus VERIFIED REMOVAL ONLY. Prevention credits stop a future emission and unverified purchases have no "
+    + "retirement proof on file; both are recorded below the line and neither settles a removal debt. This is the "
+    + "GHG Protocol / SBTi distinction, not a house rule.", F.balance],
+   ["Dollar ledger",
+    "A separate account in plain dollars, deliberately unclamped. Overall prices everything emitted at the removal "
+    + "rate; contributed counts every dollar given, offsets and donations alike, with no conversion into tonnes. Once "
+    + "contributions pass the overall cost, owed goes negative and the page reports it as carbon-negative.", F.owed],
+   ["API value",
+    "The list price the same work would have cost on pay-as-you-go, not money actually spent on a subscription. It is "
+    + "context for scale and it never enters the carbon or dollar ledgers.", null],
+   ["Uncertainty",
+    "Anthropic publishes no per-query energy data. Every figure here — carbon, energy, water, embodied — is an "
+    + "order-of-magnitude estimate with roughly ±50% uncertainty, and the excluded items (training, most of the "
+    + "supply chain) make the true value more likely above the displayed one than below it.", null]
+  ].forEach(function (m) {
+    meth.append(h("div", {},
+      h("dt", { class: "meth__t" }, m[0]),
+      h("dd", { class: "meth__d" }, m[1], m[2] ? h("span", { class: "meth__f" }, m[2]) : null)));
+  });
 
   /* --- draw, and redraw at the measured width on resize -------------------- */
   var pending = 0;
