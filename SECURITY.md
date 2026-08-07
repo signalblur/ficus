@@ -1,37 +1,45 @@
 # Security Policy
 
-## Supported versions
+## Scope
 
-Only the latest release is supported. The installer and `npx claude-carbon`
-always fetch the latest version, and `/carbon-update` brings existing installs
-up to date, so there is no reason to run an older one.
+Ficus runs entirely locally and makes no network calls, but it does touch
+sensitive material:
 
-## What is in scope
+- It reads your Claude Code transcripts under `~/.claude/projects/` to compute
+  usage, and writes them to a SQLite database in `~/.claude/carbon-ledger/`.
+- It stores receipt files and their bytes in that database. Receipts carry
+  names, amounts and sometimes addresses.
+- The `Stop` and `SessionStart` hooks execute on your machine on every session.
 
-claude-carbon runs locally, but it touches sensitive material:
+Anything that could leak transcript content or receipt data, execute unexpected
+code through the hooks, the skills or the dashboard, or make a network call from
+a tool that is supposed to make none, is a security issue worth reporting.
 
-- It reads your local Claude Code transcripts in `~/.claude` to compute usage.
-- The quota display can read an OAuth bearer token from the macOS Keychain,
-  `CLAUDE_CODE_OAUTH_TOKEN`, or `~/.claude/.credentials.json`.
-- `install.sh` is piped from GitHub into bash, and hooks execute inside your
-  shell on every status line refresh.
+The dashboard is a particular case: it embeds ledger strings into an HTML file
+that opens over `file://`. Every value reaches the DOM as a text node, never as
+parsed markup. A way around that is a security issue.
 
-Anything that could leak the OAuth token or transcript content, execute
-unexpected code through the installer, update flow, or hooks, or send data
-anywhere (the tool is expected to make no network calls other than the Anthropic
-usage endpoint and GitHub for updates) is a security issue we want to hear
-about.
+## Not in scope
 
-## Reporting a vulnerability
+The estimates. The methodology is documented as ±50% order-of-magnitude and
+disagreeing with a factor is a
+[normal issue](https://github.com/signalblur/ficus/issues), not a vulnerability.
 
-Please do not open a public issue for security problems.
+## Reporting
 
-- Preferred: [open a private security advisory](https://github.com/gwittebolle/claude-carbon/security/advisories/new)
-  on GitHub.
-- Or email gaetan.wittebolle@gmail.com with "claude-carbon security" in the
-  subject.
+Do not open a public issue for a security problem.
+[Open a private security advisory](https://github.com/signalblur/ficus/security/advisories/new)
+on GitHub. Include what you found, how to reproduce it, and what an attacker
+could do with it.
 
-Include what you found, how to reproduce it, and what an attacker could do
-with it. You can expect an acknowledgment within 72 hours and a fix or a
-public advisory as soon as one is ready. Please give us a reasonable window to
-ship a fix before disclosing publicly.
+## Upstream
+
+Ficus is a fork of
+[claude-carbon](https://github.com/gwittebolle/claude-carbon) pinned at
+`upstream-43fb883`. Several upstream components were deleted in this fork
+because of their attack surface — the OAuth-token-reading statusline, the
+pipe-to-shell installer, and the auto-update path (see the README's fork
+provenance section). A vulnerability that only exists in upstream code this fork
+does not ship belongs in
+[upstream's advisory queue](https://github.com/gwittebolle/claude-carbon/security/advisories/new),
+not here.

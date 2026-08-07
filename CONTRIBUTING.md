@@ -1,101 +1,131 @@
-# Contributing to claude-carbon
+# Contributing to Ficus
 
-Thanks for taking the time to contribute. This document covers how the project
-is laid out, how to test changes, and what a good pull request looks like.
+Ficus is plain bash + jq + awk + sqlite3. No build step, no runtime
+dependencies to install. It is also a fork with a pinned upstream, which
+constrains how some files may be edited — read the layout and the fork rules
+below before changing anything under `scripts/`.
 
-## Project layout
+## Layout
 
-claude-carbon is plain bash + jq + awk. There is no build step and no runtime
-dependency to install (only `/carbon-card` needs `playwright-core`, see the
-README).
+| Path                      | What it is                                                          |
+| ------------------------- | ------------------------------------------------------------------- |
+| `hooks/hooks.json`        | Stop + SessionStart hook declarations                               |
+| `scripts/`                | Session capture, backfill, recompute, offsets, export, dashboard    |
+| `scripts/lib/`            | Shared schema DDL, model-family mapping, factors.env, segment cache |
+| `skills/`                 | The `/carbon` and `/carbon-offset` slash commands                   |
+| `data/*.json`             | Every numeric constant, each with a `_source` and a date            |
+| `templates/`              | Dashboard head/tail (inline CSS + vanilla JS, no external refs)     |
+| `tests/`                  | One `run-*.sh` per concern; `run-tests.sh` discovers them all       |
+| `statusline-snippet.sh`   | Reference statusline segment (what the benchmark measures)          |
+| `METHODOLOGY.md`          | How every number is derived                                         |
+| `MAINTENANCE.md`          | Upstream cherry-pick procedure and the consolidation tiers          |
 
-| Path                | What it is                                                            |
-| ------------------- | --------------------------------------------------------------------- |
-| `hooks/`            | Claude Code status line + shell hooks (the live CO2 estimate)         |
-| `scripts/`          | Report, card generation, backfill, update logic                       |
-| `skills/`           | The `/carbon-report`, `/carbon-card`, `/carbon-update` slash commands |
-| `data/factors.json` | Emission factors (per-model energy, PUE, carbon intensity)            |
-| `data/prices.json`  | Per-model token prices                                                |
-| `tests/`            | Golden vectors for the methodology, plus the install/update wiring     |
-| `install.sh`        | The installer (also what `npx claude-carbon` runs)                    |
-| `METHODOLOGY.md`    | How every number is derived                                           |
+## Test-driven, red first
 
-## Running the tests
+Write the failing assertion before the code that satisfies it, and watch it
+fail for the reason you expect. A test that has never been red has not been
+shown to test anything. When you change behaviour an existing test covers,
+change the test in the same commit and say why in the message.
 
-```bash
-bash tests/run-vectors.sh         # the methodology maths
-bash tests/run-install-tests.sh   # the settings.json wiring and the update repair path
-bash scripts/check-versions.sh    # the three version manifests agree
-shellcheck --severity=warning $(find . -name '*.sh' -not -path './.git/*')
-```
-
-`run-vectors.sh` replays the golden vectors in `tests/methodology-vectors.json`
-against `data/factors.json` and `data/prices.json`. It only needs bash, jq and
-awk.
-
-`run-install-tests.sh` covers what a user's `settings.json` ends up looking like:
-cold start, an install that predates a hook, a foreign status line or third-party
-hooks that must survive untouched, repeated runs, paths spelled differently
-(`~/…` versus expanded), the marketplace-cache guard, and the repair `update.sh`
-performs. Every case runs under its own throwaway `CLAUDE_CONFIG_DIR`, so your
-real `~/.claude` is never touched, and nothing hits the network.
-
-CI runs all four on every push and pull request.
-
-## Changing the methodology (factors or prices)
-
-This is the sensitive part of the project. Any change to `data/factors.json` or
-`data/prices.json` must ship in the same PR as:
-
-1. An update to `tests/methodology-vectors.json` so the golden vectors encode
-   the new expected outputs.
-2. An update to `METHODOLOGY.md` explaining the derivation. Every number must
-   be reproducible from a cited source; "it looks right" is not a derivation.
-
-PRs that change factors or prices without both of these will not be merged.
-
-## Pull requests
-
-- Branch from `main`, open the PR against `main`.
-- Keep commits in English, conventional format: `feat:`, `fix:`, `refactor:`,
-  `chore:`, `docs:`, `test:`.
-- Add an entry to `CHANGELOG.md` (date-stamped, see existing entries for the
-  format).
-- If the change is user-visible, update the README.
-
-### Releases (maintainer notes)
+Run the suite:
 
 ```bash
-bash scripts/release.sh patch --dry-run   # see what would happen
-bash scripts/release.sh patch             # bump, tag, push, open a draft release
+bash tests/run-tests.sh          # everything
+bash tests/run-offset-tests.sh   # or one concern at a time
 ```
 
-The script bumps the three manifests that must stay in sync (`package.json`,
-`.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`), commits, tags,
-pushes, and opens the GitHub release as a draft pre-filled with the CHANGELOG
-lines added since the last tag. Edit those notes, then
-`gh release edit vX.Y.Z --draft=false`. Pass `--npm` to publish to npm as well;
-the tarball only carries `bin/`, so that is only needed when `bin/` changed.
+Every suite runs in its own sandbox: `CARBON_LEDGER_DB` points at a temp file
+and the scripts derive receipts, exports, dashboards and the segment cache from
+that path, so your real `~/.claude/carbon-ledger/` is never read or written. New
+tests must do the same — `mktemp -d`, export `CARBON_LEDGER_DB`, and clean up
+with a path-guarded `trap`. Nothing in the suite may touch the network.
 
-**When to bump.** The update notice users see compares the version in
-`.claude-plugin/plugin.json` against `origin/main`, not commits. So anything
-that runs on their machine (`scripts/`, `hooks/`, `skills/`, `data/`,
-`install.sh`, `bin/`) stays invisible to every installed user until a release
-bumps it. Docs, CHANGELOG, stats and CI changes deliberately do not nag anyone
-and need no bump. `scripts/check-versions.sh` (run in CI) fails on a manifest
-mismatch and warns when runtime changes have piled up unreleased.
+Two invariants have their own gates and should not be weakened to make a change
+pass:
 
-## Reporting bugs and proposing features
+- `tests/run-hygiene.sh` — zero network call sites in `scripts/`, `hooks/`,
+  `skills/`. This is the point of the fork.
+- `tests/run-dashboard-tests.sh` — the dashboard is deterministic under a
+  pinned `CARBON_LEDGER_DASHBOARD_TS` and loads nothing over the network.
 
-Use the [issue templates](https://github.com/gwittebolle/claude-carbon/issues/new/choose).
-For bugs, the environment details (OS, Claude Code version, install method)
-matter a lot: the status line runs in the terminal CLI and IDE extensions only,
-and quota data comes from an OAuth endpoint, so many issues are
-environment-specific.
+## Changing a factor or a price
 
-For security issues, do not open a public issue: see [SECURITY.md](SECURITY.md).
+Any edit to `data/factors.json`, `data/prices.json` or
+`data/offset-constants.json` ships in the same commit as:
 
-## Questions
+1. Updated expectations in `tests/methodology-vectors.json`.
+2. A `_source` on the constant naming where the number came from and when it
+   was recorded. No script may hardcode a constant.
+3. An update to `METHODOLOGY.md` explaining the derivation. "It looks right" is
+   not a derivation.
+4. A green `scripts/check-crosscheck.sh` — the EcoLogits cross-check blocks a
+   factor change that diverges more than 3x either way.
 
-Not sure whether something is a bug, or want to discuss an idea before writing
-code? Open an issue. Small questions are fine.
+New constants also have to be added to the validation guard in `recompute.sh`
+and the emit guard in `scripts/lib/factors-env.sh` in the same commit.
+
+## Fork rules
+
+The upstream remote is fetch-only. Files that exist in the `upstream-43fb883`
+tag stay **byte-close to upstream** so cherry-picks apply cleanly — do not
+reformat them, do not reindent them, do not clean them up in passing. The
+`aggregate_jsonl` jq programs in `backfill.sh` and `persist-session.sh` are the
+strictest case: they are the most likely recipients of an upstream
+transcript-format fix, so leave them alone unless the change is the point of the
+commit.
+
+Fork-added files are normal code and are the only ones `shfmt` formats.
+`MAINTENANCE.md` has the full tier table and the cherry-pick procedure.
+
+## Lint
+
+`tests/run-lint.sh` runs shellcheck over every `*.sh` and shfmt over fork-added
+files only. It uses local binaries when present; otherwise it runs pinned images
+through the Apple `container` CLI. `--platform linux/arm64` is not optional —
+the CLI mis-detects the platform when left to negotiate:
+
+```bash
+container run --rm --platform linux/arm64 \
+  --mount "type=bind,source=$PWD,target=/repo" \
+  koalaman/shellcheck:stable --severity=warning /repo/scripts/your-file.sh
+
+container run --rm --platform linux/arm64 \
+  --mount "type=bind,source=$PWD,target=/repo" \
+  mvdan/shfmt:latest -d -i 2 /repo/scripts/your-file.sh
+```
+
+Fix warnings rather than suppressing them. If a suppression is genuinely
+required, put the justification on the line above it.
+
+New shell scripts start with `set -euo pipefail`, and `export LC_ALL=C` when
+they do any numeric formatting.
+
+## Things that are never done
+
+- **Never `rm -rf` a path you did not construct.** The cleanup traps in the test
+  suite pattern-match the temp directory name before deleting and refuse
+  anything else. Copy that shape.
+- **Never move or delete a receipt.** `offset-record.sh` only ever copies. The
+  receipt file, its SHA-256 and its stored bytes are the audit trail; a
+  correction is a new row or an `--update`, not an edit to history.
+- **Never add a network call.** Not for an update check, not for a font, not for
+  a price lookup. The hygiene test will catch it, and it is there on purpose.
+- **Never widen the render path.** The statusline may source `factors.env`, run
+  one `awk`, and read the segment cache. No database, no jq against
+  `factors.json`. New derived values are computed at write time and cached.
+
+## Commits and pull requests
+
+- Branch from `main`; open the PR against `main`.
+- Imperative mood, one logical change per commit, subject line under 72
+  characters. Describe what the code does now, not what you tried first.
+- Plain language. A bug fix is a bug fix.
+- Add a dated entry to `CHANGELOG.md` for user-visible changes.
+- Install the hook: `git config core.hooksPath .githooks`. It runs
+  `tests/run-lint.sh` and `tests/run-vectors.sh` before every commit, or defers
+  to `prek run` when prek is installed.
+
+## Security
+
+Do not open a public issue for a security problem. See
+[SECURITY.md](SECURITY.md).
