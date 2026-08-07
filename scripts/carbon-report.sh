@@ -17,7 +17,10 @@ DB_PATH="${CARBON_LEDGER_DB:-${CLAUDE_CONFIG_DIR:-${HOME}/.claude}/carbon-ledger
 CONSTANTS="${SCRIPT_DIR}/../data/offset-constants.json"
 
 RAW=0
-case "${1:-}" in --raw) RAW=1 ;; esac
+case "${1:-}" in
+--raw) RAW=1 ;;
+--dashboard) exec bash "${SCRIPT_DIR}/generate-dashboard.sh" ;;
+esac
 
 [ -f "$DB_PATH" ] || {
   echo "No ledger DB at ${DB_PATH}. Run scripts/setup.sh first." >&2

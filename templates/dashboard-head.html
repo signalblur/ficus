@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carbon Ledger — statement of account</title>
+<style>
+/* ---------------------------------------------------------------------------
+   Tokens. Two themes, both measured against their own surface with the WCAG 2.x
+   relative-luminance ratio (L1+0.05)/(L2+0.05). Ratios vs --surface:
+     light  ink-1 17.68  ink-2 8.65  ink-3 5.70  emitted 4.83  removed 6.19
+            critical 6.36  good 7.53
+     dark   ink-1 15.81  ink-2 9.08  ink-3 6.05  emitted/removed >= 3 (fills only)
+            critical 6.07  good 7.45
+   Body text sits on ink-1/ink-2; the smallest text (axis, captions) on ink-3,
+   which still clears 4.5:1. Series colors are fills, never text.
+--------------------------------------------------------------------------- */
+:root {
+  color-scheme: light;
+  --plane:    #e9edf1;
+  --surface:  #fbfcfd;
+  --ink-1:    #12161b;
+  --ink-2:    #414b55;
+  --ink-3:    #5c666f;
+  --hairline: #d5dce3;
+  --emitted:  #c4460f;
+  --removed:  #1d5fae;
+  --critical: #b3261e;
+  --good:     #046104;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --plane:    #0d1013;
+    --surface:  #171b20;
+    --ink-1:    #f2f5f8;
+    --ink-2:    #b3bdc7;
+    --ink-3:    #909aa4;
+    --hairline: #2a3037;
+    --emitted:  #d95926;
+    --removed:  #3987e5;
+    --critical: #f0736b;
+    --good:     #39c25c;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 2rem 1rem 3rem;
+  background: var(--plane);
+  color: var(--ink-1);
+  font: 400 0.9375rem/1.6 var(--sans);
+  -webkit-text-size-adjust: 100%;
+}
+:focus-visible { outline: 2px solid var(--ink-1); outline-offset: 2px; border-radius: 2px; }
+
+/* One continuous sheet, ruled — a register, not a deck of cards. */
+.sheet {
+  max-width: 62rem;
+  margin: 0 auto;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+}
+
+/* --- masthead ------------------------------------------------------------ */
+.masthead { padding: 1.5rem 1.5rem 1.25rem; border-bottom: 1px solid var(--hairline); }
+.masthead h1 {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.masthead p { margin: 0.35rem 0 0; color: var(--ink-2); font-size: 0.8125rem; }
+
+.caveat {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  margin: 0;
+  padding: 0.875rem 1.5rem;
+  border-bottom: 1px solid var(--hairline);
+  color: var(--ink-2);
+  font-size: 0.8125rem;
+  line-height: 1.55;
+}
+.caveat__tag {
+  flex: none;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid currentColor;
+  color: var(--emitted);
+  font: 600 0.625rem/1.5 var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* --- register sections --------------------------------------------------- */
+.reg { padding: 1.5rem; border-bottom: 1px solid var(--hairline); }
+.reg__h {
+  margin: 0 0 0.25rem;
+  color: var(--ink-2);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.reg__note { margin: 0 0 1.25rem; max-width: 46rem; color: var(--ink-2); font-size: 0.8125rem; }
+.reg__note strong { color: var(--ink-1); }
+.empty { margin: 0; color: var(--ink-2); font-size: 0.8125rem; font-style: italic; }
+
+/* --- the balance: the one place this page raises its voice --------------- */
+.balance { display: flex; align-items: baseline; gap: 0.6rem; margin: 0; }
+.balance__v {
+  font: 700 clamp(2.75rem, 9vw, 4.25rem)/1 var(--mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+.balance__u { color: var(--ink-2); font: 600 0.875rem/1 var(--mono); letter-spacing: 0.06em; }
+.balance__eq {
+  margin: 0.5rem 0 0;
+  color: var(--ink-2);
+  font: 400 0.8125rem/1.5 var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+/* The accountant's double rule: the account closes here. Nothing below adds in. */
+.rule--close { height: 0; margin: 1.5rem 0 1.25rem; border-top: 4px double var(--ink-3); }
+/* Chemistry keeps its case inside otherwise-uppercased labels: CO2e, not CO2E. */
+.cs { text-transform: none; }
+
+.memo__h {
+  margin: 0 0 0.6rem;
+  color: var(--ink-2);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.memo__list { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.6rem; }
+.memo__item { display: grid; grid-template-columns: 1.125rem 1fr; gap: 0.7rem; align-items: start; }
+.memo__mark { width: 1.125rem; height: 1.125rem; margin-top: 0.15rem; }
+.memo__label { font-size: 0.8125rem; }
+.memo__v { font: 600 0.8125rem/1.6 var(--mono); font-variant-numeric: tabular-nums; }
+.memo__why { display: block; color: var(--ink-2); font-size: 0.75rem; }
+/* Below-the-line marks carry shape, not hue: dashed outline for prevention,
+   a heavy ring for unverified. Both clear 3:1 against the surface. */
+.mk rect { fill: none; stroke-width: 2; }
+.mk line { stroke-width: 2; }
+.mk--prev rect { stroke: var(--ink-3); stroke-dasharray: 3 2; }
+.mk--prev line { stroke: var(--ink-3); }
+.mk--unv rect { stroke: var(--critical); }
+.mk--unv line { stroke: var(--critical); stroke-linecap: round; }
+
+/* --- lifetime tiles: ruled columns, not floating cards ------------------- */
+.tiles { display: grid; grid-template-columns: repeat(6, 1fr); margin: 0; }
+.tile { padding: 0 0.875rem; border-left: 1px solid var(--hairline); }
+.tile:first-child { padding-left: 0; border-left: 0; }
+.tile__k {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.tile__v {
+  margin: 0.35rem 0 0;
+  font: 600 1.375rem/1.15 var(--mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.tile__u { display: block; margin-top: 0.15rem; color: var(--ink-2); font-size: 0.6875rem; }
+
+/* --- charts -------------------------------------------------------------- */
+.fig { margin: 0; }
+.chart { display: block; width: 100%; height: auto; overflow: visible; }
+.chart text { font-family: var(--sans); font-variant-numeric: tabular-nums; }
+.ax { fill: var(--ink-3); font-size: 11px; }
+.val { fill: var(--ink-2); font-size: 11px; font-weight: 600; }
+.cat { fill: var(--ink-1); font-size: 12px; }
+.grid { stroke: var(--hairline); stroke-width: 1; }
+.base { stroke: var(--ink-3); stroke-width: 1; }
+.track-empty { fill: none; stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 4 3; }
+.m-emitted { fill: var(--emitted); }
+.m-removed { fill: var(--removed); }
+/* 45-degree hatch marks the unsettled segment, so settled/unsettled is never
+   carried by hue alone (WCAG 2.2 SC 1.4.1). Styled in CSS, not presentation
+   attributes, so the tone-on-tone gap tracks the surface in both themes. */
+.hatch-ink { color: var(--emitted); }
+.hatch-ink rect { fill: currentColor; }
+.hatch-ink line { stroke: var(--surface); stroke-width: 2.5; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1.5rem; margin-top: 0.875rem; }
+.legend__i { display: flex; gap: 0.5rem; align-items: center; font-size: 0.8125rem; }
+.legend__sw { width: 0.875rem; height: 0.875rem; flex: none; border-radius: 2px; }
+.legend__sw--removed { background: var(--removed); }
+.legend__sw--unsettled {
+  background:
+    repeating-linear-gradient(45deg, var(--surface) 0 2px, transparent 2px 5px),
+    var(--emitted);
+}
+.legend__v { font: 600 0.8125rem/1 var(--mono); font-variant-numeric: tabular-nums; }
+
+details { margin-top: 1rem; }
+summary {
+  color: var(--ink-2);
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* --- tables -------------------------------------------------------------- */
+.tw { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+caption { margin-bottom: 0.6rem; color: var(--ink-2); font-size: 0.75rem; text-align: left; }
+th, td { padding: 0.55rem 0.75rem; border-bottom: 1px solid var(--hairline); text-align: left; }
+th {
+  color: var(--ink-2);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+th:first-child, td:first-child { padding-left: 0; }
+.n { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.td__note { display: block; color: var(--ink-2); font-size: 0.6875rem; white-space: nowrap; }
+tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+td a { color: var(--ink-1); }
+
+.badge {
+  display: inline-block;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid currentColor;
+  font: 700 0.625rem/1.6 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.badge--ok { color: var(--good); }
+.badge--no { color: var(--critical); border-width: 2px; }
+.row--no td { background: color-mix(in srgb, var(--critical) 8%, transparent); }
+
+/* --- footer -------------------------------------------------------------- */
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.5rem;
+  padding: 1.125rem 1.5rem;
+  color: var(--ink-2);
+  font-size: 0.75rem;
+}
+.foot time { font-family: var(--mono); }
+
+@media (max-width: 60rem) { .tiles { grid-template-columns: repeat(3, 1fr); row-gap: 1.25rem; }
+  .tile:nth-child(3n+1) { padding-left: 0; border-left: 0; } }
+@media (max-width: 34rem) {
+  body { padding: 0.75rem 0.5rem 2rem; }
+  .masthead, .caveat, .reg, .foot { padding-left: 1rem; padding-right: 1rem; }
+  .tiles { grid-template-columns: repeat(2, 1fr); }
+  .tile:nth-child(3n+1) { padding-left: 0.875rem; border-left: 1px solid var(--hairline); }
+  .tile:nth-child(odd) { padding-left: 0; border-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+@media print {
+  :root { color-scheme: light; --plane: #fff; --surface: #fff; --ink-1: #000; --ink-2: #333; --ink-3: #444; }
+  body { padding: 0; }
+  .sheet { border: 0; max-width: none; }
+  details { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <header class="masthead">
+    <h1>Carbon Ledger</h1>
+    <p>Statement of account &middot; Claude Code usage</p>
+  </header>
+
+  <p class="caveat"><span class="caveat__tag">Estimate</span><span id="caveat"></span></p>
+
+  <main>
+    <section class="reg" aria-labelledby="h-balance">
+      <h2 class="reg__h" id="h-balance">Unsettled balance</h2>
+      <p class="reg__note">This balance counts <strong>verified removal only</strong>. Prevention credits and
+        unverified purchases are recorded below the line: they are real purchases, and they do not settle a
+        removal debt.</p>
+      <p class="balance"><span class="balance__v" id="balance-value">&mdash;</span><span class="balance__u">kg CO2e</span></p>
+      <p class="balance__eq" id="balance-eq"></p>
+      <figure class="fig">
+        <svg class="chart" id="c-settle" viewBox="0 0 720 52" role="img" aria-labelledby="settle-t" aria-describedby="settle-d">
+          <title id="settle-t">Lifetime emissions, settled and unsettled</title>
+          <desc id="settle-d"></desc>
+          <defs>
+            <pattern id="hatch" class="hatch-ink" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <rect width="6" height="6"></rect>
+              <line x1="3" y1="0" x2="3" y2="6"></line>
+            </pattern>
+          </defs>
+          <g id="settle-marks"></g>
+        </svg>
+        <figcaption class="legend" id="settle-legend"></figcaption>
+      </figure>
+      <div class="rule--close" role="presentation"></div>
+      <div class="memo">
+        <h3 class="memo__h">Below the line &mdash; recorded, not settled</h3>
+        <ul class="memo__list" id="memo-list"></ul>
+      </div>
+    </section>
+
+    <section class="reg" aria-labelledby="h-lifetime">
+      <h2 class="reg__h" id="h-lifetime">Lifetime</h2>
+      <p class="reg__note">Operational figures come from token counts; embodied CO2e is the amortised hardware
+        share. API value is list price for the same work, not money spent.</p>
+      <dl class="tiles" id="tiles"></dl>
+    </section>
+
+    <section class="reg" aria-labelledby="h-monthly">
+      <h2 class="reg__h" id="h-monthly">Operational <span class="cs">CO2e</span> by month</h2>
+      <div id="monthly-body"></div>
+    </section>
+
+    <section class="reg" aria-labelledby="h-model">
+      <h2 class="reg__h" id="h-model">Operational <span class="cs">CO2e</span> by model family</h2>
+      <div id="model-body"></div>
+    </section>
+
+    <section class="reg" aria-labelledby="h-offsets">
+      <h2 class="reg__h" id="h-offsets">Offset purchases</h2>
+      <p class="reg__note">Every row is a purchase on record. Only <strong>verified removal</strong> rows reduce
+        the balance above.</p>
+      <div id="offsets-body"></div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <span>Generated <time id="gen" datetime=""></time></span>
+    <span>Estimates recomputed from stored token counts; no figure here is a measurement.</span>
+  </footer>
+
+</div>
+<script>

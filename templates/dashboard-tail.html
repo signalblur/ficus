@@ -1,0 +1,230 @@
+/* Renders the statement from DATA. Every value reaches the DOM as a text node
+   (Node.append with a string, or textContent) — never as parsed markup — so no
+   ledger string can inject HTML. Charts are inline SVG built through the
+   namespace read off the static <svg> in the skeleton, which keeps the URL of
+   the SVG namespace out of this file: the dashboard must carry zero external
+   references and be openable over file:// with the network off. */
+(function () {
+  "use strict";
+  var doc = document, settle = doc.getElementById("c-settle"), NS = settle.namespaceURI;
+
+  function make(ns, tag, attrs, kids) {
+    var n = ns ? doc.createElementNS(ns, tag) : doc.createElement(tag), k;
+    for (k in attrs) if (attrs[k] !== null && attrs[k] !== undefined) n.setAttribute(k, attrs[k]);
+    (kids || []).forEach(function (c) { if (c !== null && c !== undefined) n.append(c); });
+    return n;
+  }
+  function h(tag, attrs) { return make(null, tag, attrs, [].slice.call(arguments, 2)); }
+  function s(tag, attrs) { return make(NS, tag, attrs, [].slice.call(arguments, 2)); }
+  function set(id, text) { doc.getElementById(id).textContent = text; }
+  function num(v, d) {
+    var x = Number(v) || 0, p = Math.abs(x).toFixed(d).split(".");
+    return (x < 0 ? "−" : "") + p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",") + (p[1] ? "." + p[1] : "");
+  }
+  function width(node) { return Math.max(240, Math.round(node.getBoundingClientRect().width) || 720); }
+
+  var T = DATA.totals || {}, OS = DATA.offset_state || {};
+  var months = DATA.monthly || [], models = DATA.by_model || [], buys = DATA.offsets || [];
+  var emitted = (Number(T.co2_g) || 0) / 1000;
+  var removal = Number(OS.removal_verified_kg) || 0;
+  var settled = Math.min(removal, emitted), unsettled = Math.max(emitted - removal, 0);
+
+  /* --- standing text ------------------------------------------------------ */
+  set("caveat", DATA.caveat || "");
+  var gen = doc.getElementById("gen");
+  gen.textContent = DATA.generated_at || "";
+  gen.setAttribute("datetime", DATA.generated_at || "");
+
+  /* --- balance ------------------------------------------------------------ */
+  set("balance-value", num(OS.balance_kg, 2));
+  set("balance-eq", num(emitted, 2) + " kg emitted − " + num(removal, 2) + " kg verified removal"
+    + (emitted > 0 && unsettled === 0 ? " · fully settled" : ""));
+
+  var memo = doc.getElementById("memo-list");
+  function mark(kind) {
+    var g = s("svg", { class: "memo__mark mk mk--" + kind, viewBox: "0 0 18 18", "aria-hidden": "true" },
+      s("rect", { x: "1", y: "1", width: "16", height: "16" }));
+    if (kind === "prev") g.append(s("line", { x1: "4", y1: "14", x2: "14", y2: "4" }));
+    else { g.append(s("line", { x1: "9", y1: "5", x2: "9", y2: "10" })); g.append(s("line", { x1: "9", y1: "13", x2: "9", y2: "13" })); }
+    return g;
+  }
+  [["prev", "Prevention credits, verified", OS.prevention_verified_kg,
+    "Avoided emissions elsewhere. Real, purchased, and not a removal — so it cannot settle a removal debt."],
+   ["unv", "Unverified purchases", OS.unverified_kg,
+    "No retirement proof on file. Excluded from the balance until verified."]
+  ].forEach(function (r) {
+    memo.append(h("li", { class: "memo__item" }, mark(r[0]),
+      h("div", { class: "memo__label" },
+        r[1] + " · ", h("span", { class: "memo__v" }, num(r[2], 2) + " kg CO2e"),
+        h("span", { class: "memo__why" }, r[3]))));
+  });
+
+  /* --- lifetime tiles ----------------------------------------------------- */
+  var tiles = doc.getElementById("tiles");
+  [["Operational", num(emitted, 2), "kg CO2e"],
+   ["Embodied", num((Number(T.embodied_g) || 0) / 1000, 2), "kg CO2e"],
+   ["Energy", num((Number(T.energy_wh) || 0) / 1000, 2), "kWh"],
+   ["Water", num((Number(T.water_ml) || 0) / 1000, 1), "L"],
+   ["API value", "$" + num(T.cost_usd, 2), "list price"],
+   ["Sessions", num(T.sessions, 0), "recorded"]
+  ].forEach(function (t) {
+    tiles.append(h("div", { class: "tile" }, h("dt", { class: "tile__k" }, t[0]),
+      h("dd", { class: "tile__v" }, t[1], h("span", { class: "tile__u" }, t[2]))));
+  });
+
+  /* --- tables ------------------------------------------------------------- */
+  function table(caption, cols, rows) {
+    return h("div", { class: "tw" }, h("table", {}, h("caption", {}, caption),
+      h("thead", {}, make(null, "tr", {}, cols.map(function (c) {
+        return h("th", { scope: "col", class: c[1] ? "n" : null }, c[0]);
+      }))), make(null, "tbody", {}, rows)));
+  }
+
+  /* --- charts ------------------------------------------------------------- */
+  function chart(hostId, id, titleText) {
+    var host = doc.getElementById(hostId);
+    var g = s("g", {});
+    var svg = s("svg", { class: "chart", id: id, role: "img",
+      "aria-labelledby": id + "-t", "aria-describedby": id + "-d" },
+      s("title", { id: id + "-t" }, titleText), s("desc", { id: id + "-d" }), g);
+    host.append(h("figure", { class: "fig" }, svg));
+    return { svg: svg, g: g, desc: svg.querySelector("desc") };
+  }
+  function frame(c, w, hgt) { c.svg.setAttribute("viewBox", "0 0 " + w + " " + hgt); c.g.textContent = ""; }
+
+  /* Settlement: one track, split at the verified-removal boundary. The unsettled
+     remainder is hatched as well as colored, and prevention is nowhere on it. */
+  function drawSettle() {
+    var g = doc.getElementById("settle-marks"), W = width(settle.parentNode), H = 52, bh = 30;
+    settle.setAttribute("viewBox", "0 0 " + W + " " + H);
+    g.textContent = "";
+    if (emitted <= 0) {
+      g.append(s("rect", { class: "track-empty", x: "0.5", y: "8", width: W - 1, height: bh, rx: "3" }));
+      g.append(s("text", { class: "ax", x: "0", y: "50" }, "Nothing emitted yet — nothing to settle"));
+      set("settle-d", "No emissions recorded, so there is nothing to settle.");
+      return;
+    }
+    var wS = Math.round((settled / emitted) * W), gap = wS > 0 && wS < W ? 2 : 0;
+    if (wS > 0) g.append(s("rect", { class: "m-removed", x: "0", y: "8", width: Math.max(wS - gap, 1), height: bh, rx: "3" }));
+    if (wS < W) g.append(s("rect", { x: wS, y: "8", width: W - wS, height: bh, rx: "3", fill: "url(#hatch)" }));
+    g.append(s("line", { class: "base", x1: "0", y1: "39.5", x2: W, y2: "39.5" }));
+    g.append(s("text", { class: "ax", x: "0", y: "50" }, "0"));
+    g.append(s("text", { class: "ax", x: W, y: "50", "text-anchor": "end" }, num(emitted, 2) + " kg emitted"));
+    set("settle-d", "Of " + num(emitted, 2) + " kg CO2e emitted, " + num(settled, 2)
+      + " kg is settled by verified removal and " + num(unsettled, 2) + " kg is unsettled."
+      + (removal > emitted ? " Verified removal exceeds emissions by " + num(removal - emitted, 2) + " kg." : ""));
+  }
+  var legend = doc.getElementById("settle-legend");
+  [["removed", "Settled by verified removal", settled], ["unsettled", "Unsettled", unsettled]].forEach(function (l) {
+    legend.append(h("span", { class: "legend__i" }, h("span", { class: "legend__sw legend__sw--" + l[0] }),
+      l[1] + " ", h("span", { class: "legend__v" }, num(l[2], 2) + " kg")));
+  });
+
+  /* Monthly columns. One measure, one axis; every column is directly labelled
+     when there is room, and the data table below carries the full numbers. */
+  var cMonth = months.length ? chart("monthly-body", "c-month", "Operational CO2e by month, in kilograms") : null;
+  function drawMonthly() {
+    if (!cMonth) return;
+    var W = width(cMonth.svg.parentNode), H = 190, top = 24, bot = 26, plot = H - top - bot;
+    var vals = months.map(function (m) { return (Number(m.co2_g) || 0) / 1000; });
+    var max = Math.max.apply(null, vals.concat([0])) || 1;
+    /* Cap the column pitch so two months cluster at the left instead of
+       drifting half a page apart; a long history still fills the width. */
+    var step = Math.min(W / months.length, 110), bw = Math.min(step * 0.6, 56), label = step >= 44;
+    var axis = Math.min(months.length * step, W);
+    frame(cMonth, W, H);
+    months.forEach(function (m, i) {
+      var v = vals[i], bh = Math.max(Math.round((v / max) * plot), v > 0 ? 2 : 0);
+      var x = Math.round(i * step + (step - bw) / 2), y = top + plot - bh;
+      var bar = s("rect", { class: "m-emitted", x: x, y: y, width: Math.round(bw), height: bh, rx: "3" });
+      bar.append(s("title", {}, m.month + ": " + num(v, 2) + " kg CO2e"));
+      cMonth.g.append(bar);
+      if (label) cMonth.g.append(s("text", { class: "val", x: x + bw / 2, y: y - 7, "text-anchor": "middle" }, num(v, 2)));
+      cMonth.g.append(s("text", { class: "ax", x: x + bw / 2, y: H - 8, "text-anchor": "middle" },
+        step >= 62 ? String(m.month) : String(m.month).slice(-2)));
+    });
+    cMonth.g.append(s("line", { class: "base", x1: "0", y1: top + plot + 0.5, x2: axis, y2: top + plot + 0.5 }));
+    cMonth.desc.textContent = "Kilograms of operational CO2e per month: " + months.map(function (m, i) {
+      return m.month + " " + num(vals[i], 2); }).join("; ") + ".";
+  }
+
+  /* Model families: horizontal bars, ranked, every bar directly labelled. */
+  var cModel = models.length ? chart("model-body", "c-model", "Operational CO2e by model family, in kilograms") : null;
+  function drawModel() {
+    if (!cModel) return;
+    var W = width(cModel.svg.parentNode), rh = 32, gut = 88, right = 84;
+    var span = Math.max(W - gut - right, 40), H = models.length * rh + 4;
+    var vals = models.map(function (m) { return (Number(m.co2_g) || 0) / 1000; });
+    var max = Math.max.apply(null, vals.concat([0])) || 1;
+    frame(cModel, W, H);
+    models.forEach(function (m, i) {
+      var y = i * rh + 6, bw = Math.max(Math.round((vals[i] / max) * span), vals[i] > 0 ? 2 : 0);
+      cModel.g.append(s("text", { class: "cat", x: "0", y: y + 14, "dominant-baseline": "middle" }, String(m.family)));
+      var bar = s("rect", { class: "m-emitted", x: gut, y: y + 3, width: bw, height: "18", rx: "3" });
+      bar.append(s("title", {}, m.family + ": " + num(vals[i], 2) + " kg CO2e"));
+      cModel.g.append(bar);
+      cModel.g.append(s("text", { class: "val", x: gut + bw + 8, y: y + 14, "dominant-baseline": "middle" }, num(vals[i], 2) + " kg"));
+    });
+    cModel.g.append(s("line", { class: "base", x1: gut - 0.5, y1: "4", x2: gut - 0.5, y2: H - 4 }));
+    cModel.desc.textContent = "Kilograms of operational CO2e by model family: " + models.map(function (m, i) {
+      return m.family + " " + num(vals[i], 2); }).join("; ") + ".";
+  }
+
+  /* --- the numbers behind each chart, and the fresh-install empty state ---- */
+  [["monthly-body", months, "month", "Month", "monthly figures", "month"],
+   ["model-body", models, "family", "Family", "model figures", "model family"]
+  ].forEach(function (d) {
+    var host = doc.getElementById(d[0]);
+    if (!d[1].length) { host.append(h("p", { class: "empty" }, "No sessions recorded yet.")); return; }
+    host.append(h("details", {}, h("summary", {}, "Show " + d[4]),
+      table("Operational CO2e, energy and session count by " + d[5] + ".",
+        [[d[3]], [h("span", { class: "cs" }, "kg CO2e"), 1], ["kWh", 1], ["Sessions", 1]], d[1].map(function (r) {
+          return h("tr", {}, h("th", { scope: "row" }, String(r[d[2]])),
+            h("td", { class: "n" }, num((Number(r.co2_g) || 0) / 1000, 2)),
+            h("td", { class: "n" }, num((Number(r.energy_wh) || 0) / 1000, 2)),
+            h("td", { class: "n" }, num(r.sessions, 0)));
+        }))));
+  });
+
+  /* --- offset purchases --------------------------------------------------- */
+  var offHost = doc.getElementById("offsets-body");
+  if (!buys.length) {
+    offHost.append(h("p", { class: "empty" }, "No offsets purchased yet."));
+  } else {
+    var rows = buys.map(function (o) {
+      var ok = Number(o.verified) === 1, path = String(o.receipt_path || "");
+      var badge = h("span", { class: "badge " + (ok ? "badge--ok" : "badge--no") },
+        h("span", { "aria-hidden": "true" }, ok ? "✓ " : "⚠ "), ok ? "Verified" : "Unverified");
+      var receipt = path
+        ? h("a", { href: "file://" + path }, path.split("/").pop())
+        : "—";
+      return h("tr", { class: ok ? null : "row--no" },
+        h("th", { scope: "row" }, String(o.purchase_date || "—")),
+        h("td", {}, String(o.vendor || "—")),
+        h("td", {}, String(o.pathway || "—")),
+        h("td", { class: "n" }, num(o.kg_co2e, 2)),
+        h("td", { class: "n" }, "$" + num(o.usd, 2)),
+        h("td", {}, String(o.category || "—"),
+          String(o.category) === "removal" ? null : h("span", { class: "td__note" }, "does not settle")),
+        h("td", {}, badge),
+        h("td", {}, String(o.retirement_id || "—")),
+        h("td", {}, receipt));
+    });
+    offHost.append(table(buys.length + " purchase" + (buys.length === 1 ? "" : "s")
+      + " · $" + num(OS.offset_spent_usd, 2) + " spent · newest first.",
+      [["Date"], ["Vendor"], ["Pathway"], [h("span", { class: "cs" }, "kg CO2e"), 1], ["USD", 1], ["Category"], ["Status"],
+       ["Retirement ID"], ["Receipt"]], rows));
+  }
+
+  /* --- draw, and redraw at the measured width on resize -------------------- */
+  var pending = 0;
+  function render() { drawSettle(); drawMonthly(); drawModel(); }
+  render();
+  addEventListener("resize", function () {
+    cancelAnimationFrame(pending);
+    pending = requestAnimationFrame(render);
+  });
+})();
+</script>
+</body>
+</html>

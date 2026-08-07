@@ -10,6 +10,11 @@ reformat, or omit the caveat line.
 bash "${CARBON_LEDGER_DIR:-$HOME/Documents/Research/carbon-tracker/carbon-ledger}/scripts/carbon-report.sh"
 ```
 
+If the user asks for the dashboard (e.g. "/carbon --dashboard" or "show me the
+dashboard"), pass `--dashboard` instead: it generates a self-contained HTML
+file under `~/.claude/carbon-ledger/dashboard/` and opens it locally (file://,
+zero network).
+
 Notes for the agent:
 
 - The headline UNOFFSET BALANCE counts verified removal only. Prevention and
