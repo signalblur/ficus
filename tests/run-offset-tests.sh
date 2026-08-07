@@ -54,9 +54,22 @@ sqlite3 "$DB" "INSERT INTO sessions (session_id, project, model, input_tokens, o
   ('cccccccc-cccc-4ccc-8ccc-cccccccccccc', 'p3', 'qwen-local', 1, 1, 0, 0,
    '2026-03-01T00:00:00Z', '2026-03-01T01:00:00Z', 'backfill', 2, 1);"
 
+# RECEIPT1 is a real (minimal, uncompressed) PDF so text extraction has
+# something to parse; RECEIPT2 is junk-with-a-.pdf-name so the unparseable
+# path is covered too.
 RECEIPT1="${TMPROOT}/receipt-biochar.pdf"
 RECEIPT2="${TMPROOT}/receipt-tradewater.pdf"
-printf 'fake biochar receipt %s\n' "one" >"$RECEIPT1"
+{
+  printf '%%PDF-1.4\n'
+  printf '1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n'
+  printf '2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n'
+  printf '3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R >> endobj\n'
+  printf '4 0 obj << /Length 62 >> stream\n'
+  printf 'BT /F1 12 Tf 72 720 Td (CORC-RECEIPT 100 kg biochar) Tj ET\n'
+  printf 'endstream endobj\n'
+  printf 'trailer << /Root 1 0 R >>\n'
+  printf '%%%%EOF\n'
+} >"$RECEIPT1"
 printf 'fake tradewater receipt %s\n' "two" >"$RECEIPT2"
 
 # --- 1. record removal with receipt -----------------------------------------
@@ -105,11 +118,22 @@ if [ -f "$EXTRACTED" ] && [ "$(shasum -a 256 "$EXTRACTED" | LC_ALL=C awk '{print
 else
   ko "receipt blob round-trips byte-identical"
 fi
+TEXT1="$(sqlite3 "$DB" "SELECT COALESCE(extracted_text,'') FROM receipt_blobs WHERE offset_id=1;" 2>/dev/null)"
+case "$TEXT1" in
+*"CORC-RECEIPT 100 kg biochar"*) ok "receipt text parsed and stored" ;;
+*) ko "receipt text parsed and stored (got: '$TEXT1')" ;;
+esac
 
 # --- 2. record prevention + unverified removal ------------------------------
 bash "$RECORD" --kg 200 --usd 3.00 --vendor tradewater --pathway refrigerant-destruction \
   --category prevention --payer "Lies Above Media" --receipt "$RECEIPT2" \
   --date 2025-12-31 >/dev/null 2>&1 || ko "record prevention (year-boundary 2025) exits 0"
+TEXT2="$(sqlite3 "$DB" "SELECT COALESCE(extracted_text,'') FROM receipt_blobs WHERE offset_id=2;" 2>/dev/null)"
+if [ -z "$TEXT2" ]; then
+  ok "unparseable receipt records fine with no extracted text"
+else
+  ko "unparseable receipt records fine with no extracted text (got: '$TEXT2')"
+fi
 
 if bash "$RECORD" --kg 50 --usd 8.00 --vendor other --pathway biochar \
   --category removal --payer "Signalblur Security" --no-receipt \

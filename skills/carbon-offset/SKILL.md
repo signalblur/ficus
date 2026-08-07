@@ -30,11 +30,20 @@ bash "$LEDGER/scripts/offset-export.sh" --tax-year <YYYY> [--payer "<entity>"]
 ```
 
 **Extract a stored receipt from the DB** (recording also stores the receipt
-bytes in the `receipt_blobs` table, so the DB alone is a complete record):
+bytes in the `receipt_blobs` table, so the DB alone is a complete record; the
+dashboard offers the same bytes as download links):
 
 ```bash
 sqlite3 "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/carbon-ledger/carbon.db" \
   "SELECT writefile('<output-path>', content) FROM receipt_blobs WHERE offset_id=<id>;"
+```
+
+**Search receipt text** — recording best-effort parses the PDF's text into
+`receipt_blobs.extracted_text` (NULL for scanned/image-only receipts):
+
+```bash
+sqlite3 "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/carbon-ledger/carbon.db" \
+  "SELECT offset_id, filename FROM receipt_blobs WHERE extracted_text LIKE '%<term>%';"
 ```
 
 Rules for the agent:

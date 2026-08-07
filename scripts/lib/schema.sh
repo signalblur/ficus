@@ -56,7 +56,9 @@ ensure_schema() {
     filename TEXT NOT NULL,
     sha256 TEXT NOT NULL,
     content BLOB NOT NULL,
+    extracted_text TEXT,
     stored_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
   );" 2>/dev/null || true
+  sqlite3 "$db" "ALTER TABLE receipt_blobs ADD COLUMN extracted_text TEXT;" 2>/dev/null || true
   return 0
 }

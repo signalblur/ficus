@@ -213,6 +213,19 @@ if [ -n "$RECEIPT" ]; then
     VALUES (${ROW_ID}, '$(esc "$(basename "$DEST")")', '${SHA256}', readfile('$(esc "$DEST")'));"
   echo "Recorded offset #${ROW_ID}: ${KG} kg ${CATEGORY} (${VENDOR}), receipt -> ${DEST}"
   echo "Receipt bytes stored in the ledger DB (receipt_blobs, offset ${ROW_ID})."
+  # Best-effort text extraction so receipts are searchable; empty output means
+  # "no text" (scanned/odd PDF) and must never block the record.
+  PARSED=""
+  if command -v python3 >/dev/null 2>&1; then
+    PARSED="$(python3 "${SCRIPT_DIR}/lib/pdf-text.py" "$DEST" 2>/dev/null)" || PARSED=""
+  fi
+  if [ -n "$PARSED" ]; then
+    sqlite3 "$DB_PATH" "UPDATE receipt_blobs SET extracted_text='$(esc "$PARSED")'
+      WHERE offset_id=${ROW_ID};"
+    echo "Receipt text parsed (${#PARSED} chars) and stored for search."
+  else
+    echo "Receipt text not extractable (scanned or image-only PDF?); stored bytes only."
+  fi
 else
   echo "Recorded offset #${ROW_ID}: ${KG} kg ${CATEGORY} (${VENDOR}) — UNVERIFIED (no receipt)."
   echo "It will NOT count toward the verified balance until a receipt is attached."
