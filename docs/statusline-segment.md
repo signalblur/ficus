@@ -6,19 +6,19 @@ on their own row underneath:
 
 ```
 ... │ ⚡ 0.42Wh 💧 2.2mL 💨 0.12g
-∑ ⚡ 2173.2kWh 💧 11448L 💨 0.62t ▲ 623.7kg
+∑ ⚡ 2173.2kWh 💧 11448L 💨 0.62t
 ────────────────────────────────
-🌱 $0.03 session · $99.82 total
+▲ 0.62t · 🌱 $0.03 session · $99.82 total
 ```
 
-The last row is the estimated cost to offset — the current session and the whole
-unoffset balance — at the removal rate from `data/offset-constants.json`
-($160/t biochar CORCs). The segment cache is two lines: the ∑ readings and the
-pre-computed total cost; the session cost comes out of the same awk that prices
-the live readings.
+The last row carries the ▲ unoffset balance (tonnes) and the estimated cost to
+offset — the current session and the whole balance — at the removal rate from
+`data/offset-constants.json` ($160/t biochar CORCs). The segment cache is three
+lines: the ∑ readings, the pre-computed total cost, and the ▲ balance; the
+session cost comes out of the same awk that prices the live readings.
 
 (In the live integration the ∑ row is printed as a third statusline line; the
-reference snippet prints both parts on one line — same two inputs either way.)
+reference snippet prints the readings on one line — same inputs either way.)
 
 Design rule: **no fork code executes in the render path.** The statusline reads
 two pre-written files and does one awk. All DB work happens at write time:
@@ -26,7 +26,7 @@ two pre-written files and does one awk. All DB work happens at write time:
 | File (in `~/.claude/carbon-ledger/`) | Written by | Read by statusline |
 | --- | --- | --- |
 | `factors.env` | `setup.sh`, `recompute.sh` | `source` (shell vars, numeric-guarded) |
-| `segment-cache` | `persist-session.sh` (Stop hook), `backfill.sh`, `offset-record.sh`, `recompute.sh` | `cat` (pre-formatted `∑ ⚡ 2173.2kWh 💧 11448L 💨 0.62t ▲ 623.7kg` (all-time energy/water/carbon + unoffset balance)) |
+| `segment-cache` | `persist-session.sh` (Stop hook), `backfill.sh`, `offset-record.sh`, `recompute.sh` | `sed -n Np` (three pre-formatted lines: `∑ ⚡ 2173.2kWh 💧 11448L 💨 0.62t` all-time readings / total cost-to-clear USD / `▲ 0.62t` unoffset balance) |
 
 `statusline-snippet.sh` at the repo root is the reference implementation and is
 what `tests/run-statusline-bench.sh` benchmarks (p95 < 50 ms) and checks against

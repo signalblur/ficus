@@ -147,7 +147,7 @@ get() { echo "$RAW" | LC_ALL=C awk -F'\t' -v k="$1" '$1 == k {print $2}'; }
 # segment cache line 1: all-time readings (kWh / L / tonnes; balance moved to
 # line 3). Seeded sessions have NULL energy/water -> 0.0kWh / 0L; 600 kg = 0.60 t.
 # Line 2: cost-to-clear the balance at the removal rate: 500 kg x $160/t = 80.00.
-# Line 3: the balance itself (600 - 100 verified removal = 500.0 kg).
+# Line 3: the balance itself in tonnes (600 - 100 verified removal = 0.50 t).
 CACHE_L1="$(sed -n 1p "${STATE}/segment-cache" 2>/dev/null)"
 CACHE_L2="$(sed -n 2p "${STATE}/segment-cache" 2>/dev/null)"
 CACHE_L3="$(sed -n 3p "${STATE}/segment-cache" 2>/dev/null)"
@@ -161,7 +161,7 @@ if [ "$CACHE_L2" = "80.00" ]; then
 else
   ko "segment cache carries total offset cost (got: '$CACHE_L2')"
 fi
-if [ "$CACHE_L3" = "▲ 500.0kg" ]; then
+if [ "$CACHE_L3" = "▲ 0.50t" ]; then
   ok "segment cache carries the balance on its own line"
 else
   ko "segment cache carries the balance on its own line (got: '$CACHE_L3')"
