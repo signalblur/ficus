@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
 <title>Ficus — carbon ledger statement of account</title>
 <style>
 /* ===========================================================================
@@ -43,6 +44,29 @@
        required to understand the content". Thresholds are not rounded: 2.999:1
        does not meet 3:1.
 
+   ONE MODE, AND IT IS LIGHT. This page has no dark variant and no theme toggle.
+   There is no colour-scheme-preference media block anywhere in this stylesheet
+   — the test greps the rendered page for that feature name and fails if it
+   reappears, so, exactly as with the webfont at-rule above, this comment must
+   not spell it out. Every reader gets the white sheet regardless of their OS
+   setting. That is a deliberate product decision, not an oversight: this is a
+   printable tax document, and a statement of account that changes colour
+   depending on who opens it is a statement you cannot check against the copy
+   you filed. The page declares itself light in two places so the browser does
+   not auto-darken what it draws itself:
+
+     :root { color-scheme: light }         the CSS declaration
+     <meta name="color-scheme" content="light">   in the document head
+
+   Per WHATWG HTML, the meta form exists "to aid user agents in rendering the
+   page background with the desired color scheme immediately (rather than
+   waiting for all CSS in the page to load)", its value "must be a string that
+   matches the syntax for the CSS 'color-scheme' property value", and there
+   "must not be more than one meta element with its name attribute value set to
+   an ASCII case-insensitive match for color-scheme per document". Both are
+   needed: the meta covers the first paint, the CSS declaration covers UA-drawn
+   furniture (scrollbars, form controls) for the rest of the document's life.
+
    THE NEUTRAL TIER is a named dark-grey ramp, not a by-product of the body
    ink: greys 950/800/700/600 carry body text, headings and labels, secondary
    and tertiary prose; 500 carries chart axis material. Every grey that touches
@@ -50,23 +74,14 @@
    know which surface it landed on. With the mint band gone there are only two
    surfaces left to clear, which is why every number below went UP.
 
-   Measured ratios (light) — vs sheet #ffffff / vs plane #f1f3f2:
+   Measured ratios — vs sheet #ffffff / vs plane #f1f3f2:
      grey-950  18.31 / 16.42     body ink
      grey-800  12.34 / 11.07     headings, labels, table heads
      grey-700   8.71 /  7.81     secondary prose
      grey-600   5.60 /  5.02     tertiary, captions, axis TICK TEXT
      grey-500   3.59 /  3.22     NON-TEXT ONLY (axis lines, baselines)
-     grey-400   2.53 /  2.27     ramp completeness; unused in light mode
      accent     6.58 /  5.90     critical  7.32 / 6.57
      viz-1 (debit)  3.36 / 3.01  viz-2 (credit)  6.58 / 5.90
-   Measured ratios (dark) — vs sheet #171918 / vs plane #0d0f0e:
-     grey-950  15.64 / 17.03     grey-800  10.76 / 11.71
-     grey-700   8.16 /  8.88     grey-600   6.51 /  7.09
-     grey-500   4.48 /  4.88     grey-400   3.15 /  3.43  (both non-text)
-     accent    10.35 / 11.26     critical  7.27 /  7.92
-     viz-1 (debit)  4.04 / 4.39  viz-2 (credit)  6.08 / 6.62
-   In dark mode grey-500 is still the floor for text (4.48 is under 4.5 on the
-   sheet), so the tertiary tier stays at grey-600 there and 500/400 go non-text.
 
    THE TWO MINTS. The old --mint (#43c78c) measured 2.10:1 on white and so could
    never be more than a tint — which is exactly why the old design had to make it
@@ -94,9 +109,6 @@
    1.61:1 on the old sheet) — so the rule-work changed hue without changing
    visual weight.
 
-   In dark mode the same split holds: --mint #5fdcaa at 10.35:1 and --mint-soft
-   #264037 at 1.57:1 on the dark sheet.
-
    The focus ring does NOT go mint. It stays --ink-1, 18.31:1 on the sheet,
    because a focus indicator is the one mark on the page that should be as loud
    as the page can make it; brand is not worth a ratio there.
@@ -108,16 +120,14 @@
    CHART PALETTE — validated, not eyeballed. Run through the dataviz validator
    (OKLab dE x100, Machado-Oliveira-Fernandes 2009 CVD simulation at severity
    1.0). The six slots are unchanged by the palette rework; they were re-run
-   against the NEW surfaces (light #ffffff, dark #171918) and both modes still
-   pass all five computable checks on the adjacent pairlist, with the same
-   worst pairs and the same margins as before:
-     light  worst adjacent CVD dE 10.3 (protan, viz-2 vs viz-1)
-            worst adjacent normal-vision dE 18.0 (viz-6 vs viz-5)
-     dark   worst adjacent CVD dE  9.1 (deutan, viz-2 vs viz-1)
-            worst adjacent normal-vision dE 16.3 (viz-6 vs viz-5)
+   against the new #ffffff sheet and still pass all five computable checks on
+   the adjacent pairlist, with the same worst pairs and the same margins as
+   before:
+     worst adjacent CVD dE 10.3 (protan, viz-2 vs viz-1)
+     worst adjacent normal-vision dE 18.0 (viz-6 vs viz-5)
    The settlement bar puts viz-1 beside viz-2 and is the only place two series
-   touch; that pair also clears the harder all-pairs test (light CVD 10.3 /
-   normal 28.6; dark CVD 9.1 / normal 24.2).
+   touch; that pair also clears the harder all-pairs test (CVD 10.3 /
+   normal 28.6).
      viz-1 debit    emitted, unsettled          the debit column
      viz-2 credit   verified removal, settled   the credit column
      viz-3 water    viz-4 energy    viz-5 embodied    viz-6 spare
@@ -145,8 +155,6 @@
   --grey-700:  #414e49;
   --grey-600:  #5c6b65;
   --grey-500:  #7d8a85;
-  --grey-400:  #9aa5a1;   /* --axis in dark mode; unused in light, kept so the
-                             ramp reads the same in both */
 
   /* ink roles */
   --ink-1:     var(--grey-950);   /* body and headline ink */
@@ -173,34 +181,6 @@
 
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", Consolas, "Liberation Mono", monospace;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-    /* dark NEUTRAL surfaces — the same inversion, so nothing here is tinted
-       green either. The mint stays in the rule-work. */
-    --plane:     #0d0f0e;
-    --surface:   #171918;
-    --mint:      #5fdcaa;   /* 10.35:1 on the dark sheet */
-    --mint-soft: #264037;   /*  1.57:1 on the dark sheet */
-    /* the grey ramp inverts; the roles below do not move */
-    --grey-950:  #eef2f0;
-    --grey-800:  #c3ccc8;
-    --grey-700:  #a7b3ae;
-    --grey-600:  #93a09b;
-    --grey-500:  #77837e;
-    --grey-400:  #5c6b65;
-    --axis:      var(--grey-400);
-    --accent:    #5fdcaa;
-    --critical:  #f08a80;
-    --viz-1: #c05c28;
-    --viz-2: #38ab72;
-    --viz-3: #3f88dc;
-    --viz-4: #b57d15;
-    --viz-5: #7f6ed4;
-    --viz-6: #2a9db4;
-  }
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -480,7 +460,7 @@ a:hover { text-decoration-thickness: 2px; }
 .m-credit { fill: var(--viz-2); }
 /* 45-degree hatch marks the unsettled segment, so settled/unsettled is never
    carried by hue alone (SC 1.4.1 Use of Color). Styled in CSS, not presentation
-   attributes, so the tone-on-tone gap tracks the sheet in both modes. */
+   attributes, so the tone-on-tone gap tracks the sheet. */
 .hatch-ink { color: var(--viz-1); }
 .hatch-ink rect { fill: currentColor; }
 .hatch-ink line { stroke: var(--surface); stroke-width: 2.5; }
@@ -637,7 +617,7 @@ td a { color: var(--accent); }
   .read { padding-left: 0; padding-top: 1.25rem; border-left: 0; border-top: 1px solid var(--rule-key); }
   .read:first-child { padding-top: 0; border-top: 0; }
   .pair { grid-template-columns: 1fr; gap: 1.1rem; }
-  .pair > div { padding-left: 0; padding-top: 1rem; border-left: 0; border-top: 1px solid var(--rule); }
+  .pair > div { padding-left: 0; padding-top: 1rem; border-left: 0; border-top: 1px solid var(--rule-key); }
   .pair > div:first-child { padding-top: 0; border-top: 0; }
   .gitem { grid-template-columns: 1fr; gap: 0.4rem; }
 }
@@ -661,7 +641,8 @@ td a { color: var(--accent); }
 /* --- print: this is a tax document, so it has to print like one ------------ */
 @media print {
   :root {
-    color-scheme: light;
+    /* No color-scheme re-declaration here: the page is light everywhere, so
+       :root's declaration already covers print. */
     /* Print keeps the KEY mint rules — they are the identity, they survive a
        colour printer, and on a mono printer they still render as a grey line.
        The decorative hairlines drop to neutral grey instead: a 1.61:1 pale mint
