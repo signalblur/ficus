@@ -1,15 +1,20 @@
 # Statusline segment integration
 
 The carbon segment renders as a right-hand column beside the existing
-statusline rows — cached all-time totals beside the header (underlined),
-offset totals beside the context line, session-live figures on their own row
-at the bottom (directly above Claude Code's mode line):
+statusline rows — a `Totals:` label on its own row above the column, cached
+all-time totals beside the header (underlined), offset totals beside the
+context line, session-live figures on their own row at the bottom (directly
+above Claude Code's mode line):
 
 ```
+                                    Totals:
 [Fable 5] 📁 repo │ 🌿 main          │ ∑ ⚡ 2173.2kWh 💧 11448L 💨 0.62t
 ████ 10% │ $8.08 │ ⏱ 2h 17m  ↻99%   │ 💨 0.00t/0.62t · ▲ $0.03 session · $99.82 total
 ⚡ 0.42Wh 💧 2.2mL 💨 0.12g
 ```
+
+(The label row must open with an ANSI escape — Claude Code's renderer trims
+leading whitespace, and the escape stops the trim so the padding survives.)
 
 The last row carries the 💨 paid-off/emitted pair (verified removal purchased
 vs total emitted, tonnes) and the estimated cost to offset — the current
