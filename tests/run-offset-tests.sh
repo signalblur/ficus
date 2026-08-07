@@ -144,14 +144,21 @@ get() { echo "$RAW" | LC_ALL=C awk -F'\t' -v k="$1" '$1 == k {print $2}'; }
 [ "$(get cost_to_clear_removal_usd)" = "80.00" ] && ok "cost-to-clear removal \$80.00" || ko "cost_to_clear_removal_usd (got: $(get cost_to_clear_removal_usd))"
 [ "$(get cost_to_clear_prevention_usd)" = "7.50" ] && ok "cost-to-clear prevention \$7.50" || ko "cost_to_clear_prevention_usd (got: $(get cost_to_clear_prevention_usd))"
 
-# segment cache: all-time totals (kWh / L / tonnes) + balance in kg.
+# segment cache line 1: all-time totals (kWh / L / tonnes) + balance in kg.
 # Seeded sessions have NULL energy/water -> 0.0kWh / 0L; 600 kg co2 = 0.60 t;
 # balance 600 - 100 verified removal = 500.0 kg.
-CACHE_CONTENT="$(cat "${STATE}/segment-cache" 2>/dev/null)"
-if [ "$CACHE_CONTENT" = "∑ ⚡ 0.0kWh 💧 0L 💨 0.60t ▲ 500.0kg" ]; then
+# Line 2: cost-to-clear the balance at the removal rate: 500 kg x $160/t = 80.00.
+CACHE_L1="$(sed -n 1p "${STATE}/segment-cache" 2>/dev/null)"
+CACHE_L2="$(sed -n 2p "${STATE}/segment-cache" 2>/dev/null)"
+if [ "$CACHE_L1" = "∑ ⚡ 0.0kWh 💧 0L 💨 0.60t ▲ 500.0kg" ]; then
   ok "segment cache carries all-time totals + balance"
 else
-  ko "segment cache carries all-time totals + balance (got: '$CACHE_CONTENT')"
+  ko "segment cache carries all-time totals + balance (got: '$CACHE_L1')"
+fi
+if [ "$CACHE_L2" = "80.00" ]; then
+  ok "segment cache carries total offset cost (500 kg x \$160/t = 80.00)"
+else
+  ko "segment cache carries total offset cost (got: '$CACHE_L2')"
 fi
 
 # human report must keep the caveat and the separation visible

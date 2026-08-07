@@ -15,7 +15,9 @@ emit_factors_env() {
   dest="${dest_dir}/factors.env"
   tmp="${dest}.tmp.$$"
 
-  local fab_in fab_out opus_in opus_out son_in son_out hai_in hai_out cif water_per_wh emb
+  local fab_in fab_out opus_in opus_out son_in son_out hai_in hai_out cif water_per_wh emb removal_rate constants
+  constants="$(dirname "$factors")/offset-constants.json"
+  removal_rate="$(jq -r '.removal_usd_per_tonne // 160' "$constants" 2>/dev/null)" || removal_rate=160
   fab_in="$(jq -r '.models.fable.input // 156' "$factors")"
   fab_out="$(jq -r '.models.fable.output // 3304' "$factors")"
   opus_in="$(jq -r '.models.opus.input' "$factors")"
@@ -30,7 +32,7 @@ emit_factors_env() {
     LC_ALL=C awk '{printf "%.10f", $1 / $2 + $3}')"
 
   for v in "$fab_in" "$fab_out" "$opus_in" "$opus_out" "$son_in" "$son_out" \
-    "$hai_in" "$hai_out" "$cif" "$water_per_wh" "$emb"; do
+    "$hai_in" "$hai_out" "$cif" "$water_per_wh" "$emb" "$removal_rate"; do
     case "$v" in
     '' | *[!0-9.eE+-]*)
       echo "factors-env: non-numeric value ('${v}'); refusing to write factors.env" >&2
@@ -52,5 +54,6 @@ emit_factors_env() {
     echo "CL_CIF=${cif}"
     echo "CL_WATER_PER_WH=${water_per_wh}"
     echo "CL_EMB_PER_WH=${emb}"
+    echo "CL_REMOVAL_USD_PER_T=${removal_rate}"
   } >"$tmp" && mv -f "$tmp" "$dest"
 }

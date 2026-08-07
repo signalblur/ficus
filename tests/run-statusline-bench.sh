@@ -46,7 +46,9 @@ emit_factors_env "${REPO_DIR}/data/factors.json" "$STATE" || {
   echo "FAIL statusline: emit_factors_env failed" >&2
   exit 1
 }
-printf '∑ ⚡ 2173.2kWh 💧 11448L 💨 0.62t ▲ 623.7kg' >"${STATE}/segment-cache"
+printf '∑ ⚡ 2173.2kWh 💧 11448L 💨 0.62t ▲ 623.7kg\n99.79' >"${STATE}/segment-cache"
+REMOVAL_RATE="$(jq -er '.removal_usd_per_tonne' "${REPO_DIR}/data/offset-constants.json")"
+SEP_LINE="────────────────────────────────"
 
 run_snippet() {
   printf '{"model":{"id":"%s"},"context_window":{"total_input_tokens":%s,"total_output_tokens":%s}}' \
@@ -65,15 +67,15 @@ check_vector() {
   exp_e="$(jq -r --arg v "$vid" '.vectors[] | select(.id == $v) | .expected_energy_wh' "${SCRIPT_DIR}/methodology-vectors.json")"
   got="$(run_snippet "$model" "$in" "$out")"
   exp_fmt="$(echo "$exp_e $exp_co2" | LC_ALL=C awk '{printf "⚡ %.2fWh 💧 %.1fmL 💨 %.2fg", $1, $1 * 5.2678947368, $2}')"
-  case "$got" in
-  "${exp_fmt} ∑ ⚡ 2173.2kWh 💧 11448L 💨 0.62t ▲ 623.7kg")
+  exp_cost="$(echo "$exp_co2 $REMOVAL_RATE" | LC_ALL=C awk '{printf "%.2f", $1 * $2 / 1000000}')"
+  want="$(printf '%s ∑ ⚡ 2173.2kWh 💧 11448L 💨 0.62t ▲ 623.7kg\n%s\n🌱 $%s session · $99.79 total' \
+    "$exp_fmt" "$SEP_LINE" "$exp_cost")"
+  if [ "$got" = "$want" ]; then
     echo "PASS statusline math: ${vid}"
-    ;;
-  *)
-    echo "FAIL statusline math ${vid}: got '${got}', want '${exp_fmt} ∑ ...'" >&2
+  else
+    echo "FAIL statusline math ${vid}: got '${got}', want '${want}'" >&2
     fail=1
-    ;;
-  esac
+  fi
 }
 check_vector "opus-no-cache" "claude-opus-5"
 check_vector "family-precedence-fable-over-opus" "claude-fable-opus-hybrid-test"

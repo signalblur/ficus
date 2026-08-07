@@ -30,11 +30,27 @@ case "$MODEL_ID" in
 *) FIN=0 FOUT=0 ;;
 esac
 
-SEG="$(echo "$IN_TOK $OUT_TOK $FIN $FOUT $CL_CIF $CL_WATER_PER_WH" | LC_ALL=C awk \
+# One awk: session readings + session offset cost (co2 x removal $/t)
+IFS="$(printf '\t')" read -r SEG SESS_COST <<EOF
+$(echo "$IN_TOK $OUT_TOK $FIN $FOUT $CL_CIF $CL_WATER_PER_WH ${CL_REMOVAL_USD_PER_T:-160}" | LC_ALL=C awk \
   '{co2 = ($1 * $3 + $2 * $4) / 1000000
     e = (co2 > 0) ? co2 / $5 : 0
-    printf "⚡ %.2fWh 💧 %.1fmL 💨 %.2fg", e, e * $6, co2}')"
+    printf "⚡ %.2fWh 💧 %.1fmL 💨 %.2fg\t%.2f", e, e * $6, co2, co2 * $7 / 1000000}')
+EOF
 
-BAL=""
-[ -f "${STATE_DIR}/segment-cache" ] && BAL=" $(cat "${STATE_DIR}/segment-cache")"
-printf '%s%s' "$SEG" "$BAL"
+# Cache line 1 = all-time ∑ readings; line 2 = total cost-to-clear (USD)
+ALL=""
+TOTAL_COST=""
+if [ -f "${STATE_DIR}/segment-cache" ]; then
+  ALL=" $(sed -n 1p "${STATE_DIR}/segment-cache")"
+  TOTAL_COST="$(sed -n 2p "${STATE_DIR}/segment-cache")"
+fi
+
+# Readings, then a separator, then the offset-cost estimates
+printf '%s%s\n' "$SEG" "$ALL"
+printf '────────────────────────────────\n'
+if [ -n "$TOTAL_COST" ]; then
+  printf '🌱 $%s session · $%s total' "$SESS_COST" "$TOTAL_COST"
+else
+  printf '🌱 $%s session' "$SESS_COST"
+fi

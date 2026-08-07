@@ -7,7 +7,15 @@ on their own row underneath:
 ```
 ... │ ⚡ 0.42Wh 💧 2.2mL 💨 0.12g
 ∑ ⚡ 2173.2kWh 💧 11448L 💨 0.62t ▲ 623.7kg
+────────────────────────────────
+🌱 $0.03 session · $99.82 total
 ```
+
+The last row is the estimated cost to offset — the current session and the whole
+unoffset balance — at the removal rate from `data/offset-constants.json`
+($160/t biochar CORCs). The segment cache is two lines: the ∑ readings and the
+pre-computed total cost; the session cost comes out of the same awk that prices
+the live readings.
 
 (In the live integration the ∑ row is printed as a third statusline line; the
 reference snippet prints both parts on one line — same two inputs either way.)
