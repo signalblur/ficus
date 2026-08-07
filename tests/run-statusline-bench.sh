@@ -46,7 +46,7 @@ emit_factors_env "${REPO_DIR}/data/factors.json" "$STATE" || {
   echo "FAIL statusline: emit_factors_env failed" >&2
   exit 1
 }
-printf '▲ 1.4kg' >"${STATE}/segment-cache"
+printf '∑ ⚡ 2173.2kWh 💧 11448L 💨 0.62t ▲ 623.7kg' >"${STATE}/segment-cache"
 
 run_snippet() {
   printf '{"model":{"id":"%s"},"context_window":{"total_input_tokens":%s,"total_output_tokens":%s}}' \
@@ -66,11 +66,11 @@ check_vector() {
   got="$(run_snippet "$model" "$in" "$out")"
   exp_fmt="$(echo "$exp_e $exp_co2" | LC_ALL=C awk '{printf "⚡ %.2fWh 💧 %.1fmL 💨 %.2fg", $1, $1 * 5.2678947368, $2}')"
   case "$got" in
-  "${exp_fmt} ▲ 1.4kg")
+  "${exp_fmt} ∑ ⚡ 2173.2kWh 💧 11448L 💨 0.62t ▲ 623.7kg")
     echo "PASS statusline math: ${vid}"
     ;;
   *)
-    echo "FAIL statusline math ${vid}: got '${got}', want '${exp_fmt} ▲ 1.4kg'" >&2
+    echo "FAIL statusline math ${vid}: got '${got}', want '${exp_fmt} ∑ ...'" >&2
     fail=1
     ;;
   esac

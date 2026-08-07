@@ -1,0 +1,77 @@
+# carbon-ledger maintenance
+
+## Upstream review & cherry-pick procedure (manual, always)
+
+There is no update checker by design. On an upstream release:
+
+1. `git fetch upstream` (the remote is fetch-only; push is disabled).
+2. `git log upstream-43fb883..upstream/main --oneline` and read every commit.
+   Most likely to matter: transcript-format changes, new model factors/prices.
+3. Diff-review each candidate commit in full (`git show <sha>`), with the
+   2026-08-06 audit findings in mind: anything touching network, credentials,
+   installers, updaters, or skills is rejected or stripped.
+4. Cherry-pick reviewed commits only: `git cherry-pick -x <sha>`.
+5. Run the whole suite: `bash tests/run-tests.sh`. A factor change must update
+   `tests/methodology-vectors.json` expectations in the same commit and pass
+   the cross-check gate; parser changes must keep reconciliation green.
+6. Move the audit baseline only after a full re-review: retag
+   `upstream-<newsha>` and update the tag name in `tests/run-lint.sh`,
+   `tests/run-reconciliation.sh`, and this file.
+
+## Consolidation tier policy (what may drift from upstream)
+
+| Tier | Files | Policy |
+| --- | --- | --- |
+| Consolidated | `scripts/lib/*.sh` (schema, model-family, factors-env, segment-cache) | Fork-owned. Upstream schema/factor changes are re-expressed here, never cherry-picked directly. |
+| Upstream-close | `aggregate_jsonl` jq programs in `backfill.sh` and `persist-session.sh` | Kept byte-close to upstream ON PURPOSE — they are the most likely cherry-pick recipients (transcript-format changes). Do NOT consolidate or reformat them. |
+| Fork-only | offsets, physics, dashboard, statusline snippet, skills, tests beyond `run-vectors` | No upstream counterpart; normal development. |
+
+`recompute.sh`'s SQL LIKE clauses mirror `lib/model-family.sh` and are annotated
+in place — keep both in sync when adding a model family (vector
+`family-precedence-fable-over-opus` locks the precedence).
+
+## Constants provenance
+
+Every numeric constant lives in a data file with a `_source` and date; scripts
+never hardcode one. The validation guard in `recompute.sh` (and the emit guard
+in `lib/factors-env.sh`) must list every constant interpolated into SQL or
+sourced shell — add new constants to those guards in the same commit.
+
+| Constant | Value | File | Source |
+| --- | --- | --- | --- |
+| co2 factors (fable/opus/sonnet/haiku) | 156/3304 · 78/1652 · 39/826 · 20/413 gCO2e/Mtok | `data/factors.json` `.models` | Jegham et al. 2025 (arXiv:2505.09598); fable = 2x opus extrapolation |
+| cache_read_factor | 0.08 | `data/factors.json` | engineering estimate, METHODOLOGY.md |
+| grid CIF | 0.287 g/Wh | `.physics` | Jegham et al. (AWS location-based) — the CIF identity anchor |
+| PUE | 1.14 | `.physics` | AWS fleet, Jegham et al. |
+| WUE on-site / off-site | 0.18 / 5.11 L/kWh | `.physics` | AWS 2023 / WRI via Li et al., METHODOLOGY.md:42-47 |
+| embodied intensity | 44.1 gCO2e/kWh | `.physics` | 8xH100 server LCA (BoaviztAPI + Lees-Perasso), 3-yr life at TDP — derivation in the file |
+| EcoLogits α/β/γ/B | 1.17e-6 / −0.0112 / 4.05e-5 / 64 | `.ecologits` | ecologits.ai methodology (fetched 2026-08-06), cross-check ONLY |
+| Claude parameter estimates | fable 800B, opus 400B, sonnet 200B, haiku 50B (+tps) | `.ecologits.models` | undisclosed by Anthropic; labeled estimates, cross-check ONLY |
+| offset prices | $160/t removal, $15/t prevention | `data/offset-constants.json` | workspace `research/carbon-offset-landscape-2026-08.md` |
+| prices | per `data/prices.json` | `data/prices.json` | Anthropic list prices |
+
+## Live wiring (done 2026-08-06, Phase 9)
+
+- State: `~/.claude/carbon-ledger/` (DB, factors.env, segment-cache,
+  receipts/, exports/, dashboard/)
+- Hooks in `~/.claude/settings.json`: Stop → `scripts/persist-session.sh`,
+  SessionStart → `scripts/safety-rescan.sh` (backup:
+  `settings.json.bak-carbon-ledger-2026-08-06`)
+- Statusline: segment merged into `~/.claude/statusline.sh` (backup:
+  `statusline.sh.bak-carbon-ledger-2026-08-06`); render path is
+  source factors.env + one awk + cat segment-cache
+- Skills: `~/.claude/commands/carbon.md` and `carbon-offset.md` symlink to
+  `skills/*/SKILL.md`
+- Real-history reconciliation vs upstream: `docs/real-data-reconciliation.md`
+  (1468/1470 token-exact; 2 in-flight sessions differed by capture time only)
+
+## Test suite
+
+`bash tests/run-tests.sh` auto-discovers every `tests/run-*.sh`:
+vectors (13, incl. physics + precedence), reconciliation (vs upstream tag),
+physics-db (3 write paths), offsets (33 assertions), cross-check (+ mutation),
+statusline bench (p95 < 50 ms), dashboard (determinism + zero external refs),
+hygiene (no network call sites, no legacy naming), lint (shellcheck all,
+shfmt on fork-added files; containerized when not installed locally).
+Pre-commit hook (`.githooks/`, `core.hooksPath`) runs lint + vectors; prek
+config is present for when prek is installed.

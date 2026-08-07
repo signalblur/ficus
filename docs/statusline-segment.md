@@ -3,7 +3,7 @@
 The carbon segment shows session-live figures plus the cached unoffset balance:
 
 ```
-⚡ 0.42Wh 💧 2.2mL 💨 0.12g ▲ 1.4kg
+⚡ 0.42Wh 💧 2.2mL 💨 0.12g ∑ ⚡ 2173.2kWh 💧 11448L 💨 0.62t ▲ 623.7kg
 ```
 
 Design rule: **no fork code executes in the render path.** The statusline reads
@@ -12,7 +12,7 @@ two pre-written files and does one awk. All DB work happens at write time:
 | File (in `~/.claude/carbon-ledger/`) | Written by | Read by statusline |
 | --- | --- | --- |
 | `factors.env` | `setup.sh`, `recompute.sh` | `source` (shell vars, numeric-guarded) |
-| `segment-cache` | `persist-session.sh` (Stop hook), `backfill.sh`, `offset-record.sh`, `recompute.sh` | `cat` (pre-formatted `▲ 12.5kg`) |
+| `segment-cache` | `persist-session.sh` (Stop hook), `backfill.sh`, `offset-record.sh`, `recompute.sh` | `cat` (pre-formatted `∑ ⚡ 2173.2kWh 💧 11448L 💨 0.62t ▲ 623.7kg` (all-time energy/water/carbon + unoffset balance)) |
 
 `statusline-snippet.sh` at the repo root is the reference implementation and is
 what `tests/run-statusline-bench.sh` benchmarks (p95 < 50 ms) and checks against
