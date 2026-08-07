@@ -91,6 +91,21 @@ else
   ko "copied receipt hash verifies"
 fi
 
+# receipt bytes also land in the DB (receipt_blobs), keyed by offset id
+BLOB_SHA="$(sqlite3 "$DB" "SELECT sha256 FROM receipt_blobs WHERE offset_id=1;" 2>/dev/null)"
+if [ "$BLOB_SHA" = "$SHA_EXPECTED" ]; then
+  ok "receipt blob row carries matching sha256"
+else
+  ko "receipt blob row carries matching sha256 (got: '$BLOB_SHA')"
+fi
+EXTRACTED="${TMPROOT}/extracted-receipt.pdf"
+sqlite3 "$DB" "SELECT writefile('${EXTRACTED}', content) FROM receipt_blobs WHERE offset_id=1;" >/dev/null 2>&1
+if [ -f "$EXTRACTED" ] && [ "$(shasum -a 256 "$EXTRACTED" | LC_ALL=C awk '{print $1}')" = "$SHA_EXPECTED" ]; then
+  ok "receipt blob round-trips byte-identical"
+else
+  ko "receipt blob round-trips byte-identical"
+fi
+
 # --- 2. record prevention + unverified removal ------------------------------
 bash "$RECORD" --kg 200 --usd 3.00 --vendor tradewater --pathway refrigerant-destruction \
   --category prevention --payer "Lies Above Media" --receipt "$RECEIPT2" \
@@ -105,6 +120,8 @@ else
 fi
 V="$(sqlite3 "$DB" "SELECT verified FROM offsets WHERE id=3;")"
 [ "$V" = "0" ] && ok "no-receipt row marked unverified" || ko "no-receipt row marked unverified (verified=$V)"
+NB="$(sqlite3 "$DB" "SELECT COUNT(*) FROM receipt_blobs WHERE offset_id=3;" 2>/dev/null)"
+[ "$NB" = "0" ] && ok "no-receipt row stores no blob" || ko "no-receipt row stores no blob (got: '$NB')"
 
 # --- 3. validation: hard errors, no rows written ----------------------------
 BEFORE="$(sqlite3 "$DB" "SELECT COUNT(*) FROM offsets;")"

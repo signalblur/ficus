@@ -8,7 +8,9 @@
 #   offset-record.sh --update ID [--retirement-id ID] [--notes TEXT]
 #
 # The receipt file is COPIED (never moved, never deleted) to
-# <state>/receipts/YYYY/<date>-<vendor>-<rowid>.<ext> and its SHA-256 recorded.
+# <state>/receipts/YYYY/<date>-<vendor>-<rowid>.<ext>, its SHA-256 recorded, and
+# its bytes stored in the receipt_blobs table so the DB alone is a complete
+# tax record (extract with sqlite3's writefile()).
 # No receipt without an explicit --no-receipt is a hard error; --no-receipt rows
 # are stored verified=0 and loudly labeled everywhere they appear.
 #
@@ -206,8 +208,11 @@ if [ -n "$RECEIPT" ]; then
   DEST="${DEST_DIR}/${DATE}-${VENDOR_SLUG}-${ROW_ID}.${EXT}"
   mkdir -p "$DEST_DIR"
   cp "$RECEIPT" "$DEST" # copy only; this script never moves or deletes
-  sqlite3 "$DB_PATH" "UPDATE offsets SET receipt_path='$(esc "$DEST")' WHERE id=${ROW_ID};"
+  sqlite3 "$DB_PATH" "UPDATE offsets SET receipt_path='$(esc "$DEST")' WHERE id=${ROW_ID};
+    INSERT OR REPLACE INTO receipt_blobs (offset_id, filename, sha256, content)
+    VALUES (${ROW_ID}, '$(esc "$(basename "$DEST")")', '${SHA256}', readfile('$(esc "$DEST")'));"
   echo "Recorded offset #${ROW_ID}: ${KG} kg ${CATEGORY} (${VENDOR}), receipt -> ${DEST}"
+  echo "Receipt bytes stored in the ledger DB (receipt_blobs, offset ${ROW_ID})."
 else
   echo "Recorded offset #${ROW_ID}: ${KG} kg ${CATEGORY} (${VENDOR}) — UNVERIFIED (no receipt)."
   echo "It will NOT count toward the verified balance until a receipt is attached."

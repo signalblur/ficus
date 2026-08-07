@@ -51,5 +51,12 @@ ensure_schema() {
     notes TEXT,
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
   );" 2>/dev/null || true
+  sqlite3 "$db" "CREATE TABLE IF NOT EXISTS receipt_blobs (
+    offset_id INTEGER PRIMARY KEY REFERENCES offsets(id),
+    filename TEXT NOT NULL,
+    sha256 TEXT NOT NULL,
+    content BLOB NOT NULL,
+    stored_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+  );" 2>/dev/null || true
   return 0
 }
