@@ -40,6 +40,14 @@ FACTOR_HAIKU_OUT="$(jq -r '.models.haiku.output' "$FACTORS_FILE" 2>/dev/null)" |
 # Energy of a cache_read token as a fraction of an uncached input token (see METHODOLOGY.md).
 CACHE_READ_FACTOR="$(jq -r '.cache_read_factor // 0.08' "$FACTORS_FILE" 2>/dev/null)" || CACHE_READ_FACTOR="0.08"
 
+# Physics constants: energy/water/embodied derived from co2 (see METHODOLOGY.md;
+# constants documented with sources in factors.json .physics)
+CIF_G_WH="$(jq -r '.physics.grid_cif_g_per_wh.value // 0.287' "$FACTORS_FILE" 2>/dev/null)" || CIF_G_WH="0.287"
+PUE="$(jq -r '.physics.pue.value // 1.14' "$FACTORS_FILE" 2>/dev/null)" || PUE="1.14"
+WUE_ON="$(jq -r '.physics.wue_onsite_l_per_kwh.value // 0.18' "$FACTORS_FILE" 2>/dev/null)" || WUE_ON="0.18"
+WUE_OFF="$(jq -r '.physics.wue_offsite_l_per_kwh.value // 5.11' "$FACTORS_FILE" 2>/dev/null)" || WUE_OFF="5.11"
+EMB_G_KWH="$(jq -r '.physics.embodied_gco2e_per_kwh.value // 44.1' "$FACTORS_FILE" 2>/dev/null)" || EMB_G_KWH="44.1"
+
 # Load pricing once (USD per million tokens, current Anthropic list price).
 # The Stop hook doesn't provide the actual billed cost, so we estimate the API list value.
 PRICE_FABLE_IN="$(jq -r '.models.fable.input // 10' "$PRICES_FILE" 2>/dev/null)" || PRICE_FABLE_IN="10"
@@ -220,6 +228,11 @@ NOW="$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null)" || NOW=""
 EXCLUDED=0
 if is_excluded_model "$MODEL_RAW"; then EXCLUDED=1; fi
 
+# Physics columns derived from co2 (CIF identity; excluded sessions have co2=0)
+ENERGY_WH="$(echo "$CO2_G $CIF_G_WH" | LC_ALL=C awk '{printf "%.4f", $1 / $2}')"
+WATER_ML="$(echo "$ENERGY_WH $WUE_ON $PUE $WUE_OFF" | LC_ALL=C awk '{printf "%.4f", $1 * ($2 / $3 + $4)}')"
+EMBODIED_G="$(echo "$ENERGY_WH $EMB_G_KWH" | LC_ALL=C awk '{printf "%.6f", $1 * $2 / 1000}')"
+
 # Sanitize strings for SQL
 SESSION_ID="${SESSION_ID//\'/\'\'}"
 PROJECT="${PROJECT//\'/\'\'}"
@@ -227,6 +240,6 @@ MODEL_RAW="${MODEL_RAW//\'/\'\'}"
 NOW="${NOW//\'/\'\'}"
 
 # INSERT OR REPLACE into sessions (source='live', cost = theoretical API list price)
-sqlite3 "$DB_PATH" "INSERT OR REPLACE INTO sessions (session_id, project, model, input_tokens, output_tokens, cache_read_tokens, cache_creation_tokens, cost_usd, co2_grams, started_at, ended_at, source, methodology_version, excluded) VALUES ('${SESSION_ID}', '${PROJECT}', '${MODEL_RAW}', ${INPUT_TOKENS}, ${OUTPUT_TOKENS}, ${CACHE_READ}, ${CACHE_CREATION}, ${COST_USD}, ${CO2_G}, COALESCE((SELECT started_at FROM sessions WHERE session_id='${SESSION_ID}'), '${NOW}'), '${NOW}', 'live', ${METHODOLOGY_VERSION}, ${EXCLUDED});" 2>/dev/null || true
+sqlite3 "$DB_PATH" "INSERT OR REPLACE INTO sessions (session_id, project, model, input_tokens, output_tokens, cache_read_tokens, cache_creation_tokens, cost_usd, co2_grams, started_at, ended_at, source, methodology_version, excluded, energy_wh, water_ml, embodied_gco2e) VALUES ('${SESSION_ID}', '${PROJECT}', '${MODEL_RAW}', ${INPUT_TOKENS}, ${OUTPUT_TOKENS}, ${CACHE_READ}, ${CACHE_CREATION}, ${COST_USD}, ${CO2_G}, COALESCE((SELECT started_at FROM sessions WHERE session_id='${SESSION_ID}'), '${NOW}'), '${NOW}', 'live', ${METHODOLOGY_VERSION}, ${EXCLUDED}, ${ENERGY_WH}, ${WATER_ML}, ${EMBODIED_G});" 2>/dev/null || true
 
 exit 0

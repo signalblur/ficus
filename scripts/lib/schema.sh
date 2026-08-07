@@ -23,11 +23,17 @@ ensure_schema() {
     ended_at TEXT,
     source TEXT DEFAULT 'live',
     methodology_version INTEGER DEFAULT 1,
-    excluded INTEGER DEFAULT 0
+    excluded INTEGER DEFAULT 0,
+    energy_wh REAL,
+    water_ml REAL,
+    embodied_gco2e REAL
   ); CREATE INDEX IF NOT EXISTS idx_sessions_year ON sessions(started_at);" 2>/dev/null || true
   sqlite3 "$db" "ALTER TABLE sessions ADD COLUMN cache_read_tokens INTEGER DEFAULT 0;" 2>/dev/null || true
   sqlite3 "$db" "ALTER TABLE sessions ADD COLUMN cache_creation_tokens INTEGER DEFAULT 0;" 2>/dev/null || true
   sqlite3 "$db" "ALTER TABLE sessions ADD COLUMN methodology_version INTEGER DEFAULT 1;" 2>/dev/null || true
   sqlite3 "$db" "ALTER TABLE sessions ADD COLUMN excluded INTEGER DEFAULT 0;" 2>/dev/null || true
+  sqlite3 "$db" "ALTER TABLE sessions ADD COLUMN energy_wh REAL;" 2>/dev/null || true
+  sqlite3 "$db" "ALTER TABLE sessions ADD COLUMN water_ml REAL;" 2>/dev/null || true
+  sqlite3 "$db" "ALTER TABLE sessions ADD COLUMN embodied_gco2e REAL;" 2>/dev/null || true
   return 0
 }

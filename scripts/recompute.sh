@@ -35,6 +35,14 @@ F_SON_IN="$(jq -r '.models.sonnet.input' "$FACTORS_FILE")";   F_SON_OUT="$(jq -r
 F_HAI_IN="$(jq -r '.models.haiku.input' "$FACTORS_FILE")";    F_HAI_OUT="$(jq -r '.models.haiku.output' "$FACTORS_FILE")"
 CRF="$(jq -r '.cache_read_factor // 0.08' "$FACTORS_FILE")"
 
+# Physics constants: energy/water/embodied derived from co2 (see METHODOLOGY.md;
+# constants documented with sources in factors.json .physics)
+CIF_G_WH="$(jq -r '.physics.grid_cif_g_per_wh.value // 0.287' "$FACTORS_FILE")"
+PUE="$(jq -r '.physics.pue.value // 1.14' "$FACTORS_FILE")"
+WUE_ON="$(jq -r '.physics.wue_onsite_l_per_kwh.value // 0.18' "$FACTORS_FILE")"
+WUE_OFF="$(jq -r '.physics.wue_offsite_l_per_kwh.value // 5.11' "$FACTORS_FILE")"
+EMB_G_KWH="$(jq -r '.physics.embodied_gco2e_per_kwh.value // 44.1' "$FACTORS_FILE")"
+
 # Prices (USD per million tokens) + cache multipliers
 P_FAB_IN="$(jq -r '.models.fable.input // 10' "$PRICES_FILE")"; P_FAB_OUT="$(jq -r '.models.fable.output // 50' "$PRICES_FILE")"
 P_OPUS_IN="$(jq -r '.models.opus.input' "$PRICES_FILE")";     P_OPUS_OUT="$(jq -r '.models.opus.output' "$PRICES_FILE")"
@@ -49,7 +57,8 @@ CR_MULT="$(jq -r '.cache_read_multiplier // 0.1' "$PRICES_FILE")"
 for _v in "$F_FAB_IN" "$F_FAB_OUT" "$F_OPUS_IN" "$F_OPUS_OUT" "$F_SON_IN" "$F_SON_OUT" \
           "$F_HAI_IN" "$F_HAI_OUT" "$CRF" \
           "$P_FAB_IN" "$P_FAB_OUT" "$P_OPUS_IN" "$P_OPUS_OUT" "$P_SON_IN" "$P_SON_OUT" \
-          "$P_HAI_IN" "$P_HAI_OUT" "$CW_MULT" "$CR_MULT"; do
+          "$P_HAI_IN" "$P_HAI_OUT" "$CW_MULT" "$CR_MULT" \
+          "$CIF_G_WH" "$PUE" "$WUE_ON" "$WUE_OFF" "$EMB_G_KWH"; do
   case "$_v" in
     ''|*[!0-9.eE+-]*)
       echo "recompute: non-numeric value in factors/prices ('${_v}'); refusing to run." >&2
@@ -91,6 +100,17 @@ update_family "(model LIKE '%fable%' OR model LIKE '%mythos%')" "$F_FAB_IN" "$F_
 update_family "model LIKE '%opus%'"  "$F_OPUS_IN" "$F_OPUS_OUT" "$P_OPUS_IN" "$P_OPUS_OUT"
 update_family "model LIKE '%haiku%'" "$F_HAI_IN"  "$F_HAI_OUT"  "$P_HAI_IN"  "$P_HAI_OUT"
 update_family "model NOT LIKE '%fable%' AND model NOT LIKE '%mythos%' AND model NOT LIKE '%opus%' AND model NOT LIKE '%haiku%'" "$F_SON_IN" "$F_SON_OUT" "$P_SON_IN" "$P_SON_OUT"
+
+# Physics columns re-derived from the just-recomputed co2 (CIF identity: the co2
+# factors are energy x CIF, so co2/CIF recovers facility Wh; water is PUE-consistent;
+# embodied proxies through energy). Excluded rows have co2=0 and derive to 0.
+sqlite3 -cmd ".timeout 5000" "$DB_PATH" "
+  UPDATE sessions SET
+    energy_wh = co2_grams / ${CIF_G_WH},
+    water_ml = (co2_grams / ${CIF_G_WH}) * (${WUE_ON}/${PUE} + ${WUE_OFF}),
+    embodied_gco2e = (co2_grams / ${CIF_G_WH}) * ${EMB_G_KWH} / 1000.0
+  WHERE methodology_version >= 2 AND co2_grams IS NOT NULL;
+"
 
 RECOMPUTED="$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM sessions WHERE methodology_version >= 2 AND COALESCE(excluded, 0) = 0;")"
 LEGACY="$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM sessions WHERE methodology_version IS NULL OR methodology_version < 2;")"

@@ -10,8 +10,8 @@
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-FACTORS_FILE="${SCRIPT_DIR}/../data/factors.json"
-PRICES_FILE="${SCRIPT_DIR}/../data/prices.json"
+FACTORS_FILE="${CARBON_LEDGER_FACTORS:-${SCRIPT_DIR}/../data/factors.json}"
+PRICES_FILE="${CARBON_LEDGER_PRICES:-${SCRIPT_DIR}/../data/prices.json}"
 VECTORS_FILE="${SCRIPT_DIR}/methodology-vectors.json"
 REL_TOL="0.000001" # 1e-6
 
@@ -30,6 +30,14 @@ F_OPUS_IN="$(jq -r '.models.opus.input' "$FACTORS_FILE")";  F_OPUS_OUT="$(jq -r 
 F_SON_IN="$(jq -r '.models.sonnet.input' "$FACTORS_FILE")"; F_SON_OUT="$(jq -r '.models.sonnet.output' "$FACTORS_FILE")"
 F_HAI_IN="$(jq -r '.models.haiku.input' "$FACTORS_FILE")";  F_HAI_OUT="$(jq -r '.models.haiku.output' "$FACTORS_FILE")"
 CRF="$(jq -r '.cache_read_factor // 0.08' "$FACTORS_FILE")"
+
+# Physics constants (energy/water/embodied derivation). jq -e: a missing block
+# must fail the suite, not silently default.
+CIF="$(jq -er '.physics.grid_cif_g_per_wh.value' "$FACTORS_FILE")" || { echo "FAIL: physics.grid_cif_g_per_wh missing from factors.json" >&2; exit 1; }
+PUE="$(jq -er '.physics.pue.value' "$FACTORS_FILE")" || { echo "FAIL: physics.pue missing" >&2; exit 1; }
+WUE_ON="$(jq -er '.physics.wue_onsite_l_per_kwh.value' "$FACTORS_FILE")" || { echo "FAIL: physics.wue_onsite missing" >&2; exit 1; }
+WUE_OFF="$(jq -er '.physics.wue_offsite_l_per_kwh.value' "$FACTORS_FILE")" || { echo "FAIL: physics.wue_offsite missing" >&2; exit 1; }
+EMB_G_KWH="$(jq -er '.physics.embodied_gco2e_per_kwh.value' "$FACTORS_FILE")" || { echo "FAIL: physics.embodied_gco2e_per_kwh missing" >&2; exit 1; }
 
 # Prices (USD per Mtok) + cache multipliers
 P_FAB_IN="$(jq -r '.models.fable.input' "$PRICES_FILE")";  P_FAB_OUT="$(jq -r '.models.fable.output' "$PRICES_FILE")"
@@ -70,9 +78,11 @@ while [ "$i" -lt "$N" ]; do
     (.input_tokens // 0), (.cache_creation_tokens // 0),
     (.cache_read_tokens // 0), (.output_tokens // 0),
     (if .excluded == true then "1" else "0" end),
-    (.expected_co2_grams // 0), (.expected_cost_usd // 0)
+    (.expected_co2_grams // 0), (.expected_cost_usd // 0),
+    (.expected_energy_wh // 0), (.expected_water_ml // 0),
+    (.expected_embodied_gco2e // 0)
   ] | @tsv' "$VECTORS_FILE")"
-  IFS="$(printf '\t')" read -r ID MODEL IN CW CR OUT EXCLUDED EXP_CO2 EXP_COST <<EOF
+  IFS="$(printf '\t')" read -r ID MODEL IN CW CR OUT EXCLUDED EXP_CO2 EXP_COST EXP_E EXP_W EXP_EMB <<EOF
 $ROW
 EOF
 
@@ -104,6 +114,12 @@ EOF
       '{printf "%.6f", ($1 * $5 + $2 * ($5 * $7) + $3 * ($5 * $8) + $4 * $6) / 1000000}')"
   fi
 
+  # Physics columns, derived from co2 exactly as recompute.sh/persist-session.sh do:
+  # CIF identity, PUE-consistent water, embodied through energy.
+  ENERGY="$(echo "$CO2 $CIF" | LC_ALL=C awk '{printf "%.10g", $1 / $2}')"
+  WATER="$(echo "$ENERGY $WUE_ON $PUE $WUE_OFF" | LC_ALL=C awk '{printf "%.10g", $1 * ($2 / $3 + $4)}')"
+  EMBODIED="$(echo "$ENERGY $EMB_G_KWH" | LC_ALL=C awk '{printf "%.10g", $1 * $2 / 1000}')"
+
   OK=1
   if ! close_enough "$CO2" "$EXP_CO2"; then
     echo "FAIL ${ID}: co2_grams ${CO2} != expected ${EXP_CO2} (model ${MODEL})"
@@ -111,6 +127,18 @@ EOF
   fi
   if ! close_enough "$COST" "$EXP_COST"; then
     echo "FAIL ${ID}: cost_usd ${COST} != expected ${EXP_COST} (model ${MODEL})"
+    OK=0
+  fi
+  if ! close_enough "$ENERGY" "$EXP_E"; then
+    echo "FAIL ${ID}: energy_wh ${ENERGY} != expected ${EXP_E} (model ${MODEL})"
+    OK=0
+  fi
+  if ! close_enough "$WATER" "$EXP_W"; then
+    echo "FAIL ${ID}: water_ml ${WATER} != expected ${EXP_W} (model ${MODEL})"
+    OK=0
+  fi
+  if ! close_enough "$EMBODIED" "$EXP_EMB"; then
+    echo "FAIL ${ID}: embodied_gco2e ${EMBODIED} != expected ${EXP_EMB} (model ${MODEL})"
     OK=0
   fi
   if [ "$OK" = "1" ]; then

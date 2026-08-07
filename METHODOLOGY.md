@@ -43,8 +43,8 @@ Factors are in gCO2e per million tokens. `cache_write_tokens` (`cache_creation_i
 | -------------- | ---------------- | ----------------------------------------------------------------------------- |
 | PUE            | 1.14             | AWS datacenter power usage effectiveness                                      |
 | CIF            | 0.287 kgCO2e/kWh | AWS region grid CIF, location-based (Jegham et al.); US average is ~380 g/kWh |
-| WUE (on-site)  | 0.18 L/kWh       | Water for datacenter cooling (not used in CO2 calc)                           |
-| WUE (off-site) | 5.11 L/kWh       | Water for electricity generation (not used in CO2 calc)                       |
+| WUE (on-site)  | 0.18 L/kWh       | Water for datacenter cooling (drives water_ml, on-site term)                  |
+| WUE (off-site) | 5.11 L/kWh       | Water for electricity generation (drives water_ml, off-site term)             |
 
 ## Per-model factors (gCO2e per million tokens)
 
@@ -124,3 +124,48 @@ For EUR, `data/prices.json` carries `eur_per_usd` (ECB euro reference rate, 0.87
 | TGV (full scope)         | 3.5 gCO2e/km    | SNCF open data 2024, per passenger-km              |
 
 Car and TGV factors are lifecycle values while this tool's CO2 is usage-only; the equivalences are illustrative, not scope-matched. Refreshed 2026-07-31: earlier releases used 120 g/km (car, close to the EU new-vehicle homologation average, misattributed to ADEME), 0.2 g per Google search (a 2009 blog figure misattributed to the 2023 environmental report), 19 g per email with attachment (ADEME 2011, withdrawn; the current ADEME reference email is ~2.5 g) and 2.4 g/km (TGV, untraceable).
+
+## Derived physics columns (this fork)
+
+Every session row additionally carries `energy_wh`, `water_ml`, and
+`embodied_gco2e`, derived from `co2_grams` by global constants
+(`data/factors.json` `.physics`, each value cited there):
+
+```
+energy_wh      = co2_grams / 0.287            # CIF identity (exact)
+water_ml       = energy_wh * (0.18/1.14 + 5.11)
+embodied_gco2e = energy_wh * 44.1 / 1000
+```
+
+- **CIF identity.** The Jegham-derived co2 factors are facility energy times the
+  grid CIF (0.287 g/Wh), so dividing by the CIF recovers facility energy in Wh
+  exactly. There is no second energy model in the ledger.
+- **PUE-consistent water.** Facility energy `E` includes cooling overhead, so
+  on-site cooling water applies to IT energy `E/PUE` at WUE 0.18 L/kWh, while
+  off-site generation water applies to the full `E` at 5.11 L/kWh
+  (L/kWh = mL/Wh).
+- **Embodied through energy.** Hardware embodied carbon is allocated by
+  generation time in EcoLogits, but this ledger stores tokens, not GPU-seconds,
+  so it proxies through energy: an 8xH100 server (5,700 kg server ex-GPU +
+  8 x 273 kg GPUs, BoaviztAPI / Lees-Perasso et al.) over a 3-year life at full
+  TDP works out to 44.1 gCO2e/kWh. Assuming full utilization is the low-side
+  assumption: real (lower) utilization would raise the per-kWh figure.
+
+## Cross-check gate (this fork)
+
+`scripts/check-crosscheck.sh` recomputes the golden-vector token mixes under an
+independent EcoLogits-based estimate (`factors.json` `.ecologits`: the
+ML.ENERGY-fitted per-token function, GPU-count memory model, non-GPU server
+power, PUE) and compares **blended** totals against the Jegham factors. The two
+must agree within 3x either way or the factors change is blocked. The comparison
+is blended per-session, never per-factor: EcoLogits models input/cache-token
+energy as ~0 while Jegham amortizes it into per-token factors, so per-factor
+comparison diverges by construction.
+
+## Uncertainty
+
+Anthropic publishes no per-query energy data (still true as of 2026-08). Every
+figure this tool shows — co2, energy, water, embodied — is an order-of-magnitude
+estimate with roughly +/-50% uncertainty, and the Fable factors are a double
+extrapolation (2x Opus, itself 2x Sonnet). Treat trends and relative comparisons
+as meaningful, absolute values as indicative.
