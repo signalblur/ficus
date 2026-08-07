@@ -46,7 +46,7 @@ emit_factors_env "${REPO_DIR}/data/factors.json" "$STATE" || {
   echo "FAIL statusline: emit_factors_env failed" >&2
   exit 1
 }
-printf '∑ ⚡ 2173.2kWh 💧 11448L 💨 0.62t\n99.79\n▲ 0.62t' >"${STATE}/segment-cache"
+printf '∑ ⚡ 2173.2kWh 💧 11448L 💨 0.62t\n99.79\n💨 0.00t/0.62t' >"${STATE}/segment-cache"
 REMOVAL_RATE="$(jq -er '.removal_usd_per_tonne' "${REPO_DIR}/data/offset-constants.json")"
 SEP_LINE="────────────────────────────────"
 
@@ -68,7 +68,7 @@ check_vector() {
   got="$(run_snippet "$model" "$in" "$out")"
   exp_fmt="$(echo "$exp_e $exp_co2" | LC_ALL=C awk '{printf "⚡ %.2fWh 💧 %.1fmL 💨 %.2fg", $1, $1 * 5.2678947368, $2}')"
   exp_cost="$(echo "$exp_co2 $REMOVAL_RATE" | LC_ALL=C awk '{printf "%.2f", $1 * $2 / 1000000}')"
-  want="$(printf '%s ∑ ⚡ 2173.2kWh 💧 11448L 💨 0.62t\n%s\n▲ 0.62t · 🌱 $%s session · $99.79 total' \
+  want="$(printf '%s ∑ ⚡ 2173.2kWh 💧 11448L 💨 0.62t\n%s\n💨 0.00t/0.62t · ▲ $%s session · $99.79 total' \
     "$exp_fmt" "$SEP_LINE" "$exp_cost")"
   if [ "$got" = "$want" ]; then
     echo "PASS statusline math: ${vid}"

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # statusline-snippet.sh — REFERENCE implementation of the carbon statusline
-# segment: session-live ⚡ energy / 💧 water / 💨 co2 plus the cached ▲ unoffset
-# balance. See docs/statusline-segment.md for merging this into an existing
-# statusline (fold the jq fields into your existing single jq call).
+# segment: session-live ⚡ energy / 💧 water / 💨 co2 plus the cached 💨
+# paid-off/emitted pair. See docs/statusline-segment.md for merging this into an
+# existing statusline (fold the jq fields into your existing single jq call).
 #
 # Render-path budget rules: NO DB access, NO jq against factors.json — only
 # `source factors.env`, one awk, and `cat` of the pre-formatted segment cache.
@@ -39,7 +39,7 @@ $(echo "$IN_TOK $OUT_TOK $FIN $FOUT $CL_CIF $CL_WATER_PER_WH ${CL_REMOVAL_USD_PE
 EOF
 
 # Cache: line 1 = all-time ∑ readings; line 2 = total cost-to-clear (USD);
-# line 3 = ▲ unoffset balance
+# line 3 = 💨 paid-off/emitted (tonnes)
 ALL=""
 TOTAL_COST=""
 BAL=""
@@ -49,10 +49,10 @@ if [ -f "${STATE_DIR}/segment-cache" ]; then
   BAL="$(sed -n 3p "${STATE_DIR}/segment-cache")"
 fi
 
-# Readings, then a separator, then the totals: balance + offset-cost estimates
+# Readings, then a separator, then the totals: paid-off/emitted + offset costs
 printf '%s%s\n' "$SEG" "$ALL"
 printf '────────────────────────────────\n'
-TOTALS="🌱 \$${SESS_COST} session"
+TOTALS="▲ \$${SESS_COST} session"
 [ -n "$TOTAL_COST" ] && TOTALS="${TOTALS} · \$${TOTAL_COST} total"
 [ -n "$BAL" ] && TOTALS="${BAL} · ${TOTALS}"
 printf '%s' "$TOTALS"
