@@ -1,10 +1,16 @@
 # Statusline segment integration
 
-The carbon segment shows session-live figures plus the cached unoffset balance:
+The carbon segment shows session-live figures on the statusline row, with the
+cached all-time totals (energy kWh, water L, carbon tonnes, unoffset balance)
+on their own row underneath:
 
 ```
-⚡ 0.42Wh 💧 2.2mL 💨 0.12g ∑ ⚡ 2173.2kWh 💧 11448L 💨 0.62t ▲ 623.7kg
+... │ ⚡ 0.42Wh 💧 2.2mL 💨 0.12g
+∑ ⚡ 2173.2kWh 💧 11448L 💨 0.62t ▲ 623.7kg
 ```
+
+(In the live integration the ∑ row is printed as a third statusline line; the
+reference snippet prints both parts on one line — same two inputs either way.)
 
 Design rule: **no fork code executes in the render path.** The statusline reads
 two pre-written files and does one awk. All DB work happens at write time:
@@ -53,10 +59,17 @@ if [ -f "$CL_STATE/factors.env" ]; then
 fi
 ```
 
-**3. Append `$carbon_seg`** to the rendered line:
+**3. Append the live segment to the statusline row and print the ∑ totals as
+their own line below** (capture `cat "$CL_STATE/segment-cache"` into
+`carbon_all` instead of appending it to `carbon_seg`):
 
 ```bash
 [ -n "$carbon_seg" ] && line2="$line2 $(printf '%b \033[32m%s\033[0m' "$SEP" "$carbon_seg")"
+if [ -n "$carbon_all" ]; then
+    printf '%b\n\n%b\n\033[2;32m%s\033[0m' "$line1" "$line2" "$carbon_all"
+else
+    printf '%b\n\n%b' "$line1" "$line2"
+fi
 ```
 
 ## Accuracy notes
