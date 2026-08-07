@@ -146,24 +146,50 @@
   }
   function frame(c, w, hgt) { c.svg.setAttribute("viewBox", "0 0 " + w + " " + hgt); c.g.textContent = ""; }
 
-  /* Settlement: one track, split at the verified-removal boundary. The unsettled
-     remainder is hatched as well as colored, and prevention is nowhere on it. */
+  /* SIGNATURE — the settlement meter.
+     One track, split at the verified-removal boundary, dressed as an instrument
+     rather than a progress bar: a tick scale runs above it (minor every 10% of
+     what was emitted, major at 0/50/100) and a marker drops at the boundary
+     carrying the settled percentage. The scale is the point — it turns "some of
+     the bar is filled" into a reading you can take. The unsettled remainder is
+     hatched as well as colored, and prevention is nowhere on it. */
+  var TICK_TOP_MAJ = 4, TICK_TOP_MIN = 7, TICK_BOT = 13;
+  var TRACK_Y = 17, TRACK_H = 28, BASE_Y = 46.5, AX_Y = 58, MARK_Y = 70;
   function drawSettle() {
-    var g = doc.getElementById("settle-marks"), W = width(settle.parentNode), H = 52, bh = 30;
+    var g = doc.getElementById("settle-marks"), W = width(settle.parentNode), H = 78;
     settle.setAttribute("viewBox", "0 0 " + W + " " + H);
     g.textContent = "";
     if (emitted <= 0) {
-      g.append(s("rect", { class: "track-empty", x: "0.5", y: "8", width: W - 1, height: bh, rx: "3" }));
-      g.append(s("text", { class: "ax", x: "0", y: "50" }, "Nothing emitted yet — nothing to settle"));
+      g.append(s("rect", { class: "track-empty", x: "0.5", y: TRACK_Y, width: W - 1, height: TRACK_H, rx: "3" }));
+      g.append(s("text", { class: "ax", x: "0", y: AX_Y }, "Nothing emitted yet — nothing to settle"));
       set("settle-d", "No emissions recorded, so there is nothing to settle.");
       return;
     }
+    /* Tick scale. Drawn first so the track and the boundary marker sit over it. */
+    for (var p = 0; p <= 100; p += 10) {
+      var major = p === 0 || p === 50 || p === 100;
+      var tx = Math.round((p / 100) * W) + 0.5;
+      tx = Math.min(Math.max(tx, 0.5), W - 0.5);
+      g.append(s("line", { class: "tick" + (major ? " tick--major" : ""),
+        x1: tx, y1: major ? TICK_TOP_MAJ : TICK_TOP_MIN, x2: tx, y2: TICK_BOT }));
+    }
     var wS = Math.round((settled / emitted) * W), gap = wS > 0 && wS < W ? 2 : 0;
-    if (wS > 0) g.append(s("rect", { class: "m-credit", x: "0", y: "8", width: Math.max(wS - gap, 1), height: bh, rx: "3" }));
-    if (wS < W) g.append(s("rect", { x: wS, y: "8", width: W - wS, height: bh, rx: "3", fill: "url(#hatch)" }));
-    g.append(s("line", { class: "base", x1: "0", y1: "39.5", x2: W, y2: "39.5" }));
-    g.append(s("text", { class: "ax", x: "0", y: "50" }, "0"));
-    g.append(s("text", { class: "ax", x: W, y: "50", "text-anchor": "end" }, num(emitted, 2) + " kg emitted"));
+    if (wS > 0) g.append(s("rect", { class: "m-credit", x: "0", y: TRACK_Y, width: Math.max(wS - gap, 1), height: TRACK_H, rx: "3" }));
+    if (wS < W) g.append(s("rect", { x: wS, y: TRACK_Y, width: W - wS, height: TRACK_H, rx: "3", fill: "url(#hatch)" }));
+    g.append(s("line", { class: "base", x1: "0", y1: BASE_Y, x2: W, y2: BASE_Y }));
+    g.append(s("text", { class: "ax", x: "0", y: AX_Y }, "0"));
+    g.append(s("text", { class: "ax", x: W, y: AX_Y, "text-anchor": "end" }, num(emitted, 2) + " kg emitted"));
+    /* The boundary marker only earns its place when there is a boundary to
+       mark: at 0% or 100% it would just restate an end of the track. */
+    var pct = (settled / emitted) * 100;
+    if (wS > 0 && wS < W) {
+      var mx = Math.min(Math.max(wS, 0.5), W - 0.5);
+      var anchor = pct > 70 ? "end" : pct < 30 ? "start" : "middle";
+      var mark = s("g", { class: "bound" },
+        s("line", { x1: mx, y1: TICK_BOT, x2: mx, y2: BASE_Y }),
+        s("text", { x: mx, y: MARK_Y, "text-anchor": anchor }, num(pct, 1) + "% settled"));
+      g.append(mark);
+    }
     set("settle-d", "Of " + num(emitted, 2) + " kg CO2e emitted, " + num(settled, 2)
       + " kg is settled by verified removal and " + num(unsettled, 2) + " kg is unsettled."
       + (removal > emitted ? " Verified removal exceeds emissions by " + num(removal - emitted, 2) + " kg." : ""));

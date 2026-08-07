@@ -198,6 +198,31 @@ want "water formula stated" '0.18/1.14'
 want "embodied factor stated" '44.1'
 want "removal-only balance rule restated" 'verified removal'
 
+# --- dashboard idiom ---------------------------------------------------------
+# The page is a console, not a statement of account. These lock the shape so a
+# later content edit cannot quietly reintroduce the bill: a zoned page header, a
+# card grid, and every panel a labelled section.
+want "zoned page header" 'class="topbar"'
+want "card grid" 'class="grid"'
+want "hero panel carries the headline reading" 'class="card card--hero"'
+want "charts are first-class panels, not table annexes" 'id="by-month"'
+want "model breakdown is its own panel" 'id="by-model"'
+# SIGNATURE: the settlement meter is a gauge with a real tick scale, which is
+# what makes it a reading rather than a progress bar. Both marks are drawn at
+# load time from the embedded script, so they exist in the page as the source
+# that builds them, not as static attributes — assert that source.
+want "settlement meter has a tick scale" 'tick--major'
+want "settlement meter marks the settled boundary" 'class: "bound"'
+want "settlement meter reports the settled percentage" '% settled'
+# Ledger vocabulary must stay gone.
+for dead in "Statement of account" "Detach for your records" 'class="sheet"' 'class="mast"' 'class="perf"'; do
+  if grep -qF "$dead" "$OUT"; then
+    echo "FAIL dashboard: ledger vocabulary returned: $dead" >&2
+    fail=1
+  fi
+done
+echo "PASS dashboard: ledger/bill vocabulary retired"
+
 # --- quality floor: the page's own accessibility scaffolding ------------------
 want "reduced motion honoured" 'prefers-reduced-motion'
 want "print stylesheet present" '@media print'
