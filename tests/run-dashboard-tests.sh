@@ -202,7 +202,22 @@ want "removal-only balance rule restated" 'verified removal'
 want "reduced motion honoured" 'prefers-reduced-motion'
 want "print stylesheet present" '@media print'
 want "visible keyboard focus" ':focus-visible'
-want "chart palette tokens documented" '\--viz-1'
+# Charts measure two quantities, so the palette is two colours, both pinned at
+# the values the dataviz validator cleared on all pairs (CVD dE 22.4 deutan,
+# normal-vision dE 25.5, both >= 3:1 on white).
+want "chart palette: emitted slot pinned" '\--viz-emitted: #414a8c'
+want "chart palette: settled slot pinned" '\--viz-settled: #0f9563'
+# No oranges or reds in the charts, and no quietly-reintroduced rainbow: the
+# only chart tokens permitted are those two.
+if grep -oE '\--viz-[a-z0-9-]+:' "$OUT" | sort -u |
+  grep -qvE '^--viz-(emitted|settled):$'; then
+  echo "FAIL dashboard: unexpected chart palette token(s):" >&2
+  grep -oE '\--viz-[a-z0-9-]+:' "$OUT" | sort -u |
+    grep -vE '^--viz-(emitted|settled):$' >&2
+  fail=1
+else
+  echo "PASS dashboard: exactly two chart colours (emitted, settled)"
+fi
 # The working mint is the one colour on this page under a WCAG obligation: it
 # draws the meaning-bearing rules (column rules, table-head underlines, callout
 # bars), which SC 1.4.11 Non-text Contrast requires to reach 3:1 against the

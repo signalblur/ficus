@@ -81,7 +81,6 @@
      grey-600   5.60 /  5.02     tertiary, captions, axis TICK TEXT
      grey-500   3.59 /  3.22     NON-TEXT ONLY (axis lines, baselines)
      accent     6.58 /  5.90     critical  7.32 / 6.57
-     viz-1 (debit)  3.36 / 3.01  viz-2 (credit)  6.58 / 5.90
 
    THE TWO MINTS. The old --mint (#43c78c) measured 2.10:1 on white and so could
    never be more than a tint — which is exactly why the old design had to make it
@@ -113,27 +112,42 @@
    because a focus indicator is the one mark on the page that should be as loud
    as the page can make it; brand is not worth a ratio there.
 
-   viz-1 is the tightest viz slot at 3.36:1 on the sheet — it clears 3:1, and
-   with the bands gone there is no second surface that could pull it under.
-
    ---------------------------------------------------------------------------
-   CHART PALETTE — validated, not eyeballed. Run through the dataviz validator
-   (OKLab dE x100, Machado-Oliveira-Fernandes 2009 CVD simulation at severity
-   1.0). The six slots are unchanged by the palette rework; they were re-run
-   against the new #ffffff sheet and still pass all five computable checks on
-   the adjacent pairlist, with the same worst pairs and the same margins as
-   before:
-     worst adjacent CVD dE 10.3 (protan, viz-2 vs viz-1)
-     worst adjacent normal-vision dE 18.0 (viz-6 vs viz-5)
-   The settlement bar puts viz-1 beside viz-2 and is the only place two series
-   touch; that pair also clears the harder all-pairs test (CVD 10.3 /
-   normal 28.6).
-     viz-1 debit    emitted, unsettled          the debit column
-     viz-2 credit   verified removal, settled   the credit column
-     viz-3 water    viz-4 energy    viz-5 embodied    viz-6 spare
-   Hue is never the only channel: the unsettled segment is also hatched at 45
-   degrees, every mark is directly labelled, and the same figures appear in the
-   tables (SC 1.4.1 Use of Color).
+   CHART PALETTE — two colours, because there are two quantities.
+
+   Every chart on this page measures the same two things: carbon EMITTED and
+   carbon SETTLED. So the palette is those two and nothing else. The previous
+   six slots were positional names for colours that mostly did not exist on the
+   page — only two were ever drawn, and one was called "spare". A categorical
+   ramp you do not use is not a palette, it is a licence to add a rainbow later.
+
+     --viz-emitted  #414a8c   8.13:1 on the sheet   indigo-slate
+     --viz-settled  #0f9563   3.82:1 on the sheet   the brand mint
+
+   No orange and no red anywhere in the charts, by construction: the search that
+   produced these was restricted to the cool half of the wheel (HSL hue
+   140–320). Settled is the brand mint, so "green means settled" — and emitted
+   is a muted indigo rather than a warning colour, because emitting carbon is
+   the normal state of doing the work, not an error condition.
+
+   Validated, not eyeballed, through the dataviz validator (OKLab dE x100,
+   Machado-Oliveira-Fernandes 2009 CVD simulation at severity 1.0) on ALL pairs
+   rather than only adjacent ones — with a legend on screen a reader may compare
+   any two marks, and an adjacent-only objective is gameable by interleaving two
+   tight clusters. Measured:
+     CVD dE  22.4 deutan · 24.6 protan · 18.1 tritan   (target 8, floor 6)
+     normal-vision dE 25.5                             (hard gate 15)
+     both slots clear 3:1 vs the #ffffff sheet; both sit inside the light
+     lightness band and above the 0.10 chroma floor.
+
+   THREE CHANNELS, not one. Settled vs unsettled never rests on hue alone
+   (SC 1.4.1 Use of Color):
+     hue      indigo-slate vs mint
+     value    OKLCH L 0.435 vs 0.593 — emitted is the darker mark by 0.157,
+              so the distinction survives a greyscale print
+     texture  the unsettled segment is hatched at 45 degrees
+   and on top of those, every mark is directly labelled and the same figures
+   appear in the tables underneath.
    =========================================================================== */
 
 :root {
@@ -171,13 +185,9 @@
   --accent:    #0b6b3f;
   --critical:  #a3271f;
 
-  /* chart slots */
-  --viz-1: #d96e3c;
-  --viz-2: #0b6b3f;
-  --viz-3: #2a78d6;
-  --viz-4: #b06f00;
-  --viz-5: #6a4bc4;
-  --viz-6: #00809b;
+  /* chart slots — two quantities, two colours. See CHART PALETTE above. */
+  --viz-emitted: #414a8c;
+  --viz-settled: #0f9563;
 
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", Consolas, "Liberation Mono", monospace;
@@ -456,23 +466,23 @@ a:hover { text-decoration-thickness: 2px; }
 .cat { fill: var(--ink-1); font-size: 12px; }
 .base { stroke: var(--axis); stroke-width: 1; }
 .track-empty { fill: none; stroke: var(--axis); stroke-width: 1; stroke-dasharray: 4 3; }
-.m-debit { fill: var(--viz-1); }
-.m-credit { fill: var(--viz-2); }
+.m-debit { fill: var(--viz-emitted); }
+.m-credit { fill: var(--viz-settled); }
 /* 45-degree hatch marks the unsettled segment, so settled/unsettled is never
    carried by hue alone (SC 1.4.1 Use of Color). Styled in CSS, not presentation
    attributes, so the tone-on-tone gap tracks the sheet. */
-.hatch-ink { color: var(--viz-1); }
+.hatch-ink { color: var(--viz-emitted); }
 .hatch-ink rect { fill: currentColor; }
 .hatch-ink line { stroke: var(--surface); stroke-width: 2.5; }
 
 .legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1.75rem; margin-top: 0.9rem; }
 .legend__i { display: flex; gap: 0.5rem; align-items: center; font-size: 0.8125rem; }
 .legend__sw { width: 0.875rem; height: 0.875rem; flex: none; border-radius: 2px; }
-.legend__sw--credit { background: var(--viz-2); }
+.legend__sw--credit { background: var(--viz-settled); }
 .legend__sw--debit {
   background:
     repeating-linear-gradient(45deg, var(--surface) 0 2px, transparent 2px 5px),
-    var(--viz-1);
+    var(--viz-emitted);
 }
 .legend__v { font: 600 0.8125rem/1 var(--mono); font-variant-numeric: tabular-nums; }
 
