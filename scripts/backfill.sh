@@ -17,12 +17,14 @@ DB_PATH="${CARBON_LEDGER_DB:-${CONFIG_DIR}/carbon-ledger/carbon.db}"
 # Rows written by this version of the methodology (raw-token columns populated).
 METHODOLOGY_VERSION=2
 
+# Shared libs: schema DDL + model-family precedence (single source of truth).
+# shellcheck source=lib/schema.sh
+source "${SCRIPT_DIR}/lib/schema.sh"
+# shellcheck source=lib/model-family.sh
+source "${SCRIPT_DIR}/lib/model-family.sh"
+
 # Ensure schema exists and is migrated (idempotent; safe on fresh or pre-existing DBs).
-sqlite3 "$DB_PATH" "CREATE TABLE IF NOT EXISTS sessions (session_id TEXT PRIMARY KEY, project TEXT, model TEXT, input_tokens INTEGER, output_tokens INTEGER, cache_read_tokens INTEGER DEFAULT 0, cache_creation_tokens INTEGER DEFAULT 0, cost_usd REAL, co2_grams REAL, started_at TEXT, ended_at TEXT, source TEXT DEFAULT 'live', methodology_version INTEGER DEFAULT 1, excluded INTEGER DEFAULT 0); CREATE INDEX IF NOT EXISTS idx_sessions_year ON sessions(started_at);" 2>/dev/null || true
-sqlite3 "$DB_PATH" "ALTER TABLE sessions ADD COLUMN cache_read_tokens INTEGER DEFAULT 0;" 2>/dev/null || true
-sqlite3 "$DB_PATH" "ALTER TABLE sessions ADD COLUMN cache_creation_tokens INTEGER DEFAULT 0;" 2>/dev/null || true
-sqlite3 "$DB_PATH" "ALTER TABLE sessions ADD COLUMN methodology_version INTEGER DEFAULT 1;" 2>/dev/null || true
-sqlite3 "$DB_PATH" "ALTER TABLE sessions ADD COLUMN excluded INTEGER DEFAULT 0;" 2>/dev/null || true
+ensure_schema "$DB_PATH"
 
 # Load emission factors once (gCO2e per million tokens)
 FACTOR_FABLE_IN="$(jq -r '.models.fable.input // 156' "$FACTORS_FILE")"
@@ -112,16 +114,6 @@ aggregate_jsonl() {
         last_ts:        ($d | map(.ts) | map(select(length > 0)) | sort | last // "")
       }
   ' 2>/dev/null
-}
-
-# Helper: resolve model family from model string
-resolve_family() {
-  local model="$1"
-  if echo "$model" | grep -qiE "fable|mythos"; then echo "fable"
-  elif echo "$model" | grep -qi "opus"; then echo "opus"
-  elif echo "$model" | grep -qi "haiku"; then echo "haiku"
-  else echo "sonnet"
-  fi
 }
 
 # Helper: returns 0 when the model should be excluded from cost/CO2 accounting:

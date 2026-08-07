@@ -33,33 +33,11 @@ echo ""
 echo "Creating database directory at ${DB_DIR}..."
 mkdir -p "$DB_DIR"
 
-# 3. Create SQLite database with schema
+# 3. Create SQLite database with schema (shared DDL + idempotent migrations)
 echo "Initializing database at ${DB_PATH}..."
-sqlite3 "$DB_PATH" <<'SQL'
-CREATE TABLE IF NOT EXISTS sessions (
-  session_id TEXT PRIMARY KEY,
-  project TEXT,
-  model TEXT,
-  input_tokens INTEGER,
-  output_tokens INTEGER,
-  cache_read_tokens INTEGER DEFAULT 0,
-  cache_creation_tokens INTEGER DEFAULT 0,
-  cost_usd REAL,
-  co2_grams REAL,
-  started_at TEXT,
-  ended_at TEXT,
-  source TEXT DEFAULT 'live',
-  methodology_version INTEGER DEFAULT 1,
-  excluded INTEGER DEFAULT 0
-);
-CREATE INDEX IF NOT EXISTS idx_sessions_year ON sessions(started_at);
-SQL
-
-# Migrate pre-existing DBs that lack the newer columns (idempotent; errors ignored when present).
-sqlite3 "$DB_PATH" "ALTER TABLE sessions ADD COLUMN cache_read_tokens INTEGER DEFAULT 0;" 2>/dev/null || true
-sqlite3 "$DB_PATH" "ALTER TABLE sessions ADD COLUMN cache_creation_tokens INTEGER DEFAULT 0;" 2>/dev/null || true
-sqlite3 "$DB_PATH" "ALTER TABLE sessions ADD COLUMN methodology_version INTEGER DEFAULT 1;" 2>/dev/null || true
-sqlite3 "$DB_PATH" "ALTER TABLE sessions ADD COLUMN excluded INTEGER DEFAULT 0;" 2>/dev/null || true
+# shellcheck source=lib/schema.sh
+source "${SCRIPT_DIR}/lib/schema.sh"
+ensure_schema "$DB_PATH"
 
 echo "  Schema created."
 

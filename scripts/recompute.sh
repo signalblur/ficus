@@ -81,6 +81,12 @@ update_family() {
   fi
 }
 
+# These LIKE clauses mirror lib/model-family.sh resolve_family() and MUST stay in
+# sync with it (locked by methodology vector "family-precedence-fable-over-opus").
+# Caveat, kept upstream-close for cherry-picks: the UPDATEs run sequentially, so a
+# model string matching TWO families would be re-updated by the later one
+# (last-match), while resolve_family() is first-match. No real Anthropic model id
+# matches two families; the parser scripts resolve the family before rows land here.
 update_family "(model LIKE '%fable%' OR model LIKE '%mythos%')" "$F_FAB_IN" "$F_FAB_OUT" "$P_FAB_IN" "$P_FAB_OUT"
 update_family "model LIKE '%opus%'"  "$F_OPUS_IN" "$F_OPUS_OUT" "$P_OPUS_IN" "$P_OPUS_OUT"
 update_family "model LIKE '%haiku%'" "$F_HAI_IN"  "$F_HAI_OUT"  "$P_HAI_IN"  "$P_HAI_OUT"

@@ -18,11 +18,15 @@ METHODOLOGY_VERSION=2
 # Exit silently if DB doesn't exist (plugin not set up yet)
 [ -f "$DB_PATH" ] || exit 0
 
+# Shared libs: schema DDL + model-family precedence (single source of truth).
+# ensure_schema never fails; safe in this no-set-e hook.
+# shellcheck source=lib/schema.sh
+source "${SCRIPT_DIR}/lib/schema.sh" 2>/dev/null || exit 0
+# shellcheck source=lib/model-family.sh
+source "${SCRIPT_DIR}/lib/model-family.sh" 2>/dev/null || exit 0
+
 # Migrate schema if needed (idempotent; no-ops once the columns exist)
-sqlite3 "$DB_PATH" "ALTER TABLE sessions ADD COLUMN cache_read_tokens INTEGER DEFAULT 0;" 2>/dev/null || true
-sqlite3 "$DB_PATH" "ALTER TABLE sessions ADD COLUMN cache_creation_tokens INTEGER DEFAULT 0;" 2>/dev/null || true
-sqlite3 "$DB_PATH" "ALTER TABLE sessions ADD COLUMN methodology_version INTEGER DEFAULT 1;" 2>/dev/null || true
-sqlite3 "$DB_PATH" "ALTER TABLE sessions ADD COLUMN excluded INTEGER DEFAULT 0;" 2>/dev/null || true
+ensure_schema "$DB_PATH"
 
 # Load emission factors once
 FACTOR_FABLE_IN="$(jq -r '.models.fable.input // 156' "$FACTORS_FILE" 2>/dev/null)" || FACTOR_FABLE_IN="156"
@@ -147,10 +151,7 @@ compute_co2() {
     return 0
   fi
 
-  family="sonnet"
-  echo "$model" | grep -qiE "fable|mythos" && family="fable"
-  echo "$model" | grep -qi "opus" && family="opus"
-  echo "$model" | grep -qi "haiku" && family="haiku"
+  family="$(resolve_family "$model")"
 
   case "$family" in
     fable) fin="$FACTOR_FABLE_IN"; fout="$FACTOR_FABLE_OUT"; pin="$PRICE_FABLE_IN"; pout="$PRICE_FABLE_OUT" ;;

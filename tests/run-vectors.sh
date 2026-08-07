@@ -16,6 +16,10 @@ VECTORS_FILE="${SCRIPT_DIR}/methodology-vectors.json"
 REL_TOL="0.000001" # 1e-6
 
 command -v jq >/dev/null 2>&1 || { echo "FAIL: jq is required" >&2; exit 1; }
+# Family resolution comes from the shared lib, so a precedence change there is
+# exercised by these vectors directly.
+# shellcheck source=../scripts/lib/model-family.sh
+source "${SCRIPT_DIR}/../scripts/lib/model-family.sh"
 [ -f "$FACTORS_FILE" ] || { echo "FAIL: missing $FACTORS_FILE" >&2; exit 1; }
 [ -f "$PRICES_FILE" ] || { echo "FAIL: missing $PRICES_FILE" >&2; exit 1; }
 [ -f "$VECTORS_FILE" ] || { echo "FAIL: missing $VECTORS_FILE" >&2; exit 1; }
@@ -86,10 +90,7 @@ EOF
       echo "FAIL ${ID}: vector marked excluded but model '${MODEL}' is not excluded by the plugin"
       FAILURES=$((FAILURES + 1)); i=$((i + 1)); continue
     fi
-    FAMILY="sonnet"
-    echo "$MODEL" | grep -qiE "fable|mythos" && FAMILY="fable"
-    echo "$MODEL" | grep -qi "opus" && FAMILY="opus"
-    echo "$MODEL" | grep -qi "haiku" && FAMILY="haiku"
+    FAMILY="$(resolve_family "$MODEL")"
     case "$FAMILY" in
       fable) FIN="$F_FAB_IN";  FOUT="$F_FAB_OUT";  PIN="$P_FAB_IN";  POUT="$P_FAB_OUT" ;;
       opus)  FIN="$F_OPUS_IN"; FOUT="$F_OPUS_OUT"; PIN="$P_OPUS_IN"; POUT="$P_OPUS_OUT" ;;
