@@ -35,7 +35,21 @@ else
   echo "PASS hygiene: shell code clean"
 fi
 
-# --- 2. all files: network commands anywhere (markdown included) ------------
+# --- 2. fork naming: no legacy claude-carbon paths or env vars ---------------
+# Comment lines excepted (upstream attribution); everything executable must use
+# the carbon-ledger state dir and CARBON_LEDGER_* env vars, with no fallback.
+legacy_hits="$(grep -rn -E 'claude-carbon|CLAUDE_CARBON' scripts hooks skills 2>/dev/null |
+  grep -vE '^[^:]+:[0-9]+:[[:space:]]*#' || true)"
+
+if [ -n "$legacy_hits" ]; then
+  echo "FAIL hygiene: legacy claude-carbon naming in executable lines:" >&2
+  printf '%s\n' "$legacy_hits" >&2
+  fail=1
+else
+  echo "PASS hygiene: no legacy claude-carbon naming"
+fi
+
+# --- 3. all files: network commands anywhere (markdown included) ------------
 cmd_hits="$(grep -rn -E '\b(curl|wget)\b|git (pull|clone|fetch)|http\.server' \
   scripts hooks skills 2>/dev/null || true)"
 

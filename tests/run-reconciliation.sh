@@ -48,17 +48,26 @@ cleanup() {
 trap cleanup EXIT
 
 # Run a backfill from a given repo tree against the fixtures in a fresh sandbox;
-# prints the resulting rows as a JSON array.
+# prints the resulting rows as a JSON array. Second arg names the DB env var
+# (CARBON_LEDGER_DB for the fork, CLAUDE_CARBON_DB for the upstream tag), so a
+# missed rename in the fork falls back to the sandboxed default path and fails
+# both the row comparison and the legacy-path assertion below.
 run_backfill() {
   local tree="$1"
+  local db_var="$2"
   local sandbox db rows
   sandbox="$(mktemp -d "${TMPROOT}/sandbox.XXXXXX")"
   mkdir -p "${sandbox}/config"
   cp -R "${FIXTURES}/projects" "${sandbox}/config/projects"
   db="${sandbox}/carbon.db"
 
-  CLAUDE_CONFIG_DIR="${sandbox}/config" CLAUDE_CARBON_DB="$db" \
-    bash "${tree}/scripts/backfill.sh" >/dev/null
+  CLAUDE_CONFIG_DIR="${sandbox}/config" \
+    env "${db_var}=${db}" bash "${tree}/scripts/backfill.sh" >/dev/null
+
+  if [ -e "${sandbox}/config/claude-carbon" ]; then
+    echo "FAIL: sandbox created a legacy claude-carbon/ path" >&2
+    return 1
+  fi
 
   rows="$(sqlite3 -json "$db" "SELECT session_id, project, model, input_tokens,
     output_tokens, cache_read_tokens, cache_creation_tokens, cost_usd, co2_grams,
@@ -71,7 +80,7 @@ run_backfill() {
 if [ "${1:-}" = "--record" ]; then
   WORKTREE="${TMPROOT}/upstream"
   git -C "$REPO_DIR" worktree add --detach "$WORKTREE" upstream-43fb883 >/dev/null
-  rows="$(run_backfill "$WORKTREE")"
+  rows="$(run_backfill "$WORKTREE" CLAUDE_CARBON_DB)"
   jq -n --argjson rows "$rows" '{
     _provenance: {
       source: "upstream tag upstream-43fb883 (43fb883ac1989d962c8699afb0be37fbe69c4476)",
@@ -90,7 +99,7 @@ fi
   exit 1
 }
 
-actual="$(run_backfill "$REPO_DIR")"
+actual="$(run_backfill "$REPO_DIR" CARBON_LEDGER_DB)"
 echo "$actual" >"${TMPROOT}/actual.json"
 
 diffs="$(jq -r --slurpfile act "${TMPROOT}/actual.json" '

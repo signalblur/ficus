@@ -11,7 +11,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FACTORS_FILE="${SCRIPT_DIR}/../data/factors.json"
 PRICES_FILE="${SCRIPT_DIR}/../data/prices.json"
 CONFIG_DIR="${CLAUDE_CONFIG_DIR:-${HOME}/.claude}"
-DB_PATH="${CLAUDE_CARBON_DB:-${CONFIG_DIR}/claude-carbon/carbon.db}"
+DB_PATH="${CARBON_LEDGER_DB:-${CONFIG_DIR}/carbon-ledger/carbon.db}"
 
 METHODOLOGY_VERSION=2
 

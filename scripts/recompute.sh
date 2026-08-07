@@ -18,9 +18,9 @@ set -euo pipefail
 # model, a small approximation; the original insert was model-accurate per subagent.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-FACTORS_FILE="${CLAUDE_CARBON_FACTORS:-${SCRIPT_DIR}/../data/factors.json}"
-PRICES_FILE="${CLAUDE_CARBON_PRICES:-${SCRIPT_DIR}/../data/prices.json}"
-DB_PATH="${CLAUDE_CARBON_DB:-${CLAUDE_CONFIG_DIR:-${HOME}/.claude}/claude-carbon/carbon.db}"
+FACTORS_FILE="${CARBON_LEDGER_FACTORS:-${SCRIPT_DIR}/../data/factors.json}"
+PRICES_FILE="${CARBON_LEDGER_PRICES:-${SCRIPT_DIR}/../data/prices.json}"
+DB_PATH="${CARBON_LEDGER_DB:-${CLAUDE_CONFIG_DIR:-${HOME}/.claude}/carbon-ledger/carbon.db}"
 
 [ -f "$DB_PATH" ] || { echo "No database at ${DB_PATH}" >&2; exit 1; }
 

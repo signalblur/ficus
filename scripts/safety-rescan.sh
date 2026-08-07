@@ -6,8 +6,8 @@
 # Must exit 0 immediately and never block session start.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DB_DIR="${CLAUDE_CONFIG_DIR:-${HOME}/.claude}/claude-carbon"
-DB_PATH="${CLAUDE_CARBON_DB:-${DB_DIR}/carbon.db}"
+DB_DIR="${CLAUDE_CONFIG_DIR:-${HOME}/.claude}/carbon-ledger"
+DB_PATH="${CARBON_LEDGER_DB:-${DB_DIR}/carbon.db}"
 STAMP="${DB_DIR}/.last-rescan"
 
 # Portable detach: fully background a command so it survives session-start exit. setsid is

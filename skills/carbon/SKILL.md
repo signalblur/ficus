@@ -1,5 +1,5 @@
 ---
-name: carbon-report
+name: carbon
 description: Display CO2 emissions report for Claude Code sessions
 ---
 
@@ -12,11 +12,11 @@ Run the following bash script exactly as written and present the output to the u
 # "431.7045" as 431 and print "431,0" instead of "431.7"
 export LC_ALL=C
 
-DB_PATH="${CLAUDE_CARBON_DB:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/claude-carbon/carbon.db}"
+DB_PATH="${CARBON_LEDGER_DB:-${CLAUDE_CONFIG_DIR:-$HOME/.claude}/carbon-ledger/carbon.db}"
 
 if [ ! -f "$DB_PATH" ]; then
   echo "Database not found. Run setup.sh first:"
-  echo "  bash ${CLAUDE_CARBON_DIR:-$HOME/code/claude-carbon}/scripts/setup.sh"
+  echo "  bash ${CARBON_LEDGER_DIR:-$HOME/Documents/Research/carbon-tracker/carbon-ledger}/scripts/setup.sh"
   exit 1
 fi
 
@@ -62,7 +62,7 @@ BY_PROJECT="$(sqlite3 -separator '|' "$DB_PATH" \
    ORDER BY SUM(co2_grams) DESC;")"
 
 echo "==============================="
-echo "  claude-carbon report"
+echo "  carbon-ledger report"
 echo "==============================="
 echo ""
 echo "Today (${TODAY})"
