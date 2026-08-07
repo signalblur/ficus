@@ -1,14 +1,13 @@
 # Statusline segment integration
 
-The carbon segment shows session-live figures on the statusline row, with the
-cached all-time totals (energy kWh, water L, carbon tonnes, unoffset balance)
-on their own row underneath:
+The carbon segment renders as a right-hand column beside the existing
+statusline rows — session-live figures beside the header, cached all-time
+totals beside the context line (underlined), offset totals on the row beneath:
 
 ```
-... │ ⚡ 0.42Wh 💧 2.2mL 💨 0.12g
-∑ ⚡ 2173.2kWh 💧 11448L 💨 0.62t
-────────────────────────────────
-💨 0.00t/0.62t · ▲ $0.03 session · $99.82 total
+[Fable 5] 📁 repo │ 🌿 main          │ ⚡ 0.42Wh 💧 2.2mL 💨 0.12g
+████ 10% │ $8.08 │ ⏱ 2h 17m  ↻99%   │ ∑ ⚡ 2173.2kWh 💧 11448L 💨 0.62t
+                                    │ 💨 0.00t/0.62t · ▲ $0.03 session · $99.82 total
 ```
 
 The last row carries the 💨 paid-off/emitted pair (verified removal purchased
@@ -18,8 +17,9 @@ session (▲) and the whole unoffset balance — at the removal rate from
 lines: the ∑ readings, the pre-computed total cost, and the paid-off/emitted
 pair; the session cost comes out of the same awk that prices the live readings.
 
-(In the live integration the ∑ row is printed as a third statusline line; the
-reference snippet prints the readings on one line — same inputs either way.)
+(The reference snippet below is the minimal single-column form of the same
+segment — same inputs, no column padding. The live two-column render pads each
+left cell to the widest visible width, counting emoji as two cells.)
 
 Design rule: **no fork code executes in the render path.** The statusline reads
 two pre-written files and does one awk. All DB work happens at write time:
@@ -68,18 +68,12 @@ if [ -f "$CL_STATE/factors.env" ]; then
 fi
 ```
 
-**3. Append the live segment to the statusline row and print the ∑ totals as
-their own line below** (capture `cat "$CL_STATE/segment-cache"` into
-`carbon_all` instead of appending it to `carbon_seg`):
-
-```bash
-[ -n "$carbon_seg" ] && line2="$line2 $(printf '%b \033[32m%s\033[0m' "$SEP" "$carbon_seg")"
-if [ -n "$carbon_all" ]; then
-    printf '%b\n\n%b\n\033[2;32m%s\033[0m' "$line1" "$line2" "$carbon_all"
-else
-    printf '%b\n\n%b' "$line1" "$line2"
-fi
-```
+**3. Render the carbon column** — capture the three cache lines with
+`sed -n Np` (`carbon_all`, `carbon_total_cost`, `carbon_bal`), pad each
+existing row to the widest visible width (strip ANSI, count emoji as two
+cells), and print the three rows with a dim `│` rule between the columns. The
+live implementation is `~/.claude/statusline.sh`; the minimal single-column
+form is `statusline-snippet.sh` at the repo root.
 
 ## Accuracy notes
 
