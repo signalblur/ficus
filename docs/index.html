@@ -8,11 +8,19 @@
 /* ===========================================================================
    FICUS — carbon ledger, statement of account
    ---------------------------------------------------------------------------
-   Direction: GREENBAR. This document is machine-printed accounting output, so
-   it is dressed as the stock that machine printed on — pale mint continuous-
-   form ledger paper, banded, ruled, tabular. The mint is structural (it is the
-   paper), not a coat of paint, which is the whole reason a green scheme suits
-   a carbon ledger without looking like an eco badge.
+   Direction: RULED PAD. This document is machine-printed accounting output, so
+   it is dressed as the stock that machine printed on. Not the banded green
+   continuous-form paper this file used to imitate — the other ledger tradition,
+   the columnar analysis pad: WHITE stock, pre-printed with GREEN RULE-WORK, and
+   the entries written into it in near-black ink. Mint is therefore the printer's
+   ruling, never the field. It draws the sheet edge, the masthead rule, the
+   column rules between money columns, the table heads' underline, the row rules,
+   the callout bars, and the double rule that closes the account. Every surface
+   on the page is white or a near-white neutral; nothing is tinted green.
+
+   That inversion is the whole design. A mint that is the paper is a mood; a
+   mint that is the ruling is a system, and it is what lets a green scheme suit
+   a carbon ledger without reading as an eco badge.
 
    Two voices, one rule:
      MONO  — everything the machine produced: masthead, section labels, every
@@ -37,40 +45,72 @@
 
    THE NEUTRAL TIER is a named dark-grey ramp, not a by-product of the body
    ink: greys 950/800/700/600 carry body text, headings and labels, secondary
-   and tertiary prose; 500 carries chart axis material; 300 carries hairlines.
-   Every grey that touches text clears 4.5:1 on ALL THREE surfaces (sheet, mint
-   band, plane), so a label never has to know which surface it landed on.
+   and tertiary prose; 500 carries chart axis material. Every grey that touches
+   text clears 4.5:1 on BOTH surfaces (sheet and plane), so a label never has to
+   know which surface it landed on. With the mint band gone there are only two
+   surfaces left to clear, which is why every number below went UP.
 
-   Measured ratios (light) — vs sheet #fbfdfb / vs band #dff2e7 / vs plane #e6ede9:
-     grey-950  17.91 / 15.69 / 15.39     body ink
-     grey-800  12.08 / 10.58 / 10.38     headings, labels, table heads
-     grey-700   8.52 /  7.46 /  7.32     secondary prose
-     grey-600   5.48 /  4.80 /  4.71     tertiary, captions, axis TICK TEXT
-     grey-500   3.51 /  3.08 /  3.02     NON-TEXT ONLY (axis lines, baselines)
-     grey-300   1.61 /  1.41 /  1.38     hairline rules, decorative
-     accent     6.44 /  5.64 /  5.54     critical  7.17 / 6.28 / 6.16
-     viz-1 (debit)  3.29 / 2.88          viz-2 (credit)  6.44 / 5.64
-   Measured ratios (dark) — vs sheet #141b17 / vs band #1b241e / vs plane #080c0a:
-     grey-950  15.51 / 14.11 / 17.42     grey-800  10.67 / 9.71 / 11.99
-     grey-700   8.09 /  7.36 /  9.09     grey-600   6.46 / 5.88 /  7.25
-     grey-500   4.45 /  4.05 /  5.00     grey-400   3.12 / 2.84 /  3.51 (non-text)
-     accent    10.26 /  9.34 / 11.53     critical  7.22 / 6.57 /  8.11
-     viz-1 (debit)  4.01 / 3.64          viz-2 (credit)  6.04 / 5.49
-   In dark mode grey-500 is the floor for text (4.45 is under 4.5 on the sheet),
-   so the tertiary tier stays at grey-600 there and grey-500/400 go non-text.
+   Measured ratios (light) — vs sheet #ffffff / vs plane #f1f3f2:
+     grey-950  18.31 / 16.42     body ink
+     grey-800  12.34 / 11.07     headings, labels, table heads
+     grey-700   8.71 /  7.81     secondary prose
+     grey-600   5.60 /  5.02     tertiary, captions, axis TICK TEXT
+     grey-500   3.59 /  3.22     NON-TEXT ONLY (axis lines, baselines)
+     grey-400   2.53 /  2.27     ramp completeness; unused in light mode
+     accent     6.58 /  5.90     critical  7.32 / 6.57
+     viz-1 (debit)  3.36 / 3.01  viz-2 (credit)  6.58 / 5.90
+   Measured ratios (dark) — vs sheet #171918 / vs plane #0d0f0e:
+     grey-950  15.64 / 17.03     grey-800  10.76 / 11.71
+     grey-700   8.16 /  8.88     grey-600   6.51 /  7.09
+     grey-500   4.48 /  4.88     grey-400   3.15 /  3.43  (both non-text)
+     accent    10.35 / 11.26     critical  7.27 /  7.92
+     viz-1 (debit)  4.04 / 4.39  viz-2 (credit)  6.08 / 6.62
+   In dark mode grey-500 is still the floor for text (4.48 is under 4.5 on the
+   sheet), so the tertiary tier stays at grey-600 there and 500/400 go non-text.
 
-   THE MINT TRAP, stated explicitly: --mint (#43c78c) measures 2.10:1 on the
-   sheet and 1.84:1 on the band. It therefore carries NO text and NO meaningful
-   graphic in light mode — it is a surface tint and a decorative rule only.
-   In dark mode the same family, stepped to #5fdcaa, measures 10.26:1 and does
-   become an ink; that is the one place mint gets to speak.
-   viz-1 clears 3:1 on the sheet (3.29) but not on the band (2.88), which is why
-   no chart is ever drawn on a banded surface.
+   THE TWO MINTS. The old --mint (#43c78c) measured 2.10:1 on white and so could
+   never be more than a tint — which is exactly why the old design had to make it
+   the paper. Turning mint into the rule-work means it now has to carry meaning,
+   so it has to clear the bar instead of dodging it:
+
+     --mint      #0f9563   3.81 sheet / 3.42 plane   MEANING-BEARING line-work
+     --mint-soft #9cd8c2   1.61 sheet / 1.44 plane   DECORATIVE hairlines only
+
+   --mint is every rule that a reader needs in order to parse the document as a
+   ledger: the rules that separate one money column from the next, the underline
+   under a table head, the bar on a callout, the double rule that closes the
+   account. Those are "Parts of graphics required to understand the content"
+   under SC 1.4.11, so 3:1 is a requirement and 3.81 is the margin over it. The
+   margin is deliberate: Understanding 1.4.11 warns that anti-aliasing renders
+   "particularly thin lines and shapes" fainter than their declared color and
+   advises either avoiding thin lines or using "a combination of colors that
+   exceeds the normative requirements". Every mint rule here is 1–4px, so it
+   takes the second option.
+
+   --mint-soft carries no meaning. It rules the table rows and divides the
+   blocks, where the structure is already in the markup (real th/td, real
+   sections) and the reader loses nothing if the line disappears. It is pegged
+   to 1.61:1 — the exact weight of the grey hairline it replaced (--grey-300,
+   1.61:1 on the old sheet) — so the rule-work changed hue without changing
+   visual weight.
+
+   In dark mode the same split holds: --mint #5fdcaa at 10.35:1 and --mint-soft
+   #264037 at 1.57:1 on the dark sheet.
+
+   The focus ring does NOT go mint. It stays --ink-1, 18.31:1 on the sheet,
+   because a focus indicator is the one mark on the page that should be as loud
+   as the page can make it; brand is not worth a ratio there.
+
+   viz-1 is the tightest viz slot at 3.36:1 on the sheet — it clears 3:1, and
+   with the bands gone there is no second surface that could pull it under.
 
    ---------------------------------------------------------------------------
    CHART PALETTE — validated, not eyeballed. Run through the dataviz validator
    (OKLab dE x100, Machado-Oliveira-Fernandes 2009 CVD simulation at severity
-   1.0). Both modes pass all six checks on the adjacent pairlist:
+   1.0). The six slots are unchanged by the palette rework; they were re-run
+   against the NEW surfaces (light #ffffff, dark #171918) and both modes still
+   pass all five computable checks on the adjacent pairlist, with the same
+   worst pairs and the same margins as before:
      light  worst adjacent CVD dE 10.3 (protan, viz-2 vs viz-1)
             worst adjacent normal-vision dE 18.0 (viz-6 vs viz-5)
      dark   worst adjacent CVD dE  9.1 (deutan, viz-2 vs viz-1)
@@ -89,23 +129,24 @@
 :root {
   color-scheme: light;
 
-  /* paper — near-white sheet, mint band, grey desk */
-  --plane:     #e6ede9;   /* the desk under the printout */
-  --surface:   #fbfdfb;   /* the sheet */
-  --band:      #dff2e7;   /* the greenbar stripe */
-  --band-edge: #bfe6d0;
-  --mint:      #43c78c;   /* decorative only in light mode — see THE MINT TRAP */
+  /* paper — a white sheet on a near-white neutral desk. Neither is tinted. */
+  --plane:     #f1f3f2;   /* the desk under the printout */
+  --surface:   #ffffff;   /* the sheet */
+
+  /* the ruling — see THE TWO MINTS */
+  --mint:      #0f9563;   /* 3.81:1 on the sheet — meaning-bearing line-work */
+  --mint-soft: #9cd8c2;   /* 1.61:1 on the sheet — decorative hairlines only */
 
   /* neutral tier — a deliberate dark-grey ramp, the third primary alongside
-     the near-white paper and the mint. Roles below alias onto it; nothing in
+     the white paper and the mint. Roles below alias onto it; nothing in
      the page reaches past the aliases for a raw grey. */
   --grey-950:  #101614;
   --grey-800:  #2c3733;
   --grey-700:  #414e49;
   --grey-600:  #5c6b65;
   --grey-500:  #7d8a85;
-  --grey-400:  #9aa5a1;
-  --grey-300:  #c3ccc8;
+  --grey-400:  #9aa5a1;   /* --axis in dark mode; unused in light, kept so the
+                             ramp reads the same in both */
 
   /* ink roles */
   --ink-1:     var(--grey-950);   /* body and headline ink */
@@ -113,7 +154,12 @@
   --ink-2:     var(--grey-700);   /* secondary prose */
   --ink-3:     var(--grey-600);   /* captions, axis tick text */
   --axis:      var(--grey-500);   /* axis lines and baselines — non-text */
-  --rule:      var(--grey-300);   /* hairlines */
+
+  /* rule roles. The old grey hairline tier (--grey-300) is gone: rules are the
+     mint now, and which mint depends on whether the rule carries meaning. */
+  --rule:      var(--mint-soft);  /* decorative: block dividers, row rules */
+  --rule-key:  var(--mint);       /* meaning-bearing: column rules, table heads,
+                                     callout bars, the closing double rule */
   --accent:    #0b6b3f;
   --critical:  #a3271f;
 
@@ -132,11 +178,12 @@
 @media (prefers-color-scheme: dark) {
   :root {
     color-scheme: dark;
-    --plane:     #080c0a;
-    --surface:   #141b17;
-    --band:      #1b241e;
-    --band-edge: #2f3d35;
-    --mint:      #5fdcaa;
+    /* dark NEUTRAL surfaces — the same inversion, so nothing here is tinted
+       green either. The mint stays in the rule-work. */
+    --plane:     #0d0f0e;
+    --surface:   #171918;
+    --mint:      #5fdcaa;   /* 10.35:1 on the dark sheet */
+    --mint-soft: #264037;   /*  1.57:1 on the dark sheet */
     /* the grey ramp inverts; the roles below do not move */
     --grey-950:  #eef2f0;
     --grey-800:  #c3ccc8;
@@ -144,7 +191,6 @@
     --grey-600:  #93a09b;
     --grey-500:  #77837e;
     --grey-400:  #5c6b65;
-    --grey-300:  #39443f;
     --axis:      var(--grey-400);
     --accent:    #5fdcaa;
     --critical:  #f08a80;
@@ -202,8 +248,10 @@ body {
 a { color: var(--accent); text-underline-offset: 0.18em; }
 a:hover { text-decoration-thickness: 2px; }
 
-/* --- masthead: the line-printer header row -------------------------------- */
-.mast { padding: 1.75rem 1.75rem 1.25rem; border-bottom: 2px solid var(--ink-1); }
+/* --- masthead: the line-printer header row --------------------------------
+   The rule under the masthead is the first structural line on the page and the
+   page's first statement of colour, so it is mint and it is heavy. */
+.mast { padding: 1.75rem 1.75rem 1.25rem; border-bottom: 3px solid var(--rule-key); }
 .mast__co {
   margin: 0;
   color: var(--ink-head);
@@ -234,14 +282,18 @@ a:hover { text-decoration-thickness: 2px; }
   font-variant-numeric: tabular-nums;
 }
 
-/* --- the estimate flag ---------------------------------------------------- */
+/* --- the estimate flag ----------------------------------------------------
+   No bottom rule of its own. The next element is always the reading register,
+   which opens with its own 2px mint rule; a 1px hairline immediately above that
+   would read as a printing fault rather than a divider. The caveat therefore
+   sits in a lane bracketed by the masthead rule above and the register rule
+   below, which is a better place for it than it had. */
 .flag {
   display: flex;
   gap: 0.75rem;
   align-items: flex-start;
   margin: 0;
   padding: 0.875rem 1.75rem;
-  border-bottom: 1px solid var(--rule);
   color: var(--ink-2);
   font-size: 0.8125rem;
   line-height: 1.55;
@@ -272,11 +324,18 @@ a:hover { text-decoration-thickness: 2px; }
 /* Chemistry keeps its case inside otherwise-uppercased labels: CO2e, not CO2E. */
 .cs { text-transform: none; }
 
-/* --- SIGNATURE: the greenbar band, carrying the three meter readings ------- */
-.band {
-  background: var(--band);
-  border-top: 1px solid var(--band-edge);
-  border-bottom: 1px solid var(--band-edge);
+/* --- SIGNATURE: the ruled register, carrying the three meter readings ------
+   Was a filled mint band. It is now the analysis pad's money columns: the
+   sheet stays white and the region is bracketed by heavy mint rules top and
+   bottom, with mint column rules between the three readings. This is the one
+   place the page states its colour at full strength.
+
+   Selector is .blk.reg, not .reg: the register carries both classes and .blk
+   also sets a border-bottom. Matching on both wins on specificity instead of on
+   source order, so this cannot break if the rules are ever reordered. */
+.blk.reg {
+  border-top: 2px solid var(--rule-key);
+  border-bottom: 2px solid var(--rule-key);
 }
 .reads {
   display: grid;
@@ -287,7 +346,10 @@ a:hover { text-decoration-thickness: 2px; }
   list-style: none;
   counter-reset: none;
 }
-.read { padding-left: 1.5rem; border-left: 1px solid var(--band-edge); }
+/* The column rule. On a columnar pad this is the line that says "this is a
+   different money column"; it is doing structural work, so it takes --rule-key
+   (3.81:1) rather than the decorative hairline. */
+.read { padding-left: 1.5rem; border-left: 1px solid var(--rule-key); }
 .read:first-child { padding-left: 0; border-left: 0; }
 .read__k {
   margin: 0;
@@ -306,7 +368,7 @@ a:hover { text-decoration-thickness: 2px; }
 .read__eq {
   margin: 0.7rem 0 0;
   padding-top: 0.6rem;
-  border-top: 1px dashed var(--band-edge);
+  border-top: 1px dashed var(--rule);
   font-size: 0.8125rem;
   line-height: 1.5;
 }
@@ -328,8 +390,10 @@ a:hover { text-decoration-thickness: 2px; }
   font: 400 0.8125rem/1.5 var(--mono);
   font-variant-numeric: tabular-nums;
 }
-/* The accountant's double rule: the account closes here. Nothing below adds in. */
-.close { height: 0; margin: 1.6rem 0 1.3rem; border-top: 4px double var(--ink-3); }
+/* The accountant's double rule: the account closes here. Nothing below adds in.
+   In mint, because on a ruled pad the pre-printed rules are the green and the
+   closing rule is the most consequential of them. */
+.close { height: 0; margin: 1.6rem 0 1.3rem; border-top: 4px double var(--rule-key); }
 
 .memo__h {
   margin: 0 0 0.7rem;
@@ -355,7 +419,8 @@ a:hover { text-decoration-thickness: 2px; }
 
 /* --- the dollar ledger ---------------------------------------------------- */
 .pair { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem 1.75rem; margin: 0 0 1.25rem; }
-.pair > div { padding-left: 1.25rem; border-left: 1px solid var(--rule); }
+/* Money columns again — same reasoning as .read, same rule. */
+.pair > div { padding-left: 1.25rem; border-left: 1px solid var(--rule-key); }
 .pair > div:first-child { padding-left: 0; border-left: 0; }
 .pair dt {
   color: var(--ink-head);
@@ -377,8 +442,10 @@ a:hover { text-decoration-thickness: 2px; }
   align-items: baseline;
   margin: 0 0 1.25rem;
   padding: 0.75rem 0.9rem;
-  background: var(--band);
-  border-left: 4px solid var(--accent);
+  /* Inset blocks take the neutral plane, never a tint: the desk showing
+     through a cut-out in the sheet. */
+  background: var(--plane);
+  border-left: 4px solid var(--rule-key);
 }
 .crow__tag {
   flex: none;
@@ -391,6 +458,9 @@ a:hover { text-decoration-thickness: 2px; }
 
 /* --- the two figures the reading band does not carry ---------------------- */
 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); margin: 0; }
+/* Secondary figures, so a hairline rather than the key rule. The two mints are
+   the rank: --rule-key separates the primary money columns (.read, .pair),
+   --rule separates everything subordinate to them. */
 .tile { padding: 0 0.875rem; border-left: 1px solid var(--rule); }
 .tile:first-child { padding-left: 0; border-left: 0; }
 .tile__k { margin: 0; color: var(--ink-head); font: 600 0.625rem/1.4 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; }
@@ -447,9 +517,14 @@ th {
   text-transform: uppercase;
   white-space: nowrap;
 }
-thead th { border-bottom: 2px solid var(--ink-3); }
+thead th { border-bottom: 2px solid var(--rule-key); }
 tbody th { font-weight: 600; letter-spacing: 0; text-transform: none; font-size: 0.8125rem; }
-tbody tr:nth-child(odd) > * { background: var(--band); }
+/* THE GREENBAR, REDUCED. The alternating mint fill is what made the old page
+   read as green paper, so it is gone. What survives is the thing the fill was
+   standing in for — a ruled row — drawn as a hairline between rows instead of
+   a block behind every other one. Decorative: the row structure is already in
+   the markup, so this takes --rule and not --rule-key. */
+tbody tr + tr > * { border-top: 1px solid var(--rule); }
 th:first-child, td:first-child { padding-left: 0.6rem; }
 .n { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
 /* A SHA-256 is 64 characters and will happily push the receipt column off the
@@ -457,7 +532,7 @@ th:first-child, td:first-child { padding-left: 0.6rem; }
    page whose whole point is being printed and filed. */
 .hash { max-width: 15rem; font-family: var(--mono); font-size: 0.625rem; line-height: 1.5; word-break: break-all; }
 .td__note { display: block; color: var(--ink-2); font-size: 0.6875rem; white-space: nowrap; }
-tfoot th, tfoot td { border-top: 2px solid var(--ink-3); font-weight: 700; }
+tfoot th, tfoot td { border-top: 2px solid var(--rule-key); font-weight: 700; }
 td a { color: var(--accent); }
 
 .badge {
@@ -486,7 +561,7 @@ td a { color: var(--accent); }
 .perf::before, .perf::after {
   content: "";
   flex: 1;
-  border-top: 2px dotted var(--ink-3);
+  border-top: 2px dotted var(--rule-key);
 }
 
 /* --- giving shortlist ----------------------------------------------------- */
@@ -504,8 +579,8 @@ td a { color: var(--accent); }
   display: block;
   margin-top: 0.45rem;
   padding: 0.15rem 0.45rem;
-  background: var(--band);
-  border-left: 3px solid var(--rule);
+  background: var(--plane);
+  border-left: 3px solid var(--rule-key);
   color: var(--ink-2);
   font-size: 0.75rem;
 }
@@ -526,8 +601,8 @@ td a { color: var(--accent); }
   display: block;
   margin: 0.5rem 0 0;
   padding: 0.55rem 0.75rem;
-  background: var(--band);
-  border-left: 3px solid var(--band-edge);
+  background: var(--plane);
+  border-left: 3px solid var(--rule-key);
   overflow-x: auto;
   font: 600 0.75rem/1.7 var(--mono);
   white-space: pre;
@@ -559,7 +634,7 @@ td a { color: var(--accent); }
 
 @media (max-width: 52rem) {
   .reads { grid-template-columns: 1fr; gap: 1.5rem; }
-  .read { padding-left: 0; padding-top: 1.25rem; border-left: 0; border-top: 1px solid var(--band-edge); }
+  .read { padding-left: 0; padding-top: 1.25rem; border-left: 0; border-top: 1px solid var(--rule-key); }
   .read:first-child { padding-top: 0; border-top: 0; }
   .pair { grid-template-columns: 1fr; gap: 1.1rem; }
   .pair > div { padding-left: 0; padding-top: 1rem; border-left: 0; border-top: 1px solid var(--rule); }
@@ -587,8 +662,14 @@ td a { color: var(--accent); }
 @media print {
   :root {
     color-scheme: light;
-    --plane: #fff; --surface: #fff; --band: #f2f7f4; --band-edge: #ccc;
-    --rule: #999; --ink-1: #000; --ink-2: #222; --ink-3: #444; --accent: #04502f;
+    /* Print keeps the KEY mint rules — they are the identity, they survive a
+       colour printer, and on a mono printer they still render as a grey line.
+       The decorative hairlines drop to neutral grey instead: a 1.61:1 pale mint
+       is at the edge of what a printer resolves. Inset blocks lose their fill
+       (--plane goes white) and the inks go to true black for toner. */
+    --plane: #fff; --surface: #fff;
+    --rule: #b7b7b7; --rule-key: #0f9563;
+    --ink-1: #000; --ink-2: #222; --ink-3: #444; --accent: #04502f;
   }
   body { padding: 0; font-size: 10pt; }
   .sheet { border: 0; max-width: none; }
@@ -627,7 +708,7 @@ td a { color: var(--accent); }
 
   <main id="stmt" tabindex="-1">
 
-    <section class="blk band" id="readings">
+    <section class="blk reg" id="readings">
       <h2 class="eyebrow">Meter readings &mdash; lifetime</h2>
       <ul class="reads" id="reads"></ul>
     </section>
