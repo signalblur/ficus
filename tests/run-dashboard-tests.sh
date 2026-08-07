@@ -40,7 +40,9 @@ sqlite3 "$DB" "INSERT INTO sessions (session_id, project, model, input_tokens, o
   ('2026-08-01','remove-carbon-today','biochar',10.0,1.60,'removal','Signalblur Security',
    '/tmp/r1.pdf','abc123',1,'PURO-1','2026-08-01T00:00:00Z'),
   ('2026-08-02','tradewater','refrigerant-destruction',200.0,3.00,'prevention','Lies Above Media',
-   '/tmp/r2.pdf','def456',1,'','2026-08-02T00:00:00Z');"
+   '/tmp/r2.pdf','def456',1,'','2026-08-02T00:00:00Z');
+  INSERT INTO receipt_blobs (offset_id, filename, sha256, content, stored_at) VALUES
+  (1,'2026-08-01-remove-carbon-today-1.pdf','abc123',x'25504446','2026-08-01T00:00:00Z');"
 
 export CARBON_LEDGER_DASHBOARD_DIR="${TMPROOT}/dash"
 export CARBON_LEDGER_DASHBOARD_TS="2026-08-06T12:00:00Z"
@@ -93,6 +95,23 @@ grep -q '"balance_kg":4.5' "$OUT" &&
 }
 grep -q '</html>' "$OUT" && echo "PASS dashboard: complete HTML document" || {
   echo "FAIL dashboard: truncated HTML" >&2
+  fail=1
+}
+# Receipt blobs ride along as base64 so the dashboard alone can hand back the
+# PDF (data: URI + download attribute); rows without a blob carry "".
+grep -q '"receipt_b64":"JVBERg=="' "$OUT" &&
+  echo "PASS dashboard: receipt blob embedded as base64" || {
+  echo "FAIL dashboard: receipt blob base64 missing from DATA" >&2
+  fail=1
+}
+grep -q '"receipt_b64":""' "$OUT" &&
+  echo "PASS dashboard: blobless purchase carries empty receipt_b64" || {
+  echo "FAIL dashboard: blobless purchase should carry empty receipt_b64" >&2
+  fail=1
+}
+grep -q 'data:application/pdf;base64' "$OUT" &&
+  echo "PASS dashboard: receipt link is a self-contained data: URI download" || {
+  echo "FAIL dashboard: data: URI receipt download missing" >&2
   fail=1
 }
 

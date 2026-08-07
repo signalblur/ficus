@@ -18,7 +18,9 @@
 #                   balance_kg, offset_spent_usd}   — balance counts verified
 #                   removal ONLY; prevention/unverified never fold in
 #   offsets        [{id, purchase_date, vendor, pathway, kg_co2e, usd, category,
-#                   verified, retirement_id, receipt_path}] desc by date
+#                   verified, retirement_id, receipt_path, receipt_filename,
+#                   receipt_b64}] desc by date — receipt_b64 is the stored blob,
+#                   "" when none
 
 set -euo pipefail
 export LC_ALL=C
@@ -79,10 +81,16 @@ OFFSET_STATE="$(Q "SELECT
     ROUND(COALESCE(SUM(usd),0),2) AS offset_spent_usd
   FROM offsets;" | or_empty)"
 
-OFFSETS="$(Q "SELECT id, purchase_date, vendor, pathway, kg_co2e, usd, category,
-    verified, COALESCE(retirement_id,'') AS retirement_id,
-    COALESCE(receipt_path,'') AS receipt_path
-  FROM offsets ORDER BY purchase_date DESC, id DESC;" | or_empty)"
+# receipt_b64 rides the DB blob into the page so the dashboard alone can hand
+# the PDF back (data: URI download); base64() needs sqlite3 >= 3.41.
+OFFSETS="$(Q "SELECT o.id, o.purchase_date, o.vendor, o.pathway, o.kg_co2e, o.usd,
+    o.category, o.verified, COALESCE(o.retirement_id,'') AS retirement_id,
+    COALESCE(o.receipt_path,'') AS receipt_path,
+    COALESCE(rb.filename,'') AS receipt_filename,
+    CASE WHEN rb.content IS NULL THEN ''
+      ELSE replace(base64(rb.content), char(10), '') END AS receipt_b64
+  FROM offsets o LEFT JOIN receipt_blobs rb ON rb.offset_id = o.id
+  ORDER BY o.purchase_date DESC, o.id DESC;" | or_empty)"
 
 DATA="$(jq -cn --arg ts "$TS" \
   --argjson totals "$TOTALS" --argjson monthly "$MONTHLY" \

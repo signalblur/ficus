@@ -195,9 +195,16 @@
       var ok = Number(o.verified) === 1, path = String(o.receipt_path || "");
       var badge = h("span", { class: "badge " + (ok ? "badge--ok" : "badge--no") },
         h("span", { "aria-hidden": "true" }, ok ? "✓ " : "⚠ "), ok ? "Verified" : "Unverified");
-      var receipt = path
-        ? h("a", { href: "file://" + path }, path.split("/").pop())
-        : "—";
+      var b64 = String(o.receipt_b64 || "");
+      var fname = String(o.receipt_filename || "") || path.split("/").pop() || "receipt";
+      var pref = /\.pdf$/i.test(fname)
+        ? "data:application/pdf;base64,"
+        : "data:application/octet-stream;base64,";
+      var receipt = b64
+        ? h("a", { href: pref + b64, download: fname }, fname)
+        : path
+          ? h("a", { href: "file://" + path }, path.split("/").pop())
+          : "—";
       return h("tr", { class: ok ? null : "row--no" },
         h("th", { scope: "row" }, String(o.purchase_date || "—")),
         h("td", {}, String(o.vendor || "—")),
