@@ -103,10 +103,11 @@ grep -q '</html>' "$OUT" && echo "PASS dashboard: complete HTML document" || {
   fail=1
 }
 # --- giving shortlist ----------------------------------------------------------
-# Six curated donation links, one per ecosystem; click-only anchors.
+# Seven curated donation links, one per ecosystem; click-only anchors.
 give_missing=0
 for link in removecarbontoday.com tradewater.co/buy-credits \
   americanrivers.org/donate coralrestoration.org/donate \
+  billionoysterproject.org/donate \
   naturalandtrust.org/donate-now congareelt.org/donate; do
   grep -q "$link" "$OUT" || {
     echo "FAIL dashboard: donation link missing: $link" >&2
@@ -115,7 +116,7 @@ for link in removecarbontoday.com tradewater.co/buy-credits \
   }
 done
 if [ "$give_missing" = "0" ] && grep -q 'id="h-give"' "$OUT"; then
-  echo "PASS dashboard: giving shortlist present with all six links"
+  echo "PASS dashboard: giving shortlist present with all seven links"
 elif [ "$give_missing" = "0" ]; then
   echo "FAIL dashboard: giving section heading (h-give) missing" >&2
   fail=1
