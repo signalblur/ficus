@@ -3,166 +3,349 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Carbon Ledger — statement of account</title>
+<title>Ficus — carbon ledger statement of account</title>
 <style>
-/* ---------------------------------------------------------------------------
-   Tokens. Two themes, both measured against their own surface with the WCAG 2.x
-   relative-luminance ratio (L1+0.05)/(L2+0.05). Ratios vs --surface:
-     light  ink-1 17.68  ink-2 8.65  ink-3 5.70  emitted 4.83  removed 6.19
-            critical 6.36  good 7.53
-     dark   ink-1 15.81  ink-2 9.08  ink-3 6.05  emitted/removed >= 3 (fills only)
-            critical 6.07  good 7.45
-   Body text sits on ink-1/ink-2; the smallest text (axis, captions) on ink-3,
-   which still clears 4.5:1. Series colors are fills, never text.
---------------------------------------------------------------------------- */
+/* ===========================================================================
+   FICUS — carbon ledger, statement of account
+   ---------------------------------------------------------------------------
+   Direction: GREENBAR. This document is machine-printed accounting output, so
+   it is dressed as the stock that machine printed on — pale mint continuous-
+   form ledger paper, banded, ruled, tabular. The mint is structural (it is the
+   paper), not a coat of paint, which is the whole reason a green scheme suits
+   a carbon ledger without looking like an eco badge.
+
+   Two voices, one rule:
+     MONO  — everything the machine produced: masthead, section labels, every
+             number, every identifier, every hash, badges, axis ticks.
+     SANS  — everything a human wrote: notes, explanations, methodology prose.
+   No webfont anywhere: the page must render with the network off, so both
+   stacks are system fonts (tests forbid webfont declarations and every loaded
+   reference, so this comment must not spell the at-rule out either).
+
+   ---------------------------------------------------------------------------
+   CONTRAST — WCAG 2.x relative-luminance model, (L1+0.05)/(L2+0.05).
+   This is the currently normative model (WCAG 2.2 is the W3C Recommendation);
+   APCA/Lc values are a WCAG 3.0 draft proposal and are deliberately not used
+   here. Requirements applied:
+     SC 1.4.3 Contrast (Minimum), Level AA — "The visual presentation of text
+       and images of text has a contrast ratio of at least 4.5:1", large-scale
+       text 3:1. Large-scale = 18pt, or 14pt bold.
+     SC 1.4.11 Non-text Contrast, Level AA — "at least 3:1 against adjacent
+       color(s)" for user-interface components and for "Parts of graphics
+       required to understand the content". Thresholds are not rounded: 2.999:1
+       does not meet 3:1.
+
+   THE NEUTRAL TIER is a named dark-grey ramp, not a by-product of the body
+   ink: greys 950/800/700/600 carry body text, headings and labels, secondary
+   and tertiary prose; 500 carries chart axis material; 300 carries hairlines.
+   Every grey that touches text clears 4.5:1 on ALL THREE surfaces (sheet, mint
+   band, plane), so a label never has to know which surface it landed on.
+
+   Measured ratios (light) — vs sheet #fbfdfb / vs band #dff2e7 / vs plane #e6ede9:
+     grey-950  17.91 / 15.69 / 15.39     body ink
+     grey-800  12.08 / 10.58 / 10.38     headings, labels, table heads
+     grey-700   8.52 /  7.46 /  7.32     secondary prose
+     grey-600   5.48 /  4.80 /  4.71     tertiary, captions, axis TICK TEXT
+     grey-500   3.51 /  3.08 /  3.02     NON-TEXT ONLY (axis lines, baselines)
+     grey-300   1.61 /  1.41 /  1.38     hairline rules, decorative
+     accent     6.44 /  5.64 /  5.54     critical  7.17 / 6.28 / 6.16
+     viz-1 (debit)  3.29 / 2.88          viz-2 (credit)  6.44 / 5.64
+   Measured ratios (dark) — vs sheet #141b17 / vs band #1b241e / vs plane #080c0a:
+     grey-950  15.51 / 14.11 / 17.42     grey-800  10.67 / 9.71 / 11.99
+     grey-700   8.09 /  7.36 /  9.09     grey-600   6.46 / 5.88 /  7.25
+     grey-500   4.45 /  4.05 /  5.00     grey-400   3.12 / 2.84 /  3.51 (non-text)
+     accent    10.26 /  9.34 / 11.53     critical  7.22 / 6.57 /  8.11
+     viz-1 (debit)  4.01 / 3.64          viz-2 (credit)  6.04 / 5.49
+   In dark mode grey-500 is the floor for text (4.45 is under 4.5 on the sheet),
+   so the tertiary tier stays at grey-600 there and grey-500/400 go non-text.
+
+   THE MINT TRAP, stated explicitly: --mint (#43c78c) measures 2.10:1 on the
+   sheet and 1.84:1 on the band. It therefore carries NO text and NO meaningful
+   graphic in light mode — it is a surface tint and a decorative rule only.
+   In dark mode the same family, stepped to #5fdcaa, measures 10.26:1 and does
+   become an ink; that is the one place mint gets to speak.
+   viz-1 clears 3:1 on the sheet (3.29) but not on the band (2.88), which is why
+   no chart is ever drawn on a banded surface.
+
+   ---------------------------------------------------------------------------
+   CHART PALETTE — validated, not eyeballed. Run through the dataviz validator
+   (OKLab dE x100, Machado-Oliveira-Fernandes 2009 CVD simulation at severity
+   1.0). Both modes pass all six checks on the adjacent pairlist:
+     light  worst adjacent CVD dE 10.3 (protan, viz-2 vs viz-1)
+            worst adjacent normal-vision dE 18.0 (viz-6 vs viz-5)
+     dark   worst adjacent CVD dE  9.1 (deutan, viz-2 vs viz-1)
+            worst adjacent normal-vision dE 16.3 (viz-6 vs viz-5)
+   The settlement bar puts viz-1 beside viz-2 and is the only place two series
+   touch; that pair also clears the harder all-pairs test (light CVD 10.3 /
+   normal 28.6; dark CVD 9.1 / normal 24.2).
+     viz-1 debit    emitted, unsettled          the debit column
+     viz-2 credit   verified removal, settled   the credit column
+     viz-3 water    viz-4 energy    viz-5 embodied    viz-6 spare
+   Hue is never the only channel: the unsettled segment is also hatched at 45
+   degrees, every mark is directly labelled, and the same figures appear in the
+   tables (SC 1.4.1 Use of Color).
+   =========================================================================== */
+
 :root {
   color-scheme: light;
-  --plane:    #e9edf1;
-  --surface:  #fbfcfd;
-  --ink-1:    #12161b;
-  --ink-2:    #414b55;
-  --ink-3:    #5c666f;
-  --hairline: #d5dce3;
-  --emitted:  #c4460f;
-  --removed:  #1d5fae;
-  --critical: #b3261e;
-  --good:     #046104;
+
+  /* paper — near-white sheet, mint band, grey desk */
+  --plane:     #e6ede9;   /* the desk under the printout */
+  --surface:   #fbfdfb;   /* the sheet */
+  --band:      #dff2e7;   /* the greenbar stripe */
+  --band-edge: #bfe6d0;
+  --mint:      #43c78c;   /* decorative only in light mode — see THE MINT TRAP */
+
+  /* neutral tier — a deliberate dark-grey ramp, the third primary alongside
+     the near-white paper and the mint. Roles below alias onto it; nothing in
+     the page reaches past the aliases for a raw grey. */
+  --grey-950:  #101614;
+  --grey-800:  #2c3733;
+  --grey-700:  #414e49;
+  --grey-600:  #5c6b65;
+  --grey-500:  #7d8a85;
+  --grey-400:  #9aa5a1;
+  --grey-300:  #c3ccc8;
+
+  /* ink roles */
+  --ink-1:     var(--grey-950);   /* body and headline ink */
+  --ink-head:  var(--grey-800);   /* section labels, table heads, eyebrows */
+  --ink-2:     var(--grey-700);   /* secondary prose */
+  --ink-3:     var(--grey-600);   /* captions, axis tick text */
+  --axis:      var(--grey-500);   /* axis lines and baselines — non-text */
+  --rule:      var(--grey-300);   /* hairlines */
+  --accent:    #0b6b3f;
+  --critical:  #a3271f;
+
+  /* chart slots */
+  --viz-1: #d96e3c;
+  --viz-2: #0b6b3f;
+  --viz-3: #2a78d6;
+  --viz-4: #b06f00;
+  --viz-5: #6a4bc4;
+  --viz-6: #00809b;
+
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", Consolas, "Liberation Mono", monospace;
 }
+
 @media (prefers-color-scheme: dark) {
   :root {
     color-scheme: dark;
-    --plane:    #0d1013;
-    --surface:  #171b20;
-    --ink-1:    #f2f5f8;
-    --ink-2:    #b3bdc7;
-    --ink-3:    #909aa4;
-    --hairline: #2a3037;
-    --emitted:  #d95926;
-    --removed:  #3987e5;
-    --critical: #f0736b;
-    --good:     #39c25c;
+    --plane:     #080c0a;
+    --surface:   #141b17;
+    --band:      #1b241e;
+    --band-edge: #2f3d35;
+    --mint:      #5fdcaa;
+    /* the grey ramp inverts; the roles below do not move */
+    --grey-950:  #eef2f0;
+    --grey-800:  #c3ccc8;
+    --grey-700:  #a7b3ae;
+    --grey-600:  #93a09b;
+    --grey-500:  #77837e;
+    --grey-400:  #5c6b65;
+    --grey-300:  #39443f;
+    --axis:      var(--grey-400);
+    --accent:    #5fdcaa;
+    --critical:  #f08a80;
+    --viz-1: #c05c28;
+    --viz-2: #38ab72;
+    --viz-3: #3f88dc;
+    --viz-4: #b57d15;
+    --viz-5: #7f6ed4;
+    --viz-6: #2a9db4;
   }
 }
 
 *, *::before, *::after { box-sizing: border-box; }
+
 body {
   margin: 0;
   padding: 2rem 1rem 3rem;
   background: var(--plane);
   color: var(--ink-1);
-  font: 400 0.9375rem/1.6 var(--sans);
+  font: 400 0.9375rem/1.65 var(--sans);
   -webkit-text-size-adjust: 100%;
 }
-:focus-visible { outline: 2px solid var(--ink-1); outline-offset: 2px; border-radius: 2px; }
 
-/* One continuous sheet, ruled — a register, not a deck of cards. */
-.sheet {
-  max-width: 62rem;
-  margin: 0 auto;
-  background: var(--surface);
-  border: 1px solid var(--hairline);
+/* Focus indicator: ink-1 measures 18.26:1 on the sheet and 15.99:1 on the band,
+   far above the 3:1 that SC 1.4.11 requires of a focus indicator against the
+   adjacent background (Understanding 1.4.11, Relationship with Focus Visible).
+   Never removed — F78 is the documented failure for styling it away. */
+:focus-visible {
+  outline: 3px solid var(--ink-1);
+  outline-offset: 2px;
+  border-radius: 1px;
 }
 
-/* --- masthead ------------------------------------------------------------ */
-.masthead { padding: 1.5rem 1.5rem 1.25rem; border-bottom: 1px solid var(--hairline); }
-.masthead h1 {
-  margin: 0;
-  font-size: 1.0625rem;
-  font-weight: 700;
-  letter-spacing: 0.18em;
+.skip {
+  position: absolute;
+  left: -9999px;
+  padding: 0.6rem 1rem;
+  background: var(--surface);
+  border: 2px solid var(--ink-1);
+  color: var(--ink-1);
+  font: 700 0.75rem/1 var(--mono);
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
-.masthead p { margin: 0.35rem 0 0; color: var(--ink-2); font-size: 0.8125rem; }
+.skip:focus { left: 1rem; top: 1rem; z-index: 2; }
 
-.caveat {
+/* The sheet: one continuous form, not a deck of cards. */
+.sheet {
+  max-width: 64rem;
+  margin: 0 auto;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+}
+
+a { color: var(--accent); text-underline-offset: 0.18em; }
+a:hover { text-decoration-thickness: 2px; }
+
+/* --- masthead: the line-printer header row -------------------------------- */
+.mast { padding: 1.75rem 1.75rem 1.25rem; border-bottom: 2px solid var(--ink-1); }
+.mast__co {
+  margin: 0;
+  color: var(--ink-head);
+  font: 700 0.6875rem/1 var(--mono);
+  letter-spacing: 0.38em;
+  text-transform: uppercase;
+}
+.mast__t {
+  margin: 0.6rem 0 0;
+  font: 700 clamp(1.5rem, 4.6vw, 2.125rem)/1.05 var(--mono);
+  letter-spacing: -0.02em;
+}
+.mast__meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.85rem 1.75rem;
+  margin: 1.25rem 0 0;
+}
+.mast__meta dt {
+  color: var(--ink-head);
+  font: 600 0.625rem/1.4 var(--mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.mast__meta dd {
+  margin: 0.2rem 0 0;
+  font: 600 0.8125rem/1.4 var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- the estimate flag ---------------------------------------------------- */
+.flag {
   display: flex;
   gap: 0.75rem;
   align-items: flex-start;
   margin: 0;
-  padding: 0.875rem 1.5rem;
-  border-bottom: 1px solid var(--hairline);
+  padding: 0.875rem 1.75rem;
+  border-bottom: 1px solid var(--rule);
   color: var(--ink-2);
   font-size: 0.8125rem;
   line-height: 1.55;
 }
-.caveat__tag {
+.flag__tag {
   flex: none;
-  padding: 0.1rem 0.4rem;
+  padding: 0.12rem 0.45rem;
   border: 1px solid currentColor;
-  color: var(--emitted);
-  font: 600 0.625rem/1.5 var(--mono);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-/* --- register sections --------------------------------------------------- */
-.reg { padding: 1.5rem; border-bottom: 1px solid var(--hairline); }
-.reg__h {
-  margin: 0 0 0.25rem;
-  color: var(--ink-2);
-  font-size: 0.75rem;
-  font-weight: 700;
+  color: var(--critical);
+  font: 700 0.625rem/1.5 var(--mono);
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
-.reg__note { margin: 0 0 1.25rem; max-width: 46rem; color: var(--ink-2); font-size: 0.8125rem; }
-.reg__note strong { color: var(--ink-1); }
-.empty { margin: 0; color: var(--ink-2); font-size: 0.8125rem; font-style: italic; }
 
-/* --- the balance: the one place this page raises its voice --------------- */
-.balance { display: flex; align-items: baseline; gap: 0.6rem; margin: 0; }
-.balance__v {
-  font: 700 clamp(2.75rem, 9vw, 4.25rem)/1 var(--mono);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.03em;
+/* --- blocks --------------------------------------------------------------- */
+.blk { padding: 1.75rem; border-bottom: 1px solid var(--rule); }
+.eyebrow {
+  margin: 0 0 0.3rem;
+  color: var(--ink-head);
+  font: 700 0.75rem/1.4 var(--mono);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
 }
-.balance__u { color: var(--ink-2); font: 600 0.875rem/1 var(--mono); letter-spacing: 0.06em; }
-.balance__eq {
-  margin: 0.5rem 0 0;
+.note { margin: 0 0 1.35rem; max-width: 48rem; color: var(--ink-2); font-size: 0.8125rem; }
+.note strong { color: var(--ink-1); font-weight: 600; }
+.note:last-child { margin-bottom: 0; }
+.empty { margin: 0; color: var(--ink-2); font-size: 0.8125rem; font-style: italic; }
+/* Chemistry keeps its case inside otherwise-uppercased labels: CO2e, not CO2E. */
+.cs { text-transform: none; }
+
+/* --- SIGNATURE: the greenbar band, carrying the three meter readings ------- */
+.band {
+  background: var(--band);
+  border-top: 1px solid var(--band-edge);
+  border-bottom: 1px solid var(--band-edge);
+}
+.reads {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0 1.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: none;
+}
+.read { padding-left: 1.5rem; border-left: 1px solid var(--band-edge); }
+.read:first-child { padding-left: 0; border-left: 0; }
+.read__k {
+  margin: 0;
+  color: var(--ink-head);
+  font: 600 0.625rem/1.4 var(--mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.read__v {
+  margin: 0.4rem 0 0;
+  font: 700 clamp(1.75rem, 5.2vw, 2.5rem)/1 var(--mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.035em;
+}
+.read__u { margin-left: 0; font-size: 0.875rem; font-weight: 600; color: var(--ink-2); letter-spacing: 0; }
+.read__eq {
+  margin: 0.7rem 0 0;
+  padding-top: 0.6rem;
+  border-top: 1px dashed var(--band-edge);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+.read__eq b { font: 700 0.875rem/1.4 var(--mono); font-variant-numeric: tabular-nums; }
+.read__src { display: block; margin-top: 0.3rem; color: var(--ink-3); font-size: 0.6875rem; line-height: 1.45; }
+.read__src a { color: var(--accent); }
+
+/* --- the balance: the one place this page raises its voice ---------------- */
+.bal { display: flex; align-items: baseline; gap: 0.6rem; margin: 0; flex-wrap: wrap; }
+.bal__v {
+  font: 700 clamp(2.75rem, 9.5vw, 4.5rem)/1 var(--mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+}
+.bal__u { color: var(--ink-2); font: 600 0.875rem/1 var(--mono); letter-spacing: 0.08em; }
+.bal__eq {
+  margin: 0.55rem 0 0;
   color: var(--ink-2);
   font: 400 0.8125rem/1.5 var(--mono);
   font-variant-numeric: tabular-nums;
 }
 /* The accountant's double rule: the account closes here. Nothing below adds in. */
-.rule--close { height: 0; margin: 1.5rem 0 1.25rem; border-top: 4px double var(--ink-3); }
-/* Chemistry keeps its case inside otherwise-uppercased labels: CO2e, not CO2E. */
-.cs { text-transform: none; }
+.close { height: 0; margin: 1.6rem 0 1.3rem; border-top: 4px double var(--ink-3); }
 
 .memo__h {
-  margin: 0 0 0.6rem;
-  color: var(--ink-2);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
+  margin: 0 0 0.7rem;
+  color: var(--ink-head);
+  font: 700 0.6875rem/1.4 var(--mono);
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
-.memo__list { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.6rem; }
+.memo__list { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.65rem; }
 .memo__item { display: grid; grid-template-columns: 1.125rem 1fr; gap: 0.7rem; align-items: start; }
-.memo__mark { width: 1.125rem; height: 1.125rem; margin-top: 0.15rem; }
+.memo__mark { width: 1.125rem; height: 1.125rem; margin-top: 0.2rem; }
 .memo__label { font-size: 0.8125rem; }
 .memo__v { font: 600 0.8125rem/1.6 var(--mono); font-variant-numeric: tabular-nums; }
 .memo__why { display: block; color: var(--ink-2); font-size: 0.75rem; }
-/* --- giving shortlist ------------------------------------------------------ */
-.give { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.75rem; }
-.give__item { font-size: 0.8125rem; }
-.give__area {
-  display: inline-block;
-  min-width: 10.5rem;
-  color: var(--ink-2);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-.give__why { display: block; margin-left: 10.5rem; color: var(--ink-2); font-size: 0.75rem; }
-@media (max-width: 40rem) {
-  .give__area { display: block; min-width: 0; }
-  .give__why { margin-left: 0; }
-}
 /* Below-the-line marks carry shape, not hue: dashed outline for prevention,
-   a heavy ring for unverified. Both clear 3:1 against the surface. */
+   a heavy ring for unverified. Both clear 3:1 against the sheet. */
 .mk rect { fill: none; stroke-width: 2; }
 .mk line { stroke-width: 2; }
 .mk--prev rect { stroke: var(--ink-3); stroke-dasharray: 3 2; }
@@ -170,145 +353,292 @@ body {
 .mk--unv rect { stroke: var(--critical); }
 .mk--unv line { stroke: var(--critical); stroke-linecap: round; }
 
-/* --- lifetime tiles: ruled columns, not floating cards ------------------- */
-.tiles { display: grid; grid-template-columns: repeat(6, 1fr); margin: 0; }
-.tile { padding: 0 0.875rem; border-left: 1px solid var(--hairline); }
-.tile:first-child { padding-left: 0; border-left: 0; }
-.tile__k {
-  margin: 0;
-  color: var(--ink-3);
-  font-size: 0.625rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
+/* --- the dollar ledger ---------------------------------------------------- */
+.pair { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem 1.75rem; margin: 0 0 1.25rem; }
+.pair > div { padding-left: 1.25rem; border-left: 1px solid var(--rule); }
+.pair > div:first-child { padding-left: 0; border-left: 0; }
+.pair dt {
+  color: var(--ink-head);
+  font: 600 0.625rem/1.4 var(--mono);
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
-.tile__v {
+.pair dd {
   margin: 0.35rem 0 0;
-  font: 600 1.375rem/1.15 var(--mono);
+  font: 700 1.625rem/1.1 var(--mono);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
 }
-.tile__u { display: block; margin-top: 0.15rem; color: var(--ink-2); font-size: 0.6875rem; }
+.pair dd small { display: block; margin-top: 0.25rem; color: var(--ink-2); font: 400 0.75rem/1.4 var(--sans); letter-spacing: 0; }
+.owed--neg { color: var(--accent); }
+.crow {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  margin: 0 0 1.25rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--band);
+  border-left: 4px solid var(--accent);
+}
+.crow__tag {
+  flex: none;
+  font: 700 0.625rem/1.5 var(--mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.crow p { margin: 0; font-size: 0.8125rem; color: var(--ink-2); }
 
-/* --- charts -------------------------------------------------------------- */
+/* --- the two figures the reading band does not carry ---------------------- */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); margin: 0; }
+.tile { padding: 0 0.875rem; border-left: 1px solid var(--rule); }
+.tile:first-child { padding-left: 0; border-left: 0; }
+.tile__k { margin: 0; color: var(--ink-head); font: 600 0.625rem/1.4 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; }
+.tile__v { margin: 0.35rem 0 0; font: 600 1.25rem/1.15 var(--mono); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.tile__u { display: block; margin-top: 0.15rem; color: var(--ink-2); font: 400 0.6875rem/1.4 var(--sans); }
+
+/* --- charts --------------------------------------------------------------- */
 .fig { margin: 0; }
 .chart { display: block; width: 100%; height: auto; overflow: visible; }
-.chart text { font-family: var(--sans); font-variant-numeric: tabular-nums; }
+.chart text { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 .ax { fill: var(--ink-3); font-size: 11px; }
 .val { fill: var(--ink-2); font-size: 11px; font-weight: 600; }
 .cat { fill: var(--ink-1); font-size: 12px; }
-.grid { stroke: var(--hairline); stroke-width: 1; }
-.base { stroke: var(--ink-3); stroke-width: 1; }
-.track-empty { fill: none; stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 4 3; }
-.m-emitted { fill: var(--emitted); }
-.m-removed { fill: var(--removed); }
+.base { stroke: var(--axis); stroke-width: 1; }
+.track-empty { fill: none; stroke: var(--axis); stroke-width: 1; stroke-dasharray: 4 3; }
+.m-debit { fill: var(--viz-1); }
+.m-credit { fill: var(--viz-2); }
 /* 45-degree hatch marks the unsettled segment, so settled/unsettled is never
-   carried by hue alone (WCAG 2.2 SC 1.4.1). Styled in CSS, not presentation
-   attributes, so the tone-on-tone gap tracks the surface in both themes. */
-.hatch-ink { color: var(--emitted); }
+   carried by hue alone (SC 1.4.1 Use of Color). Styled in CSS, not presentation
+   attributes, so the tone-on-tone gap tracks the sheet in both modes. */
+.hatch-ink { color: var(--viz-1); }
 .hatch-ink rect { fill: currentColor; }
 .hatch-ink line { stroke: var(--surface); stroke-width: 2.5; }
 
-.legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1.5rem; margin-top: 0.875rem; }
+.legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1.75rem; margin-top: 0.9rem; }
 .legend__i { display: flex; gap: 0.5rem; align-items: center; font-size: 0.8125rem; }
 .legend__sw { width: 0.875rem; height: 0.875rem; flex: none; border-radius: 2px; }
-.legend__sw--removed { background: var(--removed); }
-.legend__sw--unsettled {
+.legend__sw--credit { background: var(--viz-2); }
+.legend__sw--debit {
   background:
     repeating-linear-gradient(45deg, var(--surface) 0 2px, transparent 2px 5px),
-    var(--emitted);
+    var(--viz-1);
 }
 .legend__v { font: 600 0.8125rem/1 var(--mono); font-variant-numeric: tabular-nums; }
 
-details { margin-top: 1rem; }
+details { margin-top: 1.1rem; }
 summary {
-  color: var(--ink-2);
+  color: var(--ink-head);
   cursor: pointer;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  font: 700 0.6875rem/1.6 var(--mono);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
-/* --- tables -------------------------------------------------------------- */
+/* --- tables: the greenbar zebra ------------------------------------------- */
 .tw { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
-caption { margin-bottom: 0.6rem; color: var(--ink-2); font-size: 0.75rem; text-align: left; }
-th, td { padding: 0.55rem 0.75rem; border-bottom: 1px solid var(--hairline); text-align: left; }
+caption { margin-bottom: 0.65rem; color: var(--ink-2); font-size: 0.75rem; text-align: left; }
+th, td { padding: 0.55rem 0.75rem; text-align: left; }
 th {
-  color: var(--ink-2);
-  font-size: 0.625rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+  color: var(--ink-head);
+  font: 700 0.625rem/1.6 var(--mono);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   white-space: nowrap;
 }
-th:first-child, td:first-child { padding-left: 0; }
+thead th { border-bottom: 2px solid var(--ink-3); }
+tbody th { font-weight: 600; letter-spacing: 0; text-transform: none; font-size: 0.8125rem; }
+tbody tr:nth-child(odd) > * { background: var(--band); }
+th:first-child, td:first-child { padding-left: 0.6rem; }
 .n { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* A SHA-256 is 64 characters and will happily push the receipt column off the
+   sheet. Cap it and let it wrap: two short lines beat a horizontal scroll on a
+   page whose whole point is being printed and filed. */
+.hash { max-width: 15rem; font-family: var(--mono); font-size: 0.625rem; line-height: 1.5; word-break: break-all; }
 .td__note { display: block; color: var(--ink-2); font-size: 0.6875rem; white-space: nowrap; }
-tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
-td a { color: var(--ink-1); }
+tfoot th, tfoot td { border-top: 2px solid var(--ink-3); font-weight: 700; }
+td a { color: var(--accent); }
 
 .badge {
   display: inline-block;
-  padding: 0.05rem 0.4rem;
+  padding: 0.06rem 0.4rem;
   border: 1px solid currentColor;
   font: 700 0.625rem/1.6 var(--mono);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   white-space: nowrap;
 }
-.badge--ok { color: var(--good); }
+.badge--ok { color: var(--accent); }
 .badge--no { color: var(--critical); border-width: 2px; }
-.row--no td { background: color-mix(in srgb, var(--critical) 8%, transparent); }
 
-/* --- footer -------------------------------------------------------------- */
+/* --- the tax stub: detach here -------------------------------------------- */
+.perf {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin: 0 0 1.5rem;
+  color: var(--ink-head);
+  font: 700 0.625rem/1 var(--mono);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+.perf::before, .perf::after {
+  content: "";
+  flex: 1;
+  border-top: 2px dotted var(--ink-3);
+}
+
+/* --- giving shortlist ----------------------------------------------------- */
+.give { margin: 0; padding: 0; list-style: none; display: grid; gap: 1.4rem; }
+.gitem { display: grid; grid-template-columns: 11rem 1fr; gap: 0 1.5rem; }
+.gitem__area {
+  color: var(--ink-head);
+  font: 700 0.625rem/1.6 var(--mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.gitem__name { margin: 0; font-size: 0.9375rem; font-weight: 600; }
+.gitem__why { margin: 0.3rem 0 0; color: var(--ink-2); font-size: 0.8125rem; }
+.gitem__verdict {
+  display: block;
+  margin-top: 0.45rem;
+  padding: 0.15rem 0.45rem;
+  background: var(--band);
+  border-left: 3px solid var(--rule);
+  color: var(--ink-2);
+  font-size: 0.75rem;
+}
+.gitem__links { margin: 0.55rem 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 0.3rem 1.1rem; }
+.gitem__links li { font-size: 0.75rem; }
+.gitem__links b {
+  color: var(--ink-head);
+  font: 700 0.5625rem/1.6 var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* --- methodology ---------------------------------------------------------- */
+.meth { margin: 0; display: grid; gap: 1.5rem; }
+.meth__t { margin: 0; font: 700 0.8125rem/1.4 var(--mono); letter-spacing: 0.02em; }
+.meth__d { margin: 0.35rem 0 0; color: var(--ink-2); font-size: 0.8125rem; max-width: 48rem; }
+.meth__f {
+  display: block;
+  margin: 0.5rem 0 0;
+  padding: 0.55rem 0.75rem;
+  background: var(--band);
+  border-left: 3px solid var(--band-edge);
+  overflow-x: auto;
+  font: 600 0.75rem/1.7 var(--mono);
+  white-space: pre;
+}
+
+/* --- footer --------------------------------------------------------------- */
 .foot {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem 1.5rem;
-  padding: 1.125rem 1.5rem;
+  gap: 0.35rem 1.75rem;
+  padding: 1.25rem 1.75rem;
   color: var(--ink-2);
   font-size: 0.75rem;
 }
 .foot time { font-family: var(--mono); }
 
-@media (max-width: 60rem) { .tiles { grid-template-columns: repeat(3, 1fr); row-gap: 1.25rem; }
-  .tile:nth-child(3n+1) { padding-left: 0; border-left: 0; } }
+/* --- reflow: SC 1.4.10 wants no two-dimensional scrolling down to a width
+   equivalent to 320 CSS pixels (EN 301 549 9.1.4.10). Columns collapse, the
+   greenbar rhythm survives, nothing is hidden. ------------------------------
+
+   Grid and flex items default to min-width:auto, so one wide formula, one long
+   hash or one table sets a min-content floor and drags the whole sheet past
+   320px — the page then scrolls in two dimensions and fails the criterion.
+   Zeroing that floor is what lets the scrollable wrappers actually scroll. */
+.reads > *, .pair > *, .tiles > *, .mast__meta > *, .meth > *, .gitem > *,
+.flag > *, .crow > *, .memo__item > * { min-width: 0; }
+.tw, .chart, .meth__f { max-width: 100%; }
+.mast__t, .bal__eq, .read__eq, .gitem a, .gitem__verdict, .foot { overflow-wrap: anywhere; }
+
+@media (max-width: 52rem) {
+  .reads { grid-template-columns: 1fr; gap: 1.5rem; }
+  .read { padding-left: 0; padding-top: 1.25rem; border-left: 0; border-top: 1px solid var(--band-edge); }
+  .read:first-child { padding-top: 0; border-top: 0; }
+  .pair { grid-template-columns: 1fr; gap: 1.1rem; }
+  .pair > div { padding-left: 0; padding-top: 1rem; border-left: 0; border-top: 1px solid var(--rule); }
+  .pair > div:first-child { padding-top: 0; border-top: 0; }
+  .gitem { grid-template-columns: 1fr; gap: 0.4rem; }
+}
 @media (max-width: 34rem) {
   body { padding: 0.75rem 0.5rem 2rem; }
-  .masthead, .caveat, .reg, .foot { padding-left: 1rem; padding-right: 1rem; }
-  .tiles { grid-template-columns: repeat(2, 1fr); }
-  .tile:nth-child(3n+1) { padding-left: 0.875rem; border-left: 1px solid var(--hairline); }
-  .tile:nth-child(odd) { padding-left: 0; border-left: 0; }
+  .mast, .flag, .blk, .foot { padding-left: 1rem; padding-right: 1rem; }
+  .tiles { grid-template-columns: 1fr; row-gap: 1.1rem; }
+  .tile { padding-left: 0; border-left: 0; }
 }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+
+/* Nothing on this page animates by default. The guard stands anyway, so any
+   future transition inherits it (SC 2.3.3 Animation from Interactions). */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* --- print: this is a tax document, so it has to print like one ------------ */
 @media print {
-  :root { color-scheme: light; --plane: #fff; --surface: #fff; --ink-1: #000; --ink-2: #333; --ink-3: #444; }
-  body { padding: 0; }
+  :root {
+    color-scheme: light;
+    --plane: #fff; --surface: #fff; --band: #f2f7f4; --band-edge: #ccc;
+    --rule: #999; --ink-1: #000; --ink-2: #222; --ink-3: #444; --accent: #04502f;
+  }
+  body { padding: 0; font-size: 10pt; }
   .sheet { border: 0; max-width: none; }
-  details { display: none; }
+  .skip { display: none; }
+  details { display: block; }
+  details > summary { display: none; }
+  .blk, .gitem, tr { break-inside: avoid; }
+  #audit { break-before: page; }
+  /* A printed audit trail has to carry its evidence: expand every link. */
+  #audit a[href^="https"]::after,
+  #give a[href^="https"]::after,
+  .read__src a::after {
+    content: " (" attr(href) ")";
+    font-size: 8pt;
+    word-break: break-all;
+  }
 }
 </style>
 </head>
 <body>
+<a class="skip" href="#stmt">Skip to the statement</a>
 <div class="sheet">
 
-  <header class="masthead">
-    <h1>Carbon Ledger</h1>
-    <p>Statement of account &middot; Claude Code usage</p>
+  <header class="mast">
+    <p class="mast__co">Ficus &middot; carbon ledger</p>
+    <h1 class="mast__t">Statement of account</h1>
+    <dl class="mast__meta">
+      <div><dt>Account</dt><dd>Claude Code usage</dd></div>
+      <div><dt>Period</dt><dd id="m-period">&mdash;</dd></div>
+      <div><dt>Sessions</dt><dd id="m-sessions">&mdash;</dd></div>
+      <div><dt>Issued</dt><dd><time id="m-issued" datetime=""></time></dd></div>
+    </dl>
   </header>
 
-  <p class="caveat"><span class="caveat__tag">Estimate</span><span id="caveat"></span></p>
+  <p class="flag"><span class="flag__tag">Estimate</span><span id="caveat"></span></p>
 
-  <main>
-    <section class="reg" aria-labelledby="h-balance">
-      <h2 class="reg__h" id="h-balance">Unsettled balance</h2>
-      <p class="reg__note">This balance counts <strong>verified removal only</strong>. Prevention credits and
+  <main id="stmt" tabindex="-1">
+
+    <section class="blk band" id="readings">
+      <h2 class="eyebrow">Meter readings &mdash; lifetime</h2>
+      <ul class="reads" id="reads"></ul>
+    </section>
+
+    <section class="blk" id="balance">
+      <h2 class="eyebrow">Carbon balance</h2>
+      <p class="note">This balance counts <strong>verified removal only</strong>. Prevention credits and
         unverified purchases are recorded below the line: they are real purchases, and they do not settle a
         removal debt.</p>
-      <p class="balance"><span class="balance__v" id="balance-value">&mdash;</span><span class="balance__u">kg CO2e</span></p>
-      <p class="balance__eq" id="balance-eq"></p>
+      <p class="bal"><span class="bal__v" id="bal-value">&mdash;</span><span class="bal__u">kg CO2e outstanding</span></p>
+      <p class="bal__eq" id="bal-eq"></p>
       <figure class="fig">
         <svg class="chart" id="c-settle" viewBox="0 0 720 52" role="img" aria-labelledby="settle-t" aria-describedby="settle-d">
           <title id="settle-t">Lifetime emissions, settled and unsettled</title>
@@ -323,82 +653,205 @@ td a { color: var(--ink-1); }
         </svg>
         <figcaption class="legend" id="settle-legend"></figcaption>
       </figure>
-      <div class="rule--close" role="presentation"></div>
+      <div class="close" role="presentation"></div>
       <div class="memo">
         <h3 class="memo__h">Below the line &mdash; recorded, not settled</h3>
         <ul class="memo__list" id="memo-list"></ul>
       </div>
     </section>
 
-    <section class="reg" aria-labelledby="h-lifetime">
-      <h2 class="reg__h" id="h-lifetime">Lifetime</h2>
-      <p class="reg__note">Operational figures come from token counts; embodied CO2e is the amortised hardware
-        share. API value is list price for the same work, not money spent.</p>
+    <section class="blk" id="dollars">
+      <h2 class="eyebrow">Dollar ledger</h2>
+      <p class="note">A plain dollar account, kept separately from the tonnes above. <strong>Overall</strong>
+        prices every gram emitted at the removal rate. <strong>Contributed</strong> is every dollar given &mdash;
+        offset purchases and donations alike, counted 1:1, with no attempt to convert a donation into tonnes.
+        <strong>Owed</strong> is the difference, and it is never clamped at zero.</p>
+      <div id="crow-host"></div>
+      <dl class="pair" id="pair"></dl>
+      <p class="note" id="rate-note"></p>
+    </section>
+
+    <section class="blk" id="activity">
+      <h2 class="eyebrow">Activity</h2>
+      <p class="note">Two figures the meter readings above do not carry: embodied CO2e is the amortised hardware
+        share, reported separately and never folded into operational; API value is what this work would have cost
+        at list price, not money spent.</p>
       <dl class="tiles" id="tiles"></dl>
-    </section>
-
-    <section class="reg" aria-labelledby="h-monthly">
-      <h2 class="reg__h" id="h-monthly">Operational <span class="cs">CO2e</span> by month</h2>
+      <h3 class="memo__h" style="margin-top:1.75rem">Operational <span class="cs">CO2e</span> by month</h3>
       <div id="monthly-body"></div>
-    </section>
-
-    <section class="reg" aria-labelledby="h-model">
-      <h2 class="reg__h" id="h-model">Operational <span class="cs">CO2e</span> by model family</h2>
+      <h3 class="memo__h" style="margin-top:1.75rem">Operational <span class="cs">CO2e</span> by model family</h3>
       <div id="model-body"></div>
     </section>
 
-    <section class="reg" aria-labelledby="h-offsets">
-      <h2 class="reg__h" id="h-offsets">Offset purchases</h2>
-      <p class="reg__note">Every row is a purchase on record. Only <strong>verified removal</strong> rows reduce
-        the balance above.</p>
+    <section class="blk" id="audit">
+      <p class="perf">Detach for your records</p>
+      <h2 class="eyebrow" id="h-audit">Audit trail &mdash; offsets and donations</h2>
+      <p class="note">Everything a tax year needs, in one place: who paid, what was bought, what it cost, and the
+        proof. Each purchase carries the <strong>SHA-256</strong> of its receipt as recorded at filing time, the
+        <strong>registry retirement ID</strong> where one was issued, and the receipt itself as a download built
+        from the stored bytes &mdash; no server, no link to rot. Two payers keep separate books:
+        <strong>Signalblur Security</strong> and <strong>Lies Above Media</strong>.</p>
+      <p class="note">For an accountant-ready CSV, one file per payer with a totals row, run
+        <strong>scripts/offset-export.sh --tax-year YYYY</strong> (add <strong>--payer NAME</strong> to narrow
+        it). The export records; it does not give tax advice &mdash; classify donation-versus-expense with your CPA.</p>
+      <h3 class="memo__h">By payer</h3>
+      <div id="payer-body"></div>
+      <h3 class="memo__h" style="margin-top:1.75rem">Offset purchases</h3>
       <div id="offsets-body"></div>
+      <h3 class="memo__h" style="margin-top:1.75rem">Donations</h3>
+      <div id="donations-body"></div>
     </section>
 
-    <section class="reg" aria-labelledby="h-give">
-      <h2 class="reg__h" id="h-give">Giving shortlist</h2>
-      <p class="reg__note">Curated destinations, one per ecosystem. The first two act on the balance
-        above — <strong>removal</strong> settles it, <strong>prevention</strong> complements it
-        without settling — and the rest fund hands-on restoration, not offset accounting.</p>
+    <section class="blk" id="give">
+      <h2 class="eyebrow" id="h-give">Where to give</h2>
+      <p class="note">Seven destinations, one per ecosystem. The first two act on the balance above &mdash;
+        <strong>removal</strong> settles it, <strong>prevention</strong> complements it without settling. The other
+        five are restoration and land conservation, and the carbon verdict on several of them is honestly
+        unfavourable; it is printed here rather than smoothed over. Every claim links to its evidence, and every
+        org links to wherever it publishes news.</p>
       <ul class="give">
-        <li class="give__item"><span class="give__area">Air &mdash; removal</span>
-          <a href="https://www.removecarbontoday.com/collections">Remove Carbon Today (biochar CORCs)</a>
-          <span class="give__why">Ex-post Puro-audited biochar, ~$160/t; stock rotates, sold out at times.</span></li>
-        <li class="give__item"><span class="give__area">Air &mdash; prevention</span>
-          <a href="https://tradewater.co/buy-credits/">Tradewater</a>
-          <span class="give__why">Refrigerant and methane destruction, ~$15/t; does not settle the removal balance.</span></li>
-        <li class="give__item"><span class="give__area">Rivers</span>
-          <a href="https://www.americanrivers.org/donate">American Rivers</a>
-          <span class="give__why">Dam removal &mdash; about 4,900 river miles reconnected in 2025 alone.</span></li>
-        <li class="give__item"><span class="give__area">Oceans</span>
-          <a href="https://coralrestoration.org/donate">Coral Restoration Foundation</a>
-          <span class="give__why">Coral propagation and outplanting in the Florida Keys.</span></li>
-        <li class="give__item"><span class="give__area">Coasts &amp; estuaries</span>
-          <a href="https://www.billionoysterproject.org/donate">Billion Oyster Project</a>
-          <span class="give__why">Self-sustaining oyster reefs in NY Harbor &mdash; 150M+ oysters, 17 acres built.</span></li>
-        <li class="give__item"><span class="give__area">Land &amp; watershed</span>
-          <a href="https://naturalandtrust.org/donate-now">Naturaland Trust</a>
-          <span class="give__why">Greenville land purchase protecting the Saluda and Reedy watersheds.</span></li>
-        <li class="give__item"><span class="give__area">Wetlands &amp; swamp</span>
-          <a href="https://congareelt.org/donate">Congaree Land Trust</a>
-          <span class="give__why">Easements around Congaree's blackwater swamp (COWASEE basin).</span></li>
+
+        <li class="gitem">
+          <span class="gitem__area">Air &mdash; removal</span>
+          <div>
+            <p class="gitem__name"><a href="https://www.removecarbontoday.com/collections">Remove Carbon Today</a> &mdash; biochar CORCs</p>
+            <p class="gitem__why">Ex-post biochar carbon-removal certificates, independently weighed and sampled, audited
+              under the Puro Standard and retired in your name on the public registry. About $160 per tonne; stock
+              rotates and sells out.</p>
+            <p class="gitem__verdict">The only pathway here that settles the balance above: verified removal, already done.</p>
+            <ul class="gitem__links">
+              <li><b>Sources</b> <a href="https://www.removecarbontoday.com/pages/proof-of-removal">retirement proof</a>,
+                <a href="https://puro.earth/insights/post/introducing-the-world-s-first-reference-price-indexes-for-engineered-carbon-removal/">Nasdaq CORCCHAR index</a></li>
+              <li><b>News</b> <a href="https://puro.earth/insights">Puro.earth insights</a> (the registry &mdash; the vendor publishes no newsroom)</li>
+            </ul>
+          </div>
+        </li>
+
+        <li class="gitem">
+          <span class="gitem__area">Air &mdash; prevention</span>
+          <div>
+            <p class="gitem__name"><a href="https://tradewater.co/buy-credits/">Tradewater</a></p>
+            <p class="gitem__why">Collects and destroys refrigerants and plugs orphaned methane wells. Every container is
+              third-party weighed, sampled and lab-analysed, certified under ACR or VCS. Around $15 per tonne, which is
+              well under comparable refrigerant-destruction pricing &mdash; worth a direct quote before a large purchase.</p>
+            <p class="gitem__verdict">Avoidance, not removal. It stops a future emission; it does not take carbon back out, so it never settles the balance.</p>
+            <ul class="gitem__links">
+              <li><b>Sources</b> <a href="https://tradewater.co/wp-content/uploads/2024/12/11197310-RPT-1-VCS-Verification-Report_TW-Ghana-08-14-19.pdf">VCS verification report, TW Ghana ODS (GHD Ltd, 2019)</a></li>
+              <li><b>News</b> <a href="https://tradewater.co/press">Tradewater press</a></li>
+            </ul>
+          </div>
+        </li>
+
+        <li class="gitem">
+          <span class="gitem__area">Rivers</span>
+          <div>
+            <p class="gitem__name"><a href="https://www.americanrivers.org/donate">American Rivers</a></p>
+            <p class="gitem__why">Dam removal and river restoration. Reservoir surfaces are a large methane source, and the
+              four removed Klamath River dams are estimated to have eliminated roughly 275,000 tonnes CO2e a year.</p>
+            <p class="gitem__verdict">The methane avoidance is real and reasonably well quantified for specific dams, but a
+              donation cannot be converted into a tonnage: American Rivers is one partner among many funders and sells no credit.</p>
+            <ul class="gitem__links">
+              <li><b>Sources</b> <a href="https://ww2.arb.ca.gov/sites/default/files/2026-04/Attachment-2-Estimate-of-California-Dam-and-Reservoir-Methane-Emissions-3-25-2026_v2.pdf">CARB-hosted Klamath methane estimate (2026)</a>,
+                <a href="https://academic.oup.com/bioscience/article/66/11/949/2754271">Deemer et al. 2016, BioScience</a></li>
+              <li><b>News</b> <a href="https://www.americanrivers.org/media-center/">Media center</a></li>
+            </ul>
+          </div>
+        </li>
+
+        <li class="gitem">
+          <span class="gitem__area">Oceans</span>
+          <div>
+            <p class="gitem__name"><a href="https://coralrestoration.org/donate">Coral Restoration Foundation</a></p>
+            <p class="gitem__why">Propagates and outplants staghorn coral in the Florida Keys. Dense outplanting has been shown
+              to return net-erosional reefs to positive carbonate accretion &mdash; that is reef structure rebuilt.</p>
+            <p class="gitem__verdict">Habitat restoration, not a carbon investment. Coral calcification releases CO2, and no
+              published CRF carbon claim exists to check. Fund it for the reef, the coastline and the biodiversity.</p>
+            <ul class="gitem__links">
+              <li><b>Sources</b> <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC11555216/">Esplandiu et al. 2024, Scientific Reports &mdash; reef carbonate budgets</a></li>
+              <li><b>News</b> <a href="https://coralrestoration.org/blog/">CRF blog</a></li>
+            </ul>
+          </div>
+        </li>
+
+        <li class="gitem">
+          <span class="gitem__area">Coasts &amp; estuaries</span>
+          <div>
+            <p class="gitem__name"><a href="https://www.billionoysterproject.org/donate">Billion Oyster Project</a></p>
+            <p class="gitem__why">Self-sustaining oyster reefs in New York Harbor, with 150 million-plus oysters and 17 acres
+              built. Filtration, storm-surge buffering, habitat, and a schools programme attached to all of it.</p>
+            <p class="gitem__verdict">Not a carbon investment, and possibly a net source: on exposed sandflats &mdash; much of this
+              footprint &mdash; inorganic carbon burial vents more CO2 than the organic burial takes down. Fund it for the harbour.</p>
+            <ul class="gitem__links">
+              <li><b>Sources</b> <a href="https://pubmed.ncbi.nlm.nih.gov/28747477/">Fodrie et al. 2017, Proc. R. Soc. B &mdash; oyster reefs as carbon sources and sinks</a></li>
+              <li><b>News</b> <a href="https://www.billionoysterproject.org/blog">BOP stories</a></li>
+            </ul>
+          </div>
+        </li>
+
+        <li class="gitem">
+          <span class="gitem__area">Land &amp; watershed</span>
+          <div>
+            <p class="gitem__name"><a href="https://naturalandtrust.org/donate-now">Naturaland Trust</a></p>
+            <p class="gitem__why">Buys and protects Blue Ridge escarpment land above Greenville &mdash; including 1,090 acres at
+              Saluda Bluffs &mdash; in the watershed that feeds Greenville's own drinking-water reservoirs.</p>
+            <p class="gitem__verdict">The only non-market org here where a rough number can be built from public data:
+              about $20&ndash;150 per tonne depending on method, which is a five-to-eightfold spread and no registry stands behind it.</p>
+            <ul class="gitem__links">
+              <li><b>Sources</b> <a href="https://greenvillejournal.com/outdoors-recreation/naturaland-trust-leads-conservation-of-1100-acres-between-table-rock-caesars-head-saluda-bluffs/">Greenville Journal &mdash; Saluda Bluffs, 1,090 acres</a></li>
+              <li><b>News</b> <a href="https://naturalandtrust.org/enewsletter">Newsletter &amp; archive</a> (no newsroom published)</li>
+            </ul>
+          </div>
+        </li>
+
+        <li class="gitem">
+          <span class="gitem__area">Wetlands &amp; swamp</span>
+          <div>
+            <p class="gitem__name"><a href="https://congareelt.org/donate">Congaree Land Trust</a></p>
+            <p class="gitem__why">Holds easements across the COWASEE basin around Congaree National Park &mdash; the largest
+              old-growth bottomland hardwood forest in the eastern United States, and one of the densest soil-carbon stores
+              of any protected forest type in North America.</p>
+            <p class="gitem__verdict">No defensible price per tonne, because the easements are largely donated: there is no
+              transaction to divide the carbon stock by. Fund it for the forest, and say so plainly.</p>
+            <ul class="gitem__links">
+              <li><b>Sources</b> <a href="https://www.frontiersin.org/journals/forests-and-global-change/articles/10.3389/ffgc.2025.1528440/full">Sapkota et al. 2025, Frontiers &mdash; freshwater forested wetland soil carbon</a></li>
+              <li><b>News</b> <a href="https://congareelt.org/news">CLT news</a></li>
+            </ul>
+          </div>
+        </li>
+
       </ul>
     </section>
+
+    <section class="blk" id="method">
+      <h2 class="eyebrow" id="h-method">How these numbers are made</h2>
+      <p class="note">Every figure on this page is derived from stored token counts by a published factor. Nothing is
+        measured. Anthropic publishes no per-query energy data, so the honest description of all of it is
+        <strong>order-of-magnitude, roughly &plusmn;50%</strong>. Trends and relative comparisons are meaningful;
+        absolute values are indicative.</p>
+      <dl class="meth" id="meth"></dl>
+      <p class="note" style="margin-top:1.5rem">Fuller derivations, the uncertainty bands per model family, and the
+        cross-check gate against an independent estimator are in <strong>METHODOLOGY.md</strong>.</p>
+    </section>
+
   </main>
 
   <footer class="foot">
-    <span>Generated <time id="gen" datetime=""></time></span>
-    <span>Estimates recomputed from stored token counts; no figure here is a measurement.</span>
+    <span>Issued <time id="gen" datetime=""></time></span>
+    <span>Recomputed from stored token counts. No figure here is a measurement.</span>
   </footer>
 
 </div>
 <script>
-const DATA = {"generated_at":"2026-08-07T09:00:00Z","caveat":"No vendor publishes per-query energy: every figure is an order-of-magnitude estimate (±50%). Trends are meaningful; absolutes are indicative.","totals":{"co2_g":41600.0,"energy_wh":144947.7351916376502,"water_ml":763569.411333211232,"embodied_g":6392.195121951220245,"cost_usd":71.34999999999999431,"sessions":11},"monthly":[{"month":"2026-04","co2_g":2170.0,"energy_wh":7561.0,"sessions":2},{"month":"2026-05","co2_g":10220.0,"energy_wh":35609.80000000000292,"sessions":3},{"month":"2026-06","co2_g":14150.0,"energy_wh":49303.09999999999855,"sessions":2},{"month":"2026-07","co2_g":11560.0,"energy_wh":40278.69999999999708,"sessions":3},{"month":"2026-08","co2_g":3500.0,"energy_wh":12195.10000000000036,"sessions":1}],"by_model":[{"family":"fable","co2_g":17700.0,"energy_wh":61672.5,"sessions":2},{"family":"opus","co2_g":14250.0,"energy_wh":49651.59999999999855,"sessions":3},{"family":"sonnet","co2_g":8850.0,"energy_wh":30836.20000000000072,"sessions":4},{"family":"haiku","co2_g":800.0,"energy_wh":2787.5,"sessions":2}],"offset_state":{"removal_verified_kg":25.0,"prevention_verified_kg":200.0,"unverified_kg":0.0,"offset_spent_usd":7.0,"balance_kg":16.6},"offsets":[{"id":2,"purchase_date":"2026-07-22","vendor":"tradewater","pathway":"refrigerant-destruction","kg_co2e":200.0,"usd":3.0,"category":"prevention","verified":1,"retirement_id":"","receipt_path":"~/.claude/carbon-ledger/receipts/2026/2026-07-22-tradewater-2.pdf","receipt_filename":"2026-07-22-tradewater-2.pdf","receipt_b64":"JVBERi0xLjQKMSAwIG9iaiA8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4gZW5kb2JqCjIgMCBvYmogPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4gZW5kb2JqCjMgMCBvYmogPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSAvQ29udGVudHMgNCAwIFIgPj4gZW5kb2JqCjQgMCBvYmogPDwgL0xlbmd0aCA5NiA+PiBzdHJlYW0KQlQgL0YxIDEyIFRmIDcyIDcyMCBUZCAoREVNTyBSRUNFSVBUIC0gbm90IGEgcmVhbCBwdXJjaGFzZSAtIDI1IGtnIGJpb2NoYXIgQ09SQykgVGogRVQKZW5kc3RyZWFtIGVuZG9iagp0cmFpbGVyIDw8IC9Sb290IDEgMCBSID4+CiUlRU9GCg=="},{"id":1,"purchase_date":"2026-06-30","vendor":"remove-carbon-today","pathway":"biochar","kg_co2e":25.0,"usd":4.0,"category":"removal","verified":1,"retirement_id":"PURO-2026-DEMO-0001","receipt_path":"~/.claude/carbon-ledger/receipts/2026/2026-06-30-remove-carbon-today-1.pdf","receipt_filename":"2026-06-30-remove-carbon-today-1.pdf","receipt_b64":"JVBERi0xLjQKMSAwIG9iaiA8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4gZW5kb2JqCjIgMCBvYmogPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4gZW5kb2JqCjMgMCBvYmogPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSAvQ29udGVudHMgNCAwIFIgPj4gZW5kb2JqCjQgMCBvYmogPDwgL0xlbmd0aCA5NiA+PiBzdHJlYW0KQlQgL0YxIDEyIFRmIDcyIDcyMCBUZCAoREVNTyBSRUNFSVBUIC0gbm90IGEgcmVhbCBwdXJjaGFzZSAtIDI1IGtnIGJpb2NoYXIgQ09SQykgVGogRVQKZW5kc3RyZWFtIGVuZG9iagp0cmFpbGVyIDw8IC9Sb290IDEgMCBSID4+CiUlRU9GCg=="}]};
+const DATA = {"generated_at":"2026-08-07T09:00:00Z","caveat":"No vendor publishes per-query energy: every figure is an order-of-magnitude estimate (±50%). Trends are meaningful; absolutes are indicative.","totals":{"co2_g":41600.0,"energy_wh":144947.7351916376502,"water_ml":763569.411333211232,"embodied_g":6392.195121951220245,"cost_usd":71.34999999999999431,"sessions":11},"monthly":[{"month":"2026-04","co2_g":2170.0,"energy_wh":7561.0,"sessions":2},{"month":"2026-05","co2_g":10220.0,"energy_wh":35609.80000000000292,"sessions":3},{"month":"2026-06","co2_g":14150.0,"energy_wh":49303.09999999999855,"sessions":2},{"month":"2026-07","co2_g":11560.0,"energy_wh":40278.69999999999708,"sessions":3},{"month":"2026-08","co2_g":3500.0,"energy_wh":12195.10000000000036,"sessions":1}],"by_model":[{"family":"fable","co2_g":17700.0,"energy_wh":61672.5,"sessions":2},{"family":"opus","co2_g":14250.0,"energy_wh":49651.59999999999855,"sessions":3},{"family":"sonnet","co2_g":8850.0,"energy_wh":30836.20000000000072,"sessions":4},{"family":"haiku","co2_g":800.0,"energy_wh":2787.5,"sessions":2}],"offset_state":{"removal_verified_kg":25.0,"prevention_verified_kg":200.0,"unverified_kg":0.0,"offset_spent_usd":7,"balance_kg":16.6},"offsets":[{"id":2,"purchase_date":"2026-07-22","vendor":"tradewater","pathway":"refrigerant-destruction","kg_co2e":200.0,"usd":3.0,"category":"prevention","payer":"Example Media Co","verified":1,"retirement_id":"","receipt_sha256":"ba9b10cb36cbba9c426a23d81de55ef9de4438d913a866292e6b42c308c77bf1","receipt_path":"~/.claude/carbon-ledger/receipts/2026/2026-07-22-tradewater-2.pdf","receipt_filename":"2026-07-22-tradewater-2.pdf","receipt_b64":"JVBERi0xLjQKMSAwIG9iaiA8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4gZW5kb2JqCjIgMCBvYmogPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4gZW5kb2JqCjMgMCBvYmogPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSAvQ29udGVudHMgNCAwIFIgPj4gZW5kb2JqCjQgMCBvYmogPDwgL0xlbmd0aCA5NiA+PiBzdHJlYW0KQlQgL0YxIDEyIFRmIDcyIDcyMCBUZCAoREVNTyBSRUNFSVBUIC0gbm90IGEgcmVhbCBwdXJjaGFzZSAtIDI1IGtnIGJpb2NoYXIgQ09SQykgVGogRVQKZW5kc3RyZWFtIGVuZG9iagp0cmFpbGVyIDw8IC9Sb290IDEgMCBSID4+CiUlRU9GCg=="},{"id":1,"purchase_date":"2026-06-30","vendor":"remove-carbon-today","pathway":"biochar","kg_co2e":25.0,"usd":4.0,"category":"removal","payer":"Acme Research LLC","verified":1,"retirement_id":"PURO-2026-DEMO-0001","receipt_sha256":"ba9b10cb36cbba9c426a23d81de55ef9de4438d913a866292e6b42c308c77bf1","receipt_path":"~/.claude/carbon-ledger/receipts/2026/2026-06-30-remove-carbon-today-1.pdf","receipt_filename":"2026-06-30-remove-carbon-today-1.pdf","receipt_b64":"JVBERi0xLjQKMSAwIG9iaiA8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4gZW5kb2JqCjIgMCBvYmogPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4gZW5kb2JqCjMgMCBvYmogPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSAvQ29udGVudHMgNCAwIFIgPj4gZW5kb2JqCjQgMCBvYmogPDwgL0xlbmd0aCA5NiA+PiBzdHJlYW0KQlQgL0YxIDEyIFRmIDcyIDcyMCBUZCAoREVNTyBSRUNFSVBUIC0gbm90IGEgcmVhbCBwdXJjaGFzZSAtIDI1IGtnIGJpb2NoYXIgQ09SQykgVGogRVQKZW5kc3RyZWFtIGVuZG9iagp0cmFpbGVyIDw8IC9Sb290IDEgMCBSID4+CiUlRU9GCg=="}],"donations":[{"id":1,"donation_date":"2026-08-01","org":"American Rivers","usd":25.0,"payer":"Acme Research LLC","receipt_sha256":""}],"cost":{"rate_usd_per_tonne":160,"overall_usd":6.66,"contributed_usd":32,"owed_usd":-25.34},"equivalences":{"home_days":4.9,"showers":12.01,"car_miles":105.85,"energy":{"value":10791,"unit":"kWh per year","noun":"days of an average U.S. home's electricity","cite":"EIA: average U.S. residential customer used 10,791 kWh in 2022","cite_url":"https://www.eia.gov/tools/faqs/faq.php?id=97&t=3"},"water":{"value":63.6,"unit":"liters per shower","noun":"showers","cite":"EPA WaterSense: 8-minute shower at 2.1 gal/min = 16.8 gal = 63.6 L","cite_url":"https://www.epa.gov/watersense/showerheads"},"co2":{"value":0.393,"unit":"kg CO2e per mile","noun":"miles driven in an average gasoline car","cite":"EPA: 3.93e-4 t CO2e per mile, 2022 fleet (22.8 mpg, 10,917 mi/yr)","cite_url":"https://www.epa.gov/energy/greenhouse-gases-equivalencies-calculator-calculations-and-references"}},"constants":{"grid_cif_g_per_wh":0.287,"pue":1.14,"wue_onsite_l_per_kwh":0.18,"wue_offsite_l_per_kwh":5.11,"embodied_gco2e_per_kwh":44.1,"cache_read_factor":0.08},"formulas":{"co2":"co2_g = ((input + cache_write) × f_in + cache_read × f_in × 0.08 + output × f_out) / 1e6","energy":"energy_wh = co2_g / 0.287","water":"water_ml = energy_wh × (0.18/1.14 + 5.11)","embodied":"embodied_g = energy_wh × 44.1 / 1000","balance":"balance_kg = emitted_kg − verified_removal_kg","owed":"owed = emitted_t × 160 − (offset_$ + donation_$)"}};
 /* Renders the statement from DATA. Every value reaches the DOM as a text node
    (Node.append with a string, or textContent) — never as parsed markup — so no
-   ledger string can inject HTML. Charts are inline SVG built through the
-   namespace read off the static <svg> in the skeleton, which keeps the URL of
-   the SVG namespace out of this file: the dashboard must carry zero external
-   references and be openable over file:// with the network off. */
+   ledger string can inject HTML. The only attributes ever built from data are
+   href (set through setAttribute, never parsed) and download.
+
+   Charts are inline SVG built through the namespace read off the static <svg>
+   in the skeleton, which keeps the URL of the SVG namespace out of this file:
+   the dashboard must carry zero external references and be openable over
+   file:// with the network off. */
 (function () {
   "use strict";
   var doc = document, settle = doc.getElementById("c-settle"), NS = settle.namespaceURI;
@@ -416,23 +869,62 @@ const DATA = {"generated_at":"2026-08-07T09:00:00Z","caveat":"No vendor publishe
     var x = Number(v) || 0, p = Math.abs(x).toFixed(d).split(".");
     return (x < 0 ? "−" : "") + p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",") + (p[1] ? "." + p[1] : "");
   }
+  function usd(v) { var x = Number(v) || 0; return (x < 0 ? "−$" : "$") + num(Math.abs(x), 2); }
   function width(node) { return Math.max(240, Math.round(node.getBoundingClientRect().width) || 720); }
 
-  var T = DATA.totals || {}, OS = DATA.offset_state || {};
-  var months = DATA.monthly || [], models = DATA.by_model || [], buys = DATA.offsets || [];
+  var T = DATA.totals || {}, OS = DATA.offset_state || {}, EQ = DATA.equivalences || {};
+  var C = DATA.constants || {}, COST = DATA.cost || {};
+  var months = DATA.monthly || [], models = DATA.by_model || [];
+  var buys = DATA.offsets || [], gifts = DATA.donations || [];
   var emitted = (Number(T.co2_g) || 0) / 1000;
   var removal = Number(OS.removal_verified_kg) || 0;
   var settled = Math.min(removal, emitted), unsettled = Math.max(emitted - removal, 0);
 
-  /* --- standing text ------------------------------------------------------ */
+  /* --- masthead and standing text ----------------------------------------- */
   set("caveat", DATA.caveat || "");
-  var gen = doc.getElementById("gen");
-  gen.textContent = DATA.generated_at || "";
-  gen.setAttribute("datetime", DATA.generated_at || "");
+  [["gen", DATA.generated_at], ["m-issued", DATA.generated_at]].forEach(function (p) {
+    var n = doc.getElementById(p[0]);
+    n.textContent = p[1] || "";
+    n.setAttribute("datetime", p[1] || "");
+  });
+  set("m-period", months.length
+    ? (months.length === 1 ? String(months[0].month)
+      : String(months[0].month) + " – " + String(months[months.length - 1].month))
+    : "no sessions yet");
+  set("m-sessions", num(T.sessions, 0));
+
+  /* --- SIGNATURE: the three meter readings, each with its equivalence -------
+     The readings are three different units, not a series, so none of them
+     wears a chart color: color would be encoding nothing. Identity comes from
+     the label and the equivalence beneath it. */
+  var reads = doc.getElementById("reads");
+  [["Energy", num((Number(T.energy_wh) || 0) / 1000, 2), "kWh",
+    EQ.home_days, EQ.energy],
+   ["Water", num((Number(T.water_ml) || 0) / 1000, 1), "L",
+    EQ.showers, EQ.water],
+   ["Carbon", num(emitted / 1000, 3), "t CO2e",
+    EQ.car_miles, EQ.co2]
+  ].forEach(function (r) {
+    var f = r[4] || {}, eq = [];
+    if (f.noun) {
+      eq.push("≈ ", h("b", {}, num(r[3], Number(r[3]) >= 10 ? 0 : 2)), " " + f.noun);
+    }
+    var cite = f.cite
+      ? h("span", { class: "read__src" }, f.cite + " · ",
+          f.cite_url ? h("a", { href: f.cite_url }, "source") : null)
+      : null;
+    /* The space between the figure and its unit is a real text node, not a
+       margin: at 320px it is the only break opportunity the pair has, and
+       without it the unit runs off the sheet (SC 1.4.10 Reflow). */
+    reads.append(h("li", { class: "read" },
+      h("p", { class: "read__k" }, r[0]),
+      h("p", { class: "read__v" }, r[1], " ", h("span", { class: "read__u" }, r[2])),
+      h("p", { class: "read__eq" }, make(null, "span", {}, eq), cite)));
+  });
 
   /* --- balance ------------------------------------------------------------ */
-  set("balance-value", num(OS.balance_kg, 2));
-  set("balance-eq", num(emitted, 2) + " kg emitted − " + num(removal, 2) + " kg verified removal"
+  set("bal-value", num(OS.balance_kg, 2));
+  set("bal-eq", num(emitted, 2) + " kg emitted − " + num(removal, 2) + " kg verified removal"
     + (emitted > 0 && unsettled === 0 ? " · fully settled" : ""));
 
   var memo = doc.getElementById("memo-list");
@@ -454,25 +946,37 @@ const DATA = {"generated_at":"2026-08-07T09:00:00Z","caveat":"No vendor publishe
         h("span", { class: "memo__why" }, r[3]))));
   });
 
-  /* --- lifetime tiles ----------------------------------------------------- */
-  var tiles = doc.getElementById("tiles");
-  [["Operational", num(emitted, 2), "kg CO2e"],
-   ["Embodied", num((Number(T.embodied_g) || 0) / 1000, 2), "kg CO2e"],
-   ["Energy", num((Number(T.energy_wh) || 0) / 1000, 2), "kWh"],
-   ["Water", num((Number(T.water_ml) || 0) / 1000, 1), "L"],
-   ["API value", "$" + num(T.cost_usd, 2), "list price"],
-   ["Sessions", num(T.sessions, 0), "recorded"]
-  ].forEach(function (t) {
-    tiles.append(h("div", { class: "tile" }, h("dt", { class: "tile__k" }, t[0]),
-      h("dd", { class: "tile__v" }, t[1], h("span", { class: "tile__u" }, t[2]))));
+  /* --- the dollar ledger: pure dollars, unclamped -------------------------- */
+  var owed = Number(COST.owed_usd) || 0, negative = owed < 0;
+  if (negative) {
+    doc.getElementById("crow-host").append(
+      h("div", { class: "crow" },
+        h("span", { class: "crow__tag" }, "Carbon-negative"),
+        h("p", {}, "Contributions have passed the cost of everything this account has emitted, by "
+          + usd(Math.abs(owed)) + ". The ledger stays unclamped so the surplus keeps showing.")));
+  }
+  var pair = doc.getElementById("pair");
+  [["Overall", usd(COST.overall_usd), "Everything emitted, priced at the removal rate.", null],
+   ["Contributed", usd(COST.contributed_usd), "Every dollar given: offset purchases and donations, 1:1.", null],
+   ["Owed", usd(owed), negative
+      ? "In credit. Contributions exceed the overall cost."
+      : "Overall minus contributed. Never clamped at zero.", negative ? "owed--neg" : null]
+  ].forEach(function (p) {
+    pair.append(h("div", {}, h("dt", {}, p[0]),
+      h("dd", { class: p[3] }, p[1], h("small", {}, p[2]))));
   });
+  set("rate-note", "Removal rate: " + usd(COST.rate_usd_per_tonne) + " per tonne (data/offset-constants.json). "
+    + "Dollars given never move the tonnes balance above — only verified removal does.");
 
   /* --- tables ------------------------------------------------------------- */
-  function table(caption, cols, rows) {
-    return h("div", { class: "tw" }, h("table", {}, h("caption", {}, caption),
+  /* The wrapper scrolls horizontally on a narrow viewport, so it takes focus:
+     a scrollable region a keyboard user cannot reach is a keyboard trap in
+     reverse (SC 2.1.1 Keyboard; EN 301 549 9.2.1.1). */
+  function table(caption, cols, rows, foot) {
+    return h("div", { class: "tw", tabindex: "0" }, h("table", {}, h("caption", {}, caption),
       h("thead", {}, make(null, "tr", {}, cols.map(function (c) {
         return h("th", { scope: "col", class: c[1] ? "n" : null }, c[0]);
-      }))), make(null, "tbody", {}, rows)));
+      }))), make(null, "tbody", {}, rows), foot || null));
   }
 
   /* --- charts ------------------------------------------------------------- */
@@ -500,7 +1004,7 @@ const DATA = {"generated_at":"2026-08-07T09:00:00Z","caveat":"No vendor publishe
       return;
     }
     var wS = Math.round((settled / emitted) * W), gap = wS > 0 && wS < W ? 2 : 0;
-    if (wS > 0) g.append(s("rect", { class: "m-removed", x: "0", y: "8", width: Math.max(wS - gap, 1), height: bh, rx: "3" }));
+    if (wS > 0) g.append(s("rect", { class: "m-credit", x: "0", y: "8", width: Math.max(wS - gap, 1), height: bh, rx: "3" }));
     if (wS < W) g.append(s("rect", { x: wS, y: "8", width: W - wS, height: bh, rx: "3", fill: "url(#hatch)" }));
     g.append(s("line", { class: "base", x1: "0", y1: "39.5", x2: W, y2: "39.5" }));
     g.append(s("text", { class: "ax", x: "0", y: "50" }, "0"));
@@ -510,13 +1014,14 @@ const DATA = {"generated_at":"2026-08-07T09:00:00Z","caveat":"No vendor publishe
       + (removal > emitted ? " Verified removal exceeds emissions by " + num(removal - emitted, 2) + " kg." : ""));
   }
   var legend = doc.getElementById("settle-legend");
-  [["removed", "Settled by verified removal", settled], ["unsettled", "Unsettled", unsettled]].forEach(function (l) {
+  [["credit", "Settled by verified removal", settled], ["debit", "Unsettled", unsettled]].forEach(function (l) {
     legend.append(h("span", { class: "legend__i" }, h("span", { class: "legend__sw legend__sw--" + l[0] }),
       l[1] + " ", h("span", { class: "legend__v" }, num(l[2], 2) + " kg")));
   });
 
-  /* Monthly columns. One measure, one axis; every column is directly labelled
-     when there is room, and the data table below carries the full numbers. */
+  /* Monthly columns. One measure, one axis, one series — so no legend box; the
+     title names it. Every column is directly labelled when there is room, and
+     the data table below carries the full numbers. */
   var cMonth = months.length ? chart("monthly-body", "c-month", "Operational CO2e by month, in kilograms") : null;
   function drawMonthly() {
     if (!cMonth) return;
@@ -531,7 +1036,7 @@ const DATA = {"generated_at":"2026-08-07T09:00:00Z","caveat":"No vendor publishe
     months.forEach(function (m, i) {
       var v = vals[i], bh = Math.max(Math.round((v / max) * plot), v > 0 ? 2 : 0);
       var x = Math.round(i * step + (step - bw) / 2), y = top + plot - bh;
-      var bar = s("rect", { class: "m-emitted", x: x, y: y, width: Math.round(bw), height: bh, rx: "3" });
+      var bar = s("rect", { class: "m-debit", x: x, y: y, width: Math.round(bw), height: bh, rx: "3" });
       bar.append(s("title", {}, m.month + ": " + num(v, 2) + " kg CO2e"));
       cMonth.g.append(bar);
       if (label) cMonth.g.append(s("text", { class: "val", x: x + bw / 2, y: y - 7, "text-anchor": "middle" }, num(v, 2)));
@@ -543,7 +1048,9 @@ const DATA = {"generated_at":"2026-08-07T09:00:00Z","caveat":"No vendor publishe
       return m.month + " " + num(vals[i], 2); }).join("; ") + ".";
   }
 
-  /* Model families: horizontal bars, ranked, every bar directly labelled. */
+  /* Model families: horizontal bars, ranked, every bar directly labelled. One
+     nominal series, so every bar takes the same slot rather than coloring by
+     value — bar length already carries the magnitude. */
   var cModel = models.length ? chart("model-body", "c-model", "Operational CO2e by model family, in kilograms") : null;
   function drawModel() {
     if (!cModel) return;
@@ -555,7 +1062,7 @@ const DATA = {"generated_at":"2026-08-07T09:00:00Z","caveat":"No vendor publishe
     models.forEach(function (m, i) {
       var y = i * rh + 6, bw = Math.max(Math.round((vals[i] / max) * span), vals[i] > 0 ? 2 : 0);
       cModel.g.append(s("text", { class: "cat", x: "0", y: y + 14, "dominant-baseline": "middle" }, String(m.family)));
-      var bar = s("rect", { class: "m-emitted", x: gut, y: y + 3, width: bw, height: "18", rx: "3" });
+      var bar = s("rect", { class: "m-debit", x: gut, y: y + 3, width: bw, height: "18", rx: "3" });
       bar.append(s("title", {}, m.family + ": " + num(vals[i], 2) + " kg CO2e"));
       cModel.g.append(bar);
       cModel.g.append(s("text", { class: "val", x: gut + bw + 8, y: y + 14, "dominant-baseline": "middle" }, num(vals[i], 2) + " kg"));
@@ -581,10 +1088,66 @@ const DATA = {"generated_at":"2026-08-07T09:00:00Z","caveat":"No vendor publishe
         }))));
   });
 
-  /* --- offset purchases --------------------------------------------------- */
+  /* --- the two figures the reading band does not carry --------------------
+     Energy, water and carbon already lead the page; repeating them here would
+     be decoration. Only embodied CO2e and API value are new information. */
+  var tiles = doc.getElementById("tiles");
+  [["Embodied CO2e", num((Number(T.embodied_g) || 0) / 1000, 2), "kg, hardware manufacture"],
+   ["API value", usd(T.cost_usd), "list price, not money spent"]
+  ].forEach(function (t) {
+    tiles.append(h("div", { class: "tile" }, h("dt", { class: "tile__k" }, t[0]),
+      h("dd", { class: "tile__v" }, t[1], h("span", { class: "tile__u" }, t[2]))));
+  });
+
+  /* --- audit trail: by payer, then the two registers ---------------------- */
+  function payerRoll() {
+    var by = {}, order = [];
+    function slot(p) {
+      var k = String(p || "—");
+      if (!by[k]) { by[k] = { payer: k, on: 0, okg: 0, ousd: 0, dn: 0, dusd: 0 }; order.push(k); }
+      return by[k];
+    }
+    buys.forEach(function (o) {
+      var r = slot(o.payer);
+      r.on += 1; r.okg += Number(o.kg_co2e) || 0; r.ousd += Number(o.usd) || 0;
+    });
+    gifts.forEach(function (g) { var r = slot(g.payer); r.dn += 1; r.dusd += Number(g.usd) || 0; });
+    return order.sort().map(function (k) { return by[k]; });
+  }
+
+  var payerHost = doc.getElementById("payer-body");
+  var roll = payerRoll();
+  if (!roll.length) {
+    payerHost.append(h("p", { class: "empty" }, "Nothing on record yet, so there is no tax year to reconcile."));
+  } else {
+    var tk = 0, tu = 0, td = 0;
+    var prows = roll.map(function (r) {
+      tk += r.okg; tu += r.ousd; td += r.dusd;
+      return h("tr", {}, h("th", { scope: "row" }, r.payer),
+        h("td", { class: "n" }, num(r.on, 0)),
+        h("td", { class: "n" }, num(r.okg, 2)),
+        h("td", { class: "n" }, usd(r.ousd)),
+        h("td", { class: "n" }, num(r.dn, 0)),
+        h("td", { class: "n" }, usd(r.dusd)),
+        h("td", { class: "n" }, usd(r.ousd + r.dusd)));
+    });
+    var foot = h("tfoot", {}, h("tr", {}, h("th", { scope: "row" }, "All payers"),
+      h("td", { class: "n" }, num(buys.length, 0)),
+      h("td", { class: "n" }, num(tk, 2)),
+      h("td", { class: "n" }, usd(tu)),
+      h("td", { class: "n" }, num(gifts.length, 0)),
+      h("td", { class: "n" }, usd(td)),
+      h("td", { class: "n" }, usd(tu + td))));
+    payerHost.append(table("Dollars and tonnes attributed to the entity that paid. One CSV per payer per tax year.",
+      [["Payer"], ["Offsets", 1], [h("span", { class: "cs" }, "kg CO2e"), 1], ["Offset spend", 1],
+       ["Donations", 1], ["Donated", 1], ["Total spend", 1]], prows, foot));
+  }
+
   var offHost = doc.getElementById("offsets-body");
   if (!buys.length) {
-    offHost.append(h("p", { class: "empty" }, "No offsets purchased yet."));
+    offHost.append(h("p", { class: "empty" },
+      "No offset purchases on record. Record the first with scripts/offset-record.sh — it copies the receipt, "
+      + "stores its bytes and SHA-256, and the purchase appears here against its payer."));
   } else {
     var rows = buys.map(function (o) {
       var ok = Number(o.verified) === 1, path = String(o.receipt_path || "");
@@ -596,27 +1159,95 @@ const DATA = {"generated_at":"2026-08-07T09:00:00Z","caveat":"No vendor publishe
         ? "data:application/pdf;base64,"
         : "data:application/octet-stream;base64,";
       var receipt = b64
-        ? h("a", { href: pref + b64, download: fname }, fname)
+        ? h("a", { href: pref + b64, download: fname }, "Download")
         : path
           ? h("a", { href: "file://" + path }, path.split("/").pop())
           : "—";
-      return h("tr", { class: ok ? null : "row--no" },
+      var sha = String(o.receipt_sha256 || "");
+      return h("tr", {},
         h("th", { scope: "row" }, String(o.purchase_date || "—")),
-        h("td", {}, String(o.vendor || "—")),
-        h("td", {}, String(o.pathway || "—")),
+        h("td", {}, String(o.payer || "—")),
+        h("td", {}, String(o.vendor || "—"),
+          h("span", { class: "td__note" }, String(o.pathway || ""))),
         h("td", { class: "n" }, num(o.kg_co2e, 2)),
-        h("td", { class: "n" }, "$" + num(o.usd, 2)),
-        h("td", {}, String(o.category || "—"),
-          String(o.category) === "removal" ? null : h("span", { class: "td__note" }, "does not settle")),
-        h("td", {}, badge),
+        h("td", { class: "n" }, usd(o.usd)),
+        /* Category and status share a cell: at ten columns the receipt column
+           was pushed off the sheet, and these two always read together. */
+        h("td", {}, badge,
+          h("span", { class: "td__note" }, String(o.category || "—")
+            + (String(o.category) === "removal" ? "" : " · does not settle"))),
         h("td", {}, String(o.retirement_id || "—")),
+        h("td", { class: "hash" }, sha || "—"),
         h("td", {}, receipt));
     });
     offHost.append(table(buys.length + " purchase" + (buys.length === 1 ? "" : "s")
-      + " · $" + num(OS.offset_spent_usd, 2) + " spent · newest first.",
-      [["Date"], ["Vendor"], ["Pathway"], [h("span", { class: "cs" }, "kg CO2e"), 1], ["USD", 1], ["Category"], ["Status"],
-       ["Retirement ID"], ["Receipt"]], rows));
+      + " · " + usd(OS.offset_spent_usd) + " spent · newest first. "
+      + "The hash is the SHA-256 of the receipt file as recorded; the download is rebuilt from the stored bytes.",
+      [["Date"], ["Payer"], ["Vendor"], [h("span", { class: "cs" }, "kg CO2e"), 1], ["USD", 1],
+       ["Status"], ["Retirement ID"], ["Receipt hash"], ["Receipt"]], rows));
   }
+
+  var giftHost = doc.getElementById("donations-body");
+  if (!gifts.length) {
+    giftHost.append(h("p", { class: "empty" },
+      "No donations on record. Record one with scripts/donation-record.sh — the dollars subtract from Owed above "
+      + "and never from the tonnes balance."));
+  } else {
+    var grows = gifts.map(function (g) {
+      var sha = String(g.receipt_sha256 || "");
+      return h("tr", {},
+        h("th", { scope: "row" }, String(g.donation_date || "—")),
+        h("td", {}, String(g.payer || "—")),
+        h("td", {}, String(g.org || "—")),
+        h("td", { class: "n" }, usd(g.usd)),
+        h("td", { class: "hash" }, sha || "—"));
+    });
+    giftHost.append(table(gifts.length + " donation" + (gifts.length === 1 ? "" : "s")
+      + " · newest first. Donations reduce the dollar ledger, never the tonnes balance.",
+      [["Date"], ["Payer"], ["Organisation"], ["USD", 1], ["Receipt SHA-256"]], grows));
+  }
+
+  /* --- methodology: static prose, live constants --------------------------- */
+  var meth = doc.getElementById("meth"), F = DATA.formulas || {};
+  [["Operational CO2e",
+    "Estimated from deduplicated token counts by per-model factors in gCO2e per million tokens (Jegham et al. 2025, "
+    + "an arXiv preprint). Cache-read tokens count at " + C.cache_read_factor + " of an input token — an engineering "
+    + "estimate of the decode-phase KV re-read, not a billing ratio. Sonnet is fitted to three published per-query "
+    + "energies; Opus, Haiku and Fable are extrapolated from it, so Fable carries a double extrapolation.", F.co2],
+   ["Energy",
+    "Not a second model. The CO2e factors are facility energy multiplied by the grid carbon-intensity factor, so "
+    + "dividing by that same factor recovers facility energy exactly. The " + C.grid_cif_g_per_wh
+    + " g/Wh figure is the AWS location-based regional intensity the factors were built on; the US average is higher.",
+    F.energy],
+   ["Water",
+    "Two terms, kept PUE-consistent. On-site cooling water applies to IT energy (facility energy divided by PUE "
+    + C.pue + ") at " + C.wue_onsite_l_per_kwh + " L/kWh; off-site generation water applies to the full facility "
+    + "energy at " + C.wue_offsite_l_per_kwh + " L/kWh. L/kWh equals mL/Wh.", F.water],
+   ["Embodied CO2e",
+    "Manufacturing carbon for the hardware, allocated through energy because the ledger stores tokens rather than "
+    + "GPU-seconds. An 8×H100 server over a three-year life at full TDP works out to " + C.embodied_gco2e_per_kwh
+    + " gCO2e/kWh. Full utilisation is the low-side assumption: real utilisation is lower, which raises the figure.",
+    F.embodied],
+   ["Carbon balance",
+    "Emitted minus VERIFIED REMOVAL ONLY. Prevention credits stop a future emission and unverified purchases have no "
+    + "retirement proof on file; both are recorded below the line and neither settles a removal debt. This is the "
+    + "GHG Protocol / SBTi distinction, not a house rule.", F.balance],
+   ["Dollar ledger",
+    "A separate account in plain dollars, deliberately unclamped. Overall prices everything emitted at the removal "
+    + "rate; contributed counts every dollar given, offsets and donations alike, with no conversion into tonnes. Once "
+    + "contributions pass the overall cost, owed goes negative and the page reports it as carbon-negative.", F.owed],
+   ["API value",
+    "The list price the same work would have cost on pay-as-you-go, not money actually spent on a subscription. It is "
+    + "context for scale and it never enters the carbon or dollar ledgers.", null],
+   ["Uncertainty",
+    "Anthropic publishes no per-query energy data. Every figure here — carbon, energy, water, embodied — is an "
+    + "order-of-magnitude estimate with roughly ±50% uncertainty, and the excluded items (training, most of the "
+    + "supply chain) make the true value more likely above the displayed one than below it.", null]
+  ].forEach(function (m) {
+    meth.append(h("div", {},
+      h("dt", { class: "meth__t" }, m[0]),
+      h("dd", { class: "meth__d" }, m[1], m[2] ? h("span", { class: "meth__f" }, m[2]) : null)));
+  });
 
   /* --- draw, and redraw at the measured width on resize -------------------- */
   var pending = 0;
