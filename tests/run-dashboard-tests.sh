@@ -203,6 +203,22 @@ want "reduced motion honoured" 'prefers-reduced-motion'
 want "print stylesheet present" '@media print'
 want "visible keyboard focus" ':focus-visible'
 want "chart palette tokens documented" '\--viz-1'
+# The working mint is the one colour on this page under a WCAG obligation: it
+# draws the meaning-bearing rules (column rules, table-head underlines, callout
+# bars), which SC 1.4.11 Non-text Contrast requires to reach 3:1 against the
+# adjacent colour. #0f9563 measures 3.81:1 on the #ffffff sheet. Pin it, so a
+# later palette pass cannot lighten it back under the threshold unnoticed.
+want "meaning-bearing mint pinned at its measured value" '\--mint:      #0f9563'
+want "decorative mint kept separate from the working mint" '\--mint-soft: #9cd8c2'
+# Mint is the ruling, not the paper. No surface on this page may be filled with
+# it: every background resolves to the white sheet or the neutral plane.
+if grep -qE 'background(-color)?:[^;]*var\(--mint' "$OUT"; then
+  echo "FAIL dashboard: mint used as a surface fill — it is line-work only" >&2
+  grep -nE 'background(-color)?:[^;]*var\(--mint' "$OUT" | head -3 >&2
+  fail=1
+else
+  echo "PASS dashboard: mint is line-work only, never a surface fill"
+fi
 want "single main landmark" '<main'
 want "skip link to the statement" 'class="skip"'
 
