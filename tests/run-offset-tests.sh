@@ -172,6 +172,22 @@ bash "$RECORD" --update 1 --retirement-id "PURO-2026-00042" >/dev/null 2>&1 ||
 RID="$(sqlite3 "$DB" "SELECT retirement_id FROM offsets WHERE id=1;")"
 [ "$RID" = "PURO-2026-00042" ] && ok "retirement id updated" || ko "retirement id updated (got: $RID)"
 
+# --- 4b. donations: dollars subtract from the owed total --------------------
+DONATE="${REPO_DIR}/scripts/donation-record.sh"
+if bash "$DONATE" --usd 10.00 --org "American Rivers" --payer "Signalblur Security" \
+  --date 2026-07-01 >/dev/null 2>&1; then
+  ok "donation record exits 0"
+else
+  ko "donation record exits 0"
+fi
+DROW="$(sqlite3 -separator '|' "$DB" "SELECT org, usd, payer FROM donations WHERE id=1;" 2>/dev/null)"
+[ "$DROW" = "American Rivers|10.0|Signalblur Security" ] && ok "donation row recorded" ||
+  ko "donation row recorded (got: '$DROW')"
+bash "$DONATE" --usd 0 --org x --payer p >/dev/null 2>&1 && ko "donation usd=0 rejected" ||
+  ok "donation usd=0 rejected"
+bash "$DONATE" --usd 5 --org "x'; DROP TABLE donations;--" --payer p >/dev/null 2>&1 &&
+  ko "donation org charset rejected" || ok "donation org charset rejected"
+
 # --- 5. balance math (report --raw) -----------------------------------------
 # emitted 600 kg; verified removal 100 kg; prevention 200 kg; unverified removal 50 kg
 RAW="$(bash "$REPORT" --raw 2>/dev/null)"
@@ -188,7 +204,8 @@ get() { echo "$RAW" | LC_ALL=C awk -F'\t' -v k="$1" '$1 == k {print $2}'; }
 # segment cache line 1: all-time readings (kWh / L / tonnes; balance moved to
 # line 3). Seeded sessions have NULL energy/water -> 0.0kWh / 0L; 600 kg = 0.60 t.
 # Line 2: owed/overall cost pair at the removal rate: 500 kg x $160/t = 80.00
-# owed, 600 kg x $160/t = 96.00 overall.
+# minus the $10.00 donation = 70.00 owed, 600 kg x $160/t = 96.00 overall.
+# Donations subtract dollars from owed; only verified removal settles tonnes.
 # Line 3: paid-off vs emitted in tonnes (100 kg verified removal / 600 kg).
 CACHE_L1="$(sed -n 1p "${STATE}/segment-cache" 2>/dev/null)"
 CACHE_L2="$(sed -n 2p "${STATE}/segment-cache" 2>/dev/null)"
@@ -198,10 +215,10 @@ if [ "$CACHE_L1" = "∑ ⚡ 0.0kWh 💧 0L 💨 0.60t" ]; then
 else
   ko "segment cache carries all-time readings (got: '$CACHE_L1')"
 fi
-if [ "$CACHE_L2" = "80.00/96.00" ]; then
-  ok "segment cache carries owed/overall cost pair (80.00 owed / 96.00 overall)"
+if [ "$CACHE_L2" = "70.00/96.00" ]; then
+  ok "segment cache owed/overall pair nets out donations (70.00 owed / 96.00 overall)"
 else
-  ko "segment cache carries owed/overall cost pair (got: '$CACHE_L2')"
+  ko "segment cache owed/overall pair nets out donations (got: '$CACHE_L2')"
 fi
 if [ "$CACHE_L3" = "💨 0.10t/0.60t" ]; then
   ok "segment cache carries paid-off/emitted on its own line"

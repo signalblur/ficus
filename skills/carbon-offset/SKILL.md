@@ -17,6 +17,16 @@ bash "$LEDGER/scripts/offset-record.sh" \
   --receipt <path> [--date YYYY-MM-DD] [--retirement-id <id>] [--notes "<text>"]
 ```
 
+**Record a charitable donation** (giving-shortlist orgs; the dollars subtract
+1:1 from the owed side of the statusline cost pair — the tonnes balance still
+settles only with verified removal):
+
+```bash
+bash "$LEDGER/scripts/donation-record.sh" \
+  --usd <amount> --org "<name>" --payer "<entity>" \
+  [--date YYYY-MM-DD] [--notes "<text>"] [--receipt <path>]
+```
+
 **Add the registry retirement id when the confirmation arrives:**
 
 ```bash

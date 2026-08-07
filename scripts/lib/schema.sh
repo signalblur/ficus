@@ -60,5 +60,16 @@ ensure_schema() {
     stored_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
   );" 2>/dev/null || true
   sqlite3 "$db" "ALTER TABLE receipt_blobs ADD COLUMN extracted_text TEXT;" 2>/dev/null || true
+  sqlite3 "$db" "CREATE TABLE IF NOT EXISTS donations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    donation_date TEXT NOT NULL,
+    org TEXT NOT NULL,
+    usd REAL NOT NULL CHECK (usd > 0),
+    payer TEXT NOT NULL,
+    receipt_path TEXT,
+    receipt_sha256 TEXT,
+    notes TEXT,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+  );" 2>/dev/null || true
   return 0
 }
