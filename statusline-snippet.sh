@@ -38,19 +38,21 @@ $(echo "$IN_TOK $OUT_TOK $FIN $FOUT $CL_CIF $CL_WATER_PER_WH ${CL_REMOVAL_USD_PE
     printf "⚡ %.2fWh 💧 %.1fmL 💨 %.2fg\t%.2f", e, e * $6, co2, co2 * $7 / 1000000}')
 EOF
 
-# Cache line 1 = all-time ∑ readings; line 2 = total cost-to-clear (USD)
+# Cache: line 1 = all-time ∑ readings; line 2 = total cost-to-clear (USD);
+# line 3 = ▲ unoffset balance
 ALL=""
 TOTAL_COST=""
+BAL=""
 if [ -f "${STATE_DIR}/segment-cache" ]; then
   ALL=" $(sed -n 1p "${STATE_DIR}/segment-cache")"
   TOTAL_COST="$(sed -n 2p "${STATE_DIR}/segment-cache")"
+  BAL="$(sed -n 3p "${STATE_DIR}/segment-cache")"
 fi
 
-# Readings, then a separator, then the offset-cost estimates
+# Readings, then a separator, then the totals: balance + offset-cost estimates
 printf '%s%s\n' "$SEG" "$ALL"
 printf '────────────────────────────────\n'
-if [ -n "$TOTAL_COST" ]; then
-  printf '🌱 $%s session · $%s total' "$SESS_COST" "$TOTAL_COST"
-else
-  printf '🌱 $%s session' "$SESS_COST"
-fi
+TOTALS="🌱 \$${SESS_COST} session"
+[ -n "$TOTAL_COST" ] && TOTALS="${TOTALS} · \$${TOTAL_COST} total"
+[ -n "$BAL" ] && TOTALS="${BAL} · ${TOTALS}"
+printf '%s' "$TOTALS"

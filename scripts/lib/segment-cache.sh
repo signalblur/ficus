@@ -2,11 +2,12 @@
 # segment-cache.sh — refresh_segment_cache DB_PATH
 #
 # Atomically rewrites <state>/segment-cache with the pre-formatted all-time
-# statusline segment, two lines:
-#   1: "∑ ⚡ <kWh> 💧 <L> 💨 <tonnes> ▲ <balance kg>"  (balance = emitted −
-#      verified removal)
+# statusline segment, three lines:
+#   1: "∑ ⚡ <kWh> 💧 <L> 💨 <tonnes>"  — all-time readings
 #   2: "<usd>"  — cost to clear the balance at the removal rate from
 #      data/offset-constants.json (clamped at 0 when overbought)
+#   3: "▲ <kg>" — the unoffset balance (emitted − verified removal), rendered
+#      on the totals line beneath the separator
 # The statusline render path only ever reads this file; all DB work happens
 # here, at write time (Stop hook, backfill, recompute, offset recording).
 #
@@ -25,12 +26,10 @@ refresh_segment_cache() {
   '' | *[!0-9.]*) rate=160 ;;
   esac
 
-  seg="$(sqlite3 "$db" "SELECT printf('∑ ⚡ %.1fkWh 💧 %.0fL 💨 %.2ft ▲ %.1fkg',
+  seg="$(sqlite3 "$db" "SELECT printf('∑ ⚡ %.1fkWh 💧 %.0fL 💨 %.2ft',
       (SELECT COALESCE(SUM(energy_wh),0)/1000.0 FROM sessions WHERE COALESCE(excluded,0)=0),
       (SELECT COALESCE(SUM(water_ml),0)/1000.0 FROM sessions WHERE COALESCE(excluded,0)=0),
-      (SELECT COALESCE(SUM(co2_grams),0)/1000000.0 FROM sessions WHERE COALESCE(excluded,0)=0),
-      (SELECT COALESCE(SUM(co2_grams),0)/1000.0 FROM sessions WHERE COALESCE(excluded,0)=0)
-      - (SELECT COALESCE(SUM(kg_co2e),0) FROM offsets WHERE category='removal' AND verified=1)
+      (SELECT COALESCE(SUM(co2_grams),0)/1000000.0 FROM sessions WHERE COALESCE(excluded,0)=0)
     );" 2>/dev/null)" || return 0
   [ -n "$seg" ] || return 0
 
@@ -39,7 +38,13 @@ refresh_segment_cache() {
       - (SELECT COALESCE(SUM(kg_co2e),0) FROM offsets WHERE category='removal' AND verified=1)
     ) * ${rate} / 1000.0);" 2>/dev/null)" || cost=""
 
+  local bal
+  bal="$(sqlite3 "$db" "SELECT printf('▲ %.1fkg',
+      (SELECT COALESCE(SUM(co2_grams),0)/1000.0 FROM sessions WHERE COALESCE(excluded,0)=0)
+      - (SELECT COALESCE(SUM(kg_co2e),0) FROM offsets WHERE category='removal' AND verified=1)
+    );" 2>/dev/null)" || bal=""
+
   tmp="${dir}/.segment-cache.$$"
-  printf '%s\n%s' "$seg" "$cost" >"$tmp" 2>/dev/null && mv -f "$tmp" "${dir}/segment-cache" 2>/dev/null
+  printf '%s\n%s\n%s' "$seg" "$cost" "$bal" >"$tmp" 2>/dev/null && mv -f "$tmp" "${dir}/segment-cache" 2>/dev/null
   return 0
 }
