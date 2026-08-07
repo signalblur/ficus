@@ -210,6 +210,20 @@ want "chart palette tokens documented" '\--viz-1'
 # later palette pass cannot lighten it back under the threshold unnoticed.
 want "meaning-bearing mint pinned at its measured value" '\--mint:      #0f9563'
 want "decorative mint kept separate from the working mint" '\--mint-soft: #9cd8c2'
+# One mode, and it is light. A statement of account that changes colour with the
+# reader's OS setting is one you cannot check against the copy you filed, so
+# there is no dark variant and no theme toggle — and the page says so twice, in
+# CSS and in a meta element, so the browser does not auto-darken its own
+# furniture before the stylesheet has loaded.
+want "page declares itself light in CSS" 'color-scheme: light'
+want "page declares itself light before CSS loads" '<meta name="color-scheme" content="light">'
+if grep -q 'prefers-color-scheme' "$OUT"; then
+  echo "FAIL dashboard: dark mode reintroduced — the statement renders light for everyone" >&2
+  fail=1
+else
+  echo "PASS dashboard: no dark variant (single light palette for every reader)"
+fi
+
 # Mint is the ruling, not the paper. No surface on this page may be filled with
 # it: every background resolves to the white sheet or the neutral plane.
 if grep -qE 'background(-color)?:[^;]*var\(--mint' "$OUT"; then
