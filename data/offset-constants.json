@@ -1,0 +1,11 @@
+{
+  "_source": "carbon-tracker workspace: research/carbon-offset-landscape-2026-08.md (2026-08-06, incl. second-pass verification addendum). Decision rule: ex-post only — a dollar buys carbon already verifiably removed or destroyed, never a promise.",
+  "removal_usd_per_tonne": 160,
+  "_removal": "Ex-post biochar CORCs, Puro-audited. Nasdaq CORCCHAR index ~$160/t (2026-08); retail range $125-200/t. Puro does not sell direct; buy via resellers (Remove Carbon Today, 1 kg minimum, Puro retirement proof; alternates Regreener, Puro registry). Only REMOVAL counts against the headline balance.",
+  "prevention_usd_per_tonne": 15,
+  "_prevention": "Tradewater refrigerant/methane destruction, ~$15/t retail checkout, completed destruction (ex-post; cleanest additionality of the cheap tier). Prevention is avoidance leverage, NOT removal — reported on its own line, never in the headline balance.",
+  "links": {
+    "removal": "https://www.removecarbontoday.com",
+    "prevention": "https://tradewater.co/buy-credits"
+  }
+}

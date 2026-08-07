@@ -35,5 +35,21 @@ ensure_schema() {
   sqlite3 "$db" "ALTER TABLE sessions ADD COLUMN energy_wh REAL;" 2>/dev/null || true
   sqlite3 "$db" "ALTER TABLE sessions ADD COLUMN water_ml REAL;" 2>/dev/null || true
   sqlite3 "$db" "ALTER TABLE sessions ADD COLUMN embodied_gco2e REAL;" 2>/dev/null || true
+  sqlite3 "$db" "CREATE TABLE IF NOT EXISTS offsets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    purchase_date TEXT NOT NULL,
+    vendor TEXT NOT NULL,
+    pathway TEXT NOT NULL,
+    kg_co2e REAL NOT NULL CHECK (kg_co2e > 0),
+    usd REAL NOT NULL CHECK (usd >= 0),
+    category TEXT NOT NULL CHECK (category IN ('removal', 'prevention')),
+    payer TEXT NOT NULL,
+    receipt_path TEXT,
+    receipt_sha256 TEXT,
+    verified INTEGER NOT NULL DEFAULT 1,
+    retirement_id TEXT,
+    notes TEXT,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+  );" 2>/dev/null || true
   return 0
 }
