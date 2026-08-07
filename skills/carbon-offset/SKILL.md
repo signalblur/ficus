@@ -17,9 +17,11 @@ bash "$LEDGER/scripts/offset-record.sh" \
   --receipt <path> [--date YYYY-MM-DD] [--retirement-id <id>] [--notes "<text>"]
 ```
 
-**Record a charitable donation** (giving-shortlist orgs; the dollars subtract
-1:1 from the owed side of the statusline cost pair — the tonnes balance still
-settles only with verified removal):
+**Record a charitable donation** (giving-shortlist orgs). The statusline cost
+pair is a pure dollar ledger: every dollar recorded here or via offset-record
+subtracts 1:1 from the owed side, and owed goes negative once contributions
+pass carbon-neutral. The tonnes balance still settles only with verified
+removal:
 
 ```bash
 bash "$LEDGER/scripts/donation-record.sh" \

@@ -203,9 +203,10 @@ get() { echo "$RAW" | LC_ALL=C awk -F'\t' -v k="$1" '$1 == k {print $2}'; }
 
 # segment cache line 1: all-time readings (kWh / L / tonnes; balance moved to
 # line 3). Seeded sessions have NULL energy/water -> 0.0kWh / 0L; 600 kg = 0.60 t.
-# Line 2: owed/overall cost pair at the removal rate: 500 kg x $160/t = 80.00
-# minus the $10.00 donation = 70.00 owed, 600 kg x $160/t = 96.00 overall.
-# Donations subtract dollars from owed; only verified removal settles tonnes.
+# Line 2: owed/overall cost pair, PURE DOLLAR ledger: overall = 600 kg x $160/t
+# = 96.00; owed = 96.00 minus every dollar contributed (offsets $16 + $3 + $8
+# and the $10.00 donation = $37.00) = 59.00. No kg translation, no clamp —
+# owed goes NEGATIVE past carbon-neutral. Only verified removal settles tonnes.
 # Line 3: paid-off vs emitted in tonnes (100 kg verified removal / 600 kg).
 CACHE_L1="$(sed -n 1p "${STATE}/segment-cache" 2>/dev/null)"
 CACHE_L2="$(sed -n 2p "${STATE}/segment-cache" 2>/dev/null)"
@@ -215,15 +216,26 @@ if [ "$CACHE_L1" = "∑ ⚡ 0.0kWh 💧 0L 💨 0.60t" ]; then
 else
   ko "segment cache carries all-time readings (got: '$CACHE_L1')"
 fi
-if [ "$CACHE_L2" = "70.00/96.00" ]; then
-  ok "segment cache owed/overall pair nets out donations (70.00 owed / 96.00 overall)"
+if [ "$CACHE_L2" = "59.00/96.00" ]; then
+  ok "segment cache owed/overall pair nets out all contributed dollars (59.00 owed / 96.00 overall)"
 else
-  ko "segment cache owed/overall pair nets out donations (got: '$CACHE_L2')"
+  ko "segment cache owed/overall pair nets out all contributed dollars (got: '$CACHE_L2')"
 fi
 if [ "$CACHE_L3" = "💨 0.10t/0.60t" ]; then
   ok "segment cache carries paid-off/emitted on its own line"
 else
   ko "segment cache carries paid-off/emitted on its own line (got: '$CACHE_L3')"
+fi
+
+# going past carbon-neutral in dollars leaves owed NEGATIVE, not clamped at 0:
+# 96.00 - (37.00 + 80.00) = -21.00
+bash "$DONATE" --usd 80.00 --org "Tradewater" --payer "Signalblur Security" \
+  --date 2026-07-02 >/dev/null 2>&1 || ko "over-contributing donation exits 0"
+CACHE_L2_NEG="$(sed -n 2p "${STATE}/segment-cache" 2>/dev/null)"
+if [ "$CACHE_L2_NEG" = "-21.00/96.00" ]; then
+  ok "owed goes negative past carbon-neutral (-21.00/96.00)"
+else
+  ko "owed goes negative past carbon-neutral (got: '$CACHE_L2_NEG')"
 fi
 
 # human report must keep the caveat and the separation visible
