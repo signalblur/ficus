@@ -67,12 +67,17 @@ else
 fi
 
 # --- zero external references ------------------------------------------------
-if grep -qE 'https?://|<link|src="http|src='"'"'http|@import|url\(http' "$OUT"; then
-  echo "FAIL dashboard: external references found:" >&2
-  grep -nE 'https?://|<link|src="http|@import|url\(http' "$OUT" | head -5 >&2
+# Click-only donation anchors (href="https://...") are allowed; anything the
+# browser would LOAD over the network (stylesheets, scripts, images, imports)
+# is not — the page must still render fully with Wi-Fi off.
+if sed 's/href="https:\/\/[^"]*"//g' "$OUT" |
+  grep -qE 'https?://|<link|src="http|src='"'"'http|@import|url\(http'; then
+  echo "FAIL dashboard: external LOADED references found:" >&2
+  sed 's/href="https:\/\/[^"]*"//g' "$OUT" |
+    grep -nE 'https?://|<link|src="http|@import|url\(http' | head -5 >&2
   fail=1
 else
-  echo "PASS dashboard: zero external references (offline-safe)"
+  echo "PASS dashboard: zero loaded external references (offline-safe)"
 fi
 
 # --- content invariants --------------------------------------------------------
@@ -97,6 +102,25 @@ grep -q '</html>' "$OUT" && echo "PASS dashboard: complete HTML document" || {
   echo "FAIL dashboard: truncated HTML" >&2
   fail=1
 }
+# --- giving shortlist ----------------------------------------------------------
+# Six curated donation links, one per ecosystem; click-only anchors.
+give_missing=0
+for link in removecarbontoday.com tradewater.co/buy-credits \
+  americanrivers.org/donate coralrestoration.org/donate \
+  naturalandtrust.org/donate-now congareelt.org/donate; do
+  grep -q "$link" "$OUT" || {
+    echo "FAIL dashboard: donation link missing: $link" >&2
+    give_missing=1
+    fail=1
+  }
+done
+if [ "$give_missing" = "0" ] && grep -q 'id="h-give"' "$OUT"; then
+  echo "PASS dashboard: giving shortlist present with all six links"
+elif [ "$give_missing" = "0" ]; then
+  echo "FAIL dashboard: giving section heading (h-give) missing" >&2
+  fail=1
+fi
+
 # Receipt blobs ride along as base64 so the dashboard alone can hand back the
 # PDF (data: URI + download attribute); rows without a blob carry "".
 grep -q '"receipt_b64":"JVBERg=="' "$OUT" &&

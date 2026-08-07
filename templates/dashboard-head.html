@@ -144,6 +144,23 @@ body {
 .memo__label { font-size: 0.8125rem; }
 .memo__v { font: 600 0.8125rem/1.6 var(--mono); font-variant-numeric: tabular-nums; }
 .memo__why { display: block; color: var(--ink-2); font-size: 0.75rem; }
+/* --- giving shortlist ------------------------------------------------------ */
+.give { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.75rem; }
+.give__item { font-size: 0.8125rem; }
+.give__area {
+  display: inline-block;
+  min-width: 10.5rem;
+  color: var(--ink-2);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.give__why { display: block; margin-left: 10.5rem; color: var(--ink-2); font-size: 0.75rem; }
+@media (max-width: 40rem) {
+  .give__area { display: block; min-width: 0; }
+  .give__why { margin-left: 0; }
+}
 /* Below-the-line marks carry shape, not hue: dashed outline for prevention,
    a heavy ring for unverified. Both clear 3:1 against the surface. */
 .mk rect { fill: none; stroke-width: 2; }
@@ -335,6 +352,33 @@ td a { color: var(--ink-1); }
       <p class="reg__note">Every row is a purchase on record. Only <strong>verified removal</strong> rows reduce
         the balance above.</p>
       <div id="offsets-body"></div>
+    </section>
+
+    <section class="reg" aria-labelledby="h-give">
+      <h2 class="reg__h" id="h-give">Giving shortlist</h2>
+      <p class="reg__note">Curated destinations, one per ecosystem. The first two act on the balance
+        above — <strong>removal</strong> settles it, <strong>prevention</strong> complements it
+        without settling — and the rest fund hands-on restoration, not offset accounting.</p>
+      <ul class="give">
+        <li class="give__item"><span class="give__area">Air &mdash; removal</span>
+          <a href="https://www.removecarbontoday.com/collections">Remove Carbon Today (biochar CORCs)</a>
+          <span class="give__why">Ex-post Puro-audited biochar, ~$160/t; stock rotates, sold out at times.</span></li>
+        <li class="give__item"><span class="give__area">Air &mdash; prevention</span>
+          <a href="https://tradewater.co/buy-credits/">Tradewater</a>
+          <span class="give__why">Refrigerant and methane destruction, ~$15/t; does not settle the removal balance.</span></li>
+        <li class="give__item"><span class="give__area">Rivers</span>
+          <a href="https://www.americanrivers.org/donate">American Rivers</a>
+          <span class="give__why">Dam removal &mdash; about 4,900 river miles reconnected in 2025 alone.</span></li>
+        <li class="give__item"><span class="give__area">Oceans</span>
+          <a href="https://coralrestoration.org/donate">Coral Restoration Foundation</a>
+          <span class="give__why">Coral propagation and outplanting in the Florida Keys.</span></li>
+        <li class="give__item"><span class="give__area">Land &amp; watershed</span>
+          <a href="https://naturalandtrust.org/donate-now">Naturaland Trust</a>
+          <span class="give__why">Greenville land purchase protecting the Saluda and Reedy watersheds.</span></li>
+        <li class="give__item"><span class="give__area">Wetlands &amp; swamp</span>
+          <a href="https://congareelt.org/donate">Congaree Land Trust</a>
+          <span class="give__why">Easements around Congaree's blackwater swamp (COWASEE basin).</span></li>
+      </ul>
     </section>
   </main>
 
