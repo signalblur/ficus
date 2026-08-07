@@ -41,6 +41,12 @@ ensure_schema "$DB_PATH"
 
 echo "  Schema created."
 
+# Emit factors.env so the statusline render path never runs jq
+# shellcheck source=lib/factors-env.sh
+source "${SCRIPT_DIR}/lib/factors-env.sh"
+emit_factors_env "${PLUGIN_DIR}/data/factors.json" "$DB_DIR"
+echo "  factors.env written."
+
 # 4. Run backfill
 echo ""
 echo "Running backfill of historical sessions..."

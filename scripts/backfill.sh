@@ -22,6 +22,8 @@ METHODOLOGY_VERSION=2
 source "${SCRIPT_DIR}/lib/schema.sh"
 # shellcheck source=lib/model-family.sh
 source "${SCRIPT_DIR}/lib/model-family.sh"
+# shellcheck source=lib/segment-cache.sh
+source "${SCRIPT_DIR}/lib/segment-cache.sh"
 
 # Ensure schema exists and is migrated (idempotent; safe on fresh or pre-existing DBs).
 ensure_schema "$DB_PATH"
@@ -301,5 +303,8 @@ while IFS= read -r JSONL_FILE; do
   ADDED=$((ADDED + 1))
 
 done < <(find "${CONFIG_DIR}/projects" -maxdepth 2 -name "*.jsonl" 2>/dev/null)
+
+# New rows changed the balance: refresh the statusline cache.
+refresh_segment_cache "$DB_PATH"
 
 echo "  Backfill complete: ${ADDED} sessions added, ${SKIPPED} skipped, ${ERRORS} errors."

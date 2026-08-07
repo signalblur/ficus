@@ -24,6 +24,8 @@ STATE_DIR="$(dirname "$DB_PATH")"
 
 # shellcheck source=lib/schema.sh
 source "${SCRIPT_DIR}/lib/schema.sh"
+# shellcheck source=lib/segment-cache.sh
+source "${SCRIPT_DIR}/lib/segment-cache.sh"
 
 die() {
   echo "ERROR: $1" >&2
@@ -127,6 +129,7 @@ if [ -n "$UPDATE_ID" ]; then
   [ -n "$SETS" ] || die "--update needs --retirement-id and/or --notes"
 
   sqlite3 "$DB_PATH" "UPDATE offsets SET ${SETS} WHERE id=${UPDATE_ID};"
+  refresh_segment_cache "$DB_PATH"
   echo "Updated offset #${UPDATE_ID}."
   sqlite3 -header -column "$DB_PATH" "SELECT id, purchase_date, vendor, kg_co2e, category, verified, retirement_id FROM offsets WHERE id=${UPDATE_ID};"
   exit 0
@@ -189,6 +192,8 @@ ROW_ID="$(sqlite3 "$DB_PATH" "INSERT INTO offsets
    '$(esc "$PAYER")', '${SHA256}', ${VERIFIED},
    '$(esc "$RETIREMENT_ID")', '$(esc "$NOTES")');
   SELECT last_insert_rowid();")"
+
+refresh_segment_cache "$DB_PATH"
 
 if [ -n "$RECEIPT" ]; then
   YEAR="${DATE%%-*}"

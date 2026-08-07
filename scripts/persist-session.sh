@@ -24,6 +24,8 @@ METHODOLOGY_VERSION=2
 source "${SCRIPT_DIR}/lib/schema.sh" 2>/dev/null || exit 0
 # shellcheck source=lib/model-family.sh
 source "${SCRIPT_DIR}/lib/model-family.sh" 2>/dev/null || exit 0
+# shellcheck source=lib/segment-cache.sh
+source "${SCRIPT_DIR}/lib/segment-cache.sh" 2>/dev/null || exit 0
 
 # Migrate schema if needed (idempotent; no-ops once the columns exist)
 ensure_schema "$DB_PATH"
@@ -241,5 +243,8 @@ NOW="${NOW//\'/\'\'}"
 
 # INSERT OR REPLACE into sessions (source='live', cost = theoretical API list price)
 sqlite3 "$DB_PATH" "INSERT OR REPLACE INTO sessions (session_id, project, model, input_tokens, output_tokens, cache_read_tokens, cache_creation_tokens, cost_usd, co2_grams, started_at, ended_at, source, methodology_version, excluded, energy_wh, water_ml, embodied_gco2e) VALUES ('${SESSION_ID}', '${PROJECT}', '${MODEL_RAW}', ${INPUT_TOKENS}, ${OUTPUT_TOKENS}, ${CACHE_READ}, ${CACHE_CREATION}, ${COST_USD}, ${CO2_G}, COALESCE((SELECT started_at FROM sessions WHERE session_id='${SESSION_ID}'), '${NOW}'), '${NOW}', 'live', ${METHODOLOGY_VERSION}, ${EXCLUDED}, ${ENERGY_WH}, ${WATER_ML}, ${EMBODIED_G});" 2>/dev/null || true
+
+# Refresh the statusline balance cache (atomic; never fails this hook)
+refresh_segment_cache "$DB_PATH"
 
 exit 0

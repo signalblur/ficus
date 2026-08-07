@@ -112,6 +112,15 @@ sqlite3 -cmd ".timeout 5000" "$DB_PATH" "
   WHERE methodology_version >= 2 AND co2_grams IS NOT NULL;
 "
 
+# Factors changed the derived numbers: refresh the statusline inputs.
+SCRIPT_DIR_RC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/factors-env.sh
+source "${SCRIPT_DIR_RC}/lib/factors-env.sh"
+# shellcheck source=lib/segment-cache.sh
+source "${SCRIPT_DIR_RC}/lib/segment-cache.sh"
+emit_factors_env "$FACTORS_FILE" "$(dirname "$DB_PATH")"
+refresh_segment_cache "$DB_PATH"
+
 RECOMPUTED="$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM sessions WHERE methodology_version >= 2 AND COALESCE(excluded, 0) = 0;")"
 LEGACY="$(sqlite3 "$DB_PATH" "SELECT COUNT(*) FROM sessions WHERE methodology_version IS NULL OR methodology_version < 2;")"
 TOTAL_COST="$(sqlite3 "$DB_PATH" "SELECT printf('%.0f', COALESCE(SUM(cost_usd),0)) FROM sessions;")"
