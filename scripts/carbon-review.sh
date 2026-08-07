@@ -137,7 +137,7 @@ echo "- **Water** — cooling and generation water behind that electricity:" \
   "energy × (on-site cooling at PUE 1.14 + 5.11 L/kWh U.S. off-site" \
   "generation water). Constants and sources: data/factors.json."
 echo "- **CO₂e (operational)** — tokens × per-model emission factors" \
-  "(claude-carbon methodology, grid-average intensity)."
+  "(Ficus methodology, grid-average intensity)."
 echo "- **CO₂e (embodied hardware)** — the manufacturing share of the servers:" \
   "energy × 44.1 gCO₂e/kWh (8×H100 lifecycle proxy). Reported separately," \
   "never folded into operational."
