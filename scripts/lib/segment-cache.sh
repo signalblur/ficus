@@ -4,8 +4,10 @@
 # Atomically rewrites <state>/segment-cache with the pre-formatted all-time
 # statusline segment, three lines:
 #   1: "∑ ⚡ <kWh> 💧 <L> 💨 <tonnes>"  — all-time readings
-#   2: "<usd>"  — cost to clear the balance at the removal rate from
-#      data/offset-constants.json (clamped at 0 when overbought)
+#   2: "<owed>/<overall>"  — USD still owed to clear the balance (clamped at 0
+#      when overbought) over the overall cost of everything emitted, both at
+#      the removal rate from data/offset-constants.json; the gap between the
+#      two is what has been contributed
 #   3: "💨 <paid>t/<emitted>t" — verified removal purchased vs total emitted,
 #      rendered on the totals line beneath the separator
 # The statusline render path only ever reads this file; all DB work happens
@@ -33,10 +35,12 @@ refresh_segment_cache() {
     );" 2>/dev/null)" || return 0
   [ -n "$seg" ] || return 0
 
-  cost="$(sqlite3 "$db" "SELECT printf('%.2f', MAX(0,
+  cost="$(sqlite3 "$db" "SELECT printf('%.2f/%.2f', MAX(0,
       (SELECT COALESCE(SUM(co2_grams),0)/1000.0 FROM sessions WHERE COALESCE(excluded,0)=0)
       - (SELECT COALESCE(SUM(kg_co2e),0) FROM offsets WHERE category='removal' AND verified=1)
-    ) * ${rate} / 1000.0);" 2>/dev/null)" || cost=""
+    ) * ${rate} / 1000.0,
+      (SELECT COALESCE(SUM(co2_grams),0)/1000.0 FROM sessions WHERE COALESCE(excluded,0)=0)
+      * ${rate} / 1000.0);" 2>/dev/null)" || cost=""
 
   local bal
   bal="$(sqlite3 "$db" "SELECT printf('💨 %.2ft/%.2ft',

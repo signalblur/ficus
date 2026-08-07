@@ -38,7 +38,8 @@ $(echo "$IN_TOK $OUT_TOK $FIN $FOUT $CL_CIF $CL_WATER_PER_WH ${CL_REMOVAL_USD_PE
     printf "⚡ %.2fWh 💧 %.1fmL 💨 %.2fg\t%.2f", e, e * $6, co2, co2 * $7 / 1000000}')
 EOF
 
-# Cache: line 1 = all-time ∑ readings; line 2 = total cost-to-clear (USD);
+# Cache: line 1 = all-time ∑ readings; line 2 = owed/overall cost pair (USD
+# still owed to clear the balance over the overall emitted cost);
 # line 3 = 💨 paid-off/emitted (tonnes)
 ALL=""
 TOTAL_COST=""

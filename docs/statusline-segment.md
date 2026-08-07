@@ -9,19 +9,22 @@ above Claude Code's mode line):
 ```
                                     Totals:
 [Fable 5] 📁 repo │ 🌿 main          │ ∑ ⚡ 2173.2kWh 💧 11448L 💨 0.62t
-████ 10% │ $8.08 │ ⏱ 2h 17m  ↻99%   │ 💨 0.00t/0.62t · ▲ $0.03 session · $99.82 total
+████ 10% │ $8.08 │ ⏱ 2h 17m  ↻99%   │ 💨 0.00t/0.62t · ▲ $0.03 session · $99.82/99.82 total
 ⚡ 0.42Wh 💧 2.2mL 💨 0.12g
 ```
 
 (The label row must open with an ANSI escape — Claude Code's renderer trims
 leading whitespace, and the escape stops the trim so the padding survives.)
 
-The last row carries the 💨 paid-off/emitted pair (verified removal purchased
+The totals row carries the 💨 paid-off/emitted pair (verified removal purchased
 vs total emitted, tonnes) and the estimated cost to offset — the current
-session (▲) and the whole unoffset balance — at the removal rate from
-`data/offset-constants.json` ($160/t biochar CORCs). The segment cache is three
-lines: the ∑ readings, the pre-computed total cost, and the paid-off/emitted
-pair; the session cost comes out of the same awk that prices the live readings.
+session (▲) and an owed/overall dollar pair — at the removal rate from
+`data/offset-constants.json` ($160/t biochar CORCs). In `$99.82/99.82 total`
+the left number is what is still owed to clear the balance and the right is the
+overall cost of everything emitted; the gap between them is what has been
+contributed over time. The segment cache is three lines: the ∑ readings, the
+pre-computed owed/overall pair, and the paid-off/emitted pair; the session cost
+comes out of the same awk that prices the live readings.
 
 (The reference snippet below is the minimal single-column form of the same
 segment — same inputs, no column padding. The live two-column render pads each
@@ -33,7 +36,7 @@ two pre-written files and does one awk. All DB work happens at write time:
 | File (in `~/.claude/carbon-ledger/`) | Written by | Read by statusline |
 | --- | --- | --- |
 | `factors.env` | `setup.sh`, `recompute.sh` | `source` (shell vars, numeric-guarded) |
-| `segment-cache` | `persist-session.sh` (Stop hook), `backfill.sh`, `offset-record.sh`, `recompute.sh` | `sed -n Np` (three pre-formatted lines: `∑ ⚡ 2173.2kWh 💧 11448L 💨 0.62t` all-time readings / total cost-to-clear USD / `💨 0.00t/0.62t` paid-off vs emitted) |
+| `segment-cache` | `persist-session.sh` (Stop hook), `backfill.sh`, `offset-record.sh`, `recompute.sh` | `sed -n Np` (three pre-formatted lines: `∑ ⚡ 2173.2kWh 💧 11448L 💨 0.62t` all-time readings / `99.82/99.82` owed-vs-overall USD / `💨 0.00t/0.62t` paid-off vs emitted) |
 
 `statusline-snippet.sh` at the repo root is the reference implementation and is
 what `tests/run-statusline-bench.sh` benchmarks (p95 < 50 ms) and checks against

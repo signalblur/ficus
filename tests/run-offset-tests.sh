@@ -146,7 +146,8 @@ get() { echo "$RAW" | LC_ALL=C awk -F'\t' -v k="$1" '$1 == k {print $2}'; }
 
 # segment cache line 1: all-time readings (kWh / L / tonnes; balance moved to
 # line 3). Seeded sessions have NULL energy/water -> 0.0kWh / 0L; 600 kg = 0.60 t.
-# Line 2: cost-to-clear the balance at the removal rate: 500 kg x $160/t = 80.00.
+# Line 2: owed/overall cost pair at the removal rate: 500 kg x $160/t = 80.00
+# owed, 600 kg x $160/t = 96.00 overall.
 # Line 3: paid-off vs emitted in tonnes (100 kg verified removal / 600 kg).
 CACHE_L1="$(sed -n 1p "${STATE}/segment-cache" 2>/dev/null)"
 CACHE_L2="$(sed -n 2p "${STATE}/segment-cache" 2>/dev/null)"
@@ -156,10 +157,10 @@ if [ "$CACHE_L1" = "∑ ⚡ 0.0kWh 💧 0L 💨 0.60t" ]; then
 else
   ko "segment cache carries all-time readings (got: '$CACHE_L1')"
 fi
-if [ "$CACHE_L2" = "80.00" ]; then
-  ok "segment cache carries total offset cost (500 kg x \$160/t = 80.00)"
+if [ "$CACHE_L2" = "80.00/96.00" ]; then
+  ok "segment cache carries owed/overall cost pair (80.00 owed / 96.00 overall)"
 else
-  ko "segment cache carries total offset cost (got: '$CACHE_L2')"
+  ko "segment cache carries owed/overall cost pair (got: '$CACHE_L2')"
 fi
 if [ "$CACHE_L3" = "💨 0.10t/0.60t" ]; then
   ok "segment cache carries paid-off/emitted on its own line"
