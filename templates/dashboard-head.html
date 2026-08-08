@@ -732,6 +732,34 @@ td a { color: var(--accent); }
   text-transform: uppercase;
 }
 .org__n { margin: 0.2rem 0 0; font: 600 1.0625rem/1.25 var(--sans); letter-spacing: -0.01em; }
+/* The hero mark sits top-right of the card, out of the reading path, so the
+   name and the price signal still lead. It is optional: with no image the
+   header simply has nothing in that corner and the card is unchanged. The
+   figure is decorative-adjacent — the alt text names the subject, and nothing
+   in the card depends on seeing it. */
+.org__hd { display: grid; grid-template-columns: 1fr auto; gap: 0.75rem 1rem; align-items: start; }
+.org__fig {
+  width: 3.5rem;
+  height: 3.5rem;
+  flex: none;
+  margin: 0;
+  color: var(--ink-3);
+}
+.org__fig svg { display: block; width: 100%; height: 100%; }
+@media (max-width: 34rem) { .org__fig { width: 2.75rem; height: 2.75rem; } }
+
+/* The colophon: where every illustration's licence can actually be checked. */
+.credits { margin: 1.5rem 0 0; padding-top: 1.15rem; border-top: 1px solid var(--rule); }
+.credits__h {
+  margin: 0 0 0.6rem;
+  color: var(--ink-head);
+  font: 700 0.6875rem/1.4 var(--mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.credits__list { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.5rem; }
+.credits__list li { color: var(--ink-2); font-size: 0.75rem; line-height: 1.55; }
+.credits__list b { color: var(--ink-1); font-weight: 600; }
 .org__n small { display: block; margin-top: 0.1rem; color: var(--ink-3); font: 400 0.75rem/1.4 var(--sans); }
 /* The price signal is the single most decision-relevant fact about an
    organisation, so it is a distinct object rather than a sentence: a mono
@@ -1070,6 +1098,7 @@ td a { color: var(--accent); }
         <dl class="meth" id="meth"></dl>
         <p class="note" style="margin-top:1.5rem">Fuller derivations, the uncertainty bands per model family, and the
           cross-check gate against an independent estimator are in <strong>METHODOLOGY.md</strong>.</p>
+        <div id="credits"></div>
       </div></div>
     </section>
 

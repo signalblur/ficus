@@ -603,10 +603,30 @@
     var list = h("ul", { class: "orgs" + (orgs.length > 1 ? " orgs--multi" : "") });
     orgs.forEach(function (o) {
       var li = h("li", { class: "card org" });
-      li.append(h("span", { class: "org__area" }, String(o.area || "")));
-      li.append(h("h4", { class: "org__n" },
+      /* The hero mark, when the organisation has one. It arrives as GEOMETRY —
+         a viewBox and a list of path "d" strings — never as markup, so an
+         illustration goes through createElementNS and setAttribute like every
+         other value on this page and can never be an injection vector. The
+         generator refuses to build unless its provenance is complete, so an
+         image that renders here is an image whose licence is on the page. */
+      var head = h("div", { class: "org__hd" });
+      var col = h("div", {});
+      col.append(h("span", { class: "org__area" }, String(o.area || "")));
+      col.append(h("h4", { class: "org__n" },
         h("a", { href: String(o.url || "") }, String(o.name || "")),
         o.sub ? h("small", {}, String(o.sub)) : null));
+      head.append(col);
+      var img = o.image;
+      if (img && (img.paths || []).length) {
+        var art = s("svg", { viewBox: String(img.viewBox), role: "img",
+          "aria-label": String(img.alt || "") });
+        img.paths.forEach(function (d) {
+          art.append(s("path", { d: String(d), fill: "currentColor",
+            "fill-rule": img.fill_rule ? String(img.fill_rule) : null }));
+        });
+        head.append(h("figure", { class: "org__fig" }, art));
+      }
+      li.append(head);
       if (o.price) li.append(h("p", {}, h("span", { class: "org__price" }, String(o.price))));
       li.append(h("p", { class: "org__does" }, String(o.does || "")));
       if (o.price_note) li.append(h("p", { class: "org__pn" }, String(o.price_note)));
@@ -676,6 +696,29 @@
       h("dt", { class: "meth__t" }, m[0]),
       h("dd", { class: "meth__d" }, m[1], m[2] ? h("span", { class: "meth__f" }, m[2]) : null)));
   });
+
+  /* --- colophon: where an illustration's licence can actually be checked ----
+     Only rendered when something is illustrated. The generator has already
+     refused to build if any of these fields were missing, so every entry here
+     is complete by construction. */
+  var creds = DATA.image_credits || [];
+  if (creds.length) {
+    var box = h("div", { class: "credits" },
+      h("h3", { class: "credits__h" }, "Illustration credits"));
+    var cl = h("ul", { class: "credits__list" });
+    creds.forEach(function (c) {
+      cl.append(h("li", {},
+        h("b", {}, String(c.org || "")), " — ",
+        h("a", { href: String(c.source_url || "") }, String(c.title || "")),
+        ", " + String(c.author || "") + ". ",
+        h("a", { href: String(c.license_url || "") }, String(c.license || ""))));
+    });
+    box.append(cl);
+    box.append(h("p", { class: "note", style: "margin-top:0.9rem" },
+      "Every illustration on this page is public domain or CC0 and was made by a person. "
+      + "Each is embedded in the file itself, so the page still draws them with the network off."));
+    doc.getElementById("credits").append(box);
+  }
 
   /* --- draw, and redraw at the measured width on resize -------------------- */
   var pending = 0;

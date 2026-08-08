@@ -230,6 +230,68 @@ if [ "$give_missing" = "0" ]; then
 fi
 want "giving section heading" 'id="h-give"'
 
+# --- charity hero imagery: the slot, and the gate that guards it -------------
+# Images are optional per organisation and carry no markup: an entry supplies a
+# viewBox and a list of path "d" strings, which the renderer feeds to
+# createElementNS/setAttribute. Nothing is ever parsed as HTML, so an
+# illustration cannot become an injection vector.
+#
+# The gate matters more than the slot. Artwork on this page has to be verifiably
+# public domain or CC0 and not machine-generated, and a licence recorded in a
+# commit message is a licence nobody can find later. So the generator REFUSES TO
+# BUILD if an image is missing any part of its provenance, and the page prints
+# the credits where a reader can check them.
+if grep -oE '<img[^>]*src="[^"]*"' "$OUT" | grep -qvE 'src="data:'; then
+  echo "FAIL dashboard: an <img> loads something that is not an inline data: URI" >&2
+  grep -oE '<img[^>]*src="[^"]*"' "$OUT" | grep -vE 'src="data:' | head -3 >&2
+  fail=1
+else
+  echo "PASS dashboard: no externally-loaded image on the page"
+fi
+want "the hero image slot exists in the renderer" 'org__fig'
+want "an image supplies geometry, never markup" 'img.paths'
+want "credits are rendered where a reader can check them" 'id="credits"'
+
+# The provenance gate, exercised both ways against a throwaway shortlist.
+GIVE_SRC="${REPO_DIR}/data/giving-shortlist.json"
+GATE_DIR="${TMPROOT}/gate"
+mkdir -p "$GATE_DIR"
+# (a) a complete image builds, and its credit reaches the page
+jq '.orgs[0].image = {viewBox:"0 0 48 48", paths:["M4 4h40v40H4z"], alt:"test mark",
+      credit:{title:"Test Plate", author:"A Human", source_url:"https://example.org/plate",
+              license:"Public domain (PD-old-100)", license_url:"https://example.org/pd"}}' \
+  "$GIVE_SRC" >"${GATE_DIR}/ok.json"
+# (b) the same image with its licence stripped must be refused
+jq 'del(.orgs[0].image.credit.license)' "${GATE_DIR}/ok.json" >"${GATE_DIR}/bad.json"
+
+gate_run() { # gate_run SHORTLIST OUTDIR
+  cp "$GIVE_SRC" "${GATE_DIR}/backup.json"
+  cp "$1" "$GIVE_SRC"
+  CARBON_LEDGER_DASHBOARD_DIR="$2" \
+    bash "${REPO_DIR}/scripts/generate-dashboard.sh" --no-open >/dev/null 2>&1
+  local rc=$?
+  cp "${GATE_DIR}/backup.json" "$GIVE_SRC"
+  return $rc
+}
+if gate_run "${GATE_DIR}/ok.json" "${GATE_DIR}/out-ok"; then
+  echo "PASS dashboard: a fully-attributed image builds"
+  if grep -q 'Test Plate' "${GATE_DIR}/out-ok/carbon-2026-08-06T12-00-00Z.html"; then
+    echo "PASS dashboard: its credit reaches the page"
+  else
+    echo "FAIL dashboard: an image shipped without its credit reaching the page" >&2
+    fail=1
+  fi
+else
+  echo "FAIL dashboard: a fully-attributed image was refused" >&2
+  fail=1
+fi
+if gate_run "${GATE_DIR}/bad.json" "${GATE_DIR}/out-bad"; then
+  echo "FAIL dashboard: an image with no licence recorded was allowed to build" >&2
+  fail=1
+else
+  echo "PASS dashboard: an image missing its licence is refused at build time"
+fi
+
 # --- privacy: payer names come from the ledger, never from the template -------
 # The templates ship in a public repository. A payer name baked into template
 # prose is the maintainer's own business identity published to everyone who

@@ -135,6 +135,30 @@ DONATIONS="$(Q "SELECT id, donation_date, org, usd, payer,
 CONTRIB="$(Q "SELECT ROUND((SELECT COALESCE(SUM(usd),0) FROM offsets)
     + (SELECT COALESCE(SUM(usd),0) FROM donations), 2) AS contributed_usd;" | or_empty)"
 
+# --- the illustration provenance gate ---------------------------------------
+# Artwork on this page has to be verifiably public domain or CC0 and not
+# machine-generated. A licence recorded only in a commit message is a licence
+# nobody can find later, so an image that cannot name its source, its author,
+# its licence and where that licence is stated does not ship at all. This is a
+# build-stopping error on purpose: a silent skip would let an unattributed
+# illustration reach a document the user files with an accountant.
+BAD_IMG="$(jq -r '[.orgs[] | select(has("image"))
+  | select(((.image.paths // []) | length) == 0
+        or ((.image.viewBox // "") == "")
+        or ((.image.alt // "") == "")
+        or ((.image.credit.title // "") == "")
+        or ((.image.credit.author // "") == "")
+        or ((.image.credit.source_url // "") == "")
+        or ((.image.credit.license // "") == "")
+        or ((.image.credit.license_url // "") == ""))
+  | .name] | join(", ")' "$GIVING")"
+[ -z "$BAD_IMG" ] || {
+  echo "Refusing to build: illustration provenance is incomplete for: ${BAD_IMG}" >&2
+  echo "Every image in data/giving-shortlist.json needs viewBox, paths, alt, and a" >&2
+  echo "credit block with title, author, source_url, license and license_url." >&2
+  exit 1
+}
+
 DATA="$(jq -cn --arg ts "$TS" \
   --argjson totals "$TOTALS" --argjson monthly "$MONTHLY" \
   --argjson by_model "$BY_MODEL" --argjson offset_state "$OFFSET_STATE" \
@@ -200,6 +224,12 @@ DATA="$(jq -cn --arg ts "$TS" \
     # research documents each claim came from. The underscore-prefixed keys are
     # provenance for a human reading the file and never reach the page.
     giving: ($giving[0] | {tiers, orgs}),
+    # Flattened so the colophon can print the provenance of every illustration
+    # without walking the org list a second time. Empty when nothing is
+    # illustrated, and the credits block then does not render at all.
+    # (No apostrophes in this comment: the whole jq program is single-quoted.)
+    image_credits: [$giving[0].orgs[] | select(has("image"))
+      | (.image.credit + {org: .name})],
     constants: {
       grid_cif_g_per_wh: $P.grid_cif_g_per_wh.value,
       pue: $P.pue.value,
