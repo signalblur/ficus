@@ -429,6 +429,11 @@ want "the curve is emitted as cubic beziers" '"C"'
 want "each series has a gradient area fill" 'linearGradient'
 want "the fill fades to transparent" 'stop-opacity'
 want "the plot carries a faint gridline field" 'grid'
+# One vertical hairline per month, running the full height of the stack so a
+# single line ties the carbon, electricity and water readings for that month
+# together and down to its date label. Drawn before the data so it stays under
+# the curves and dots.
+want "each month gets a vertical gridline" 'grid--v'
 # The curve is interpolated; the dots are the data. Both are drawn, so a reader
 # can see which is which.
 want "every month is marked as an actual sample" 'dot'

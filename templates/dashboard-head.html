@@ -550,6 +550,10 @@ a:hover { text-decoration-thickness: 2px; }
    (OKLCH L 0.451 carbon / 0.518 electricity / 0.586 water) so they stay
    distinct in a greyscale print. */
 .grid { stroke: var(--rule); stroke-width: 1; }
+/* The verticals run the whole stack, so they are much longer than the lane
+   hairlines and would read heavier at the same weight. Held back so the field
+   stays subordinate to the data ink. */
+.grid--v { stroke-opacity: 0.7; }
 .area { stroke: none; }
 .ln { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .ln--carbon { stroke: var(--viz-carbon); }

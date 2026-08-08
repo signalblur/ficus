@@ -304,6 +304,23 @@
     var plotW = Math.max(W - GUT - RPAD, 60);
     var n = months.length;
     var desc = [];
+    var xAt = function (i) { return GUT + (n === 1 ? plotW / 2 : (i * plotW) / (n - 1)); };
+
+    /* One vertical hairline per month, drawn FIRST so every curve, fill and dot
+       sits over it. It runs the full height of the stack and down to the date
+       label, so a single line ties that month's carbon, electricity and water
+       readings to each other and to the date — which is also the shared axis
+       made visible, since the three lanes are the same measurement in three
+       units. Skipped once the months are packed tighter than 12px, where a line
+       per month stops helping and starts hatching the plot. */
+    var vTop = LANE_TOP;
+    var vBot = STREAMS.length * LANE_H + 4;
+    if (n && (n === 1 || plotW / (n - 1) >= 12)) {
+      months.forEach(function (r, i) {
+        var vx = r2(xAt(i)) + 0.5;
+        cTrace.g.append(s("line", { class: "grid grid--v", x1: vx, y1: vTop, x2: vx, y2: vBot }));
+      });
+    }
 
     STREAMS.forEach(function (m, li) {
       var top = li * LANE_H, plotTop = top + LANE_TOP, baseY = plotTop + PLOT_H;
@@ -321,8 +338,7 @@
       cTrace.g.append(s("text", { class: "lane__u", x: "0", y: plotTop + PLOT_H / 2 + 12 }, m.laneUnit));
 
       var pts = vals.map(function (v, i) {
-        return { x: GUT + (n === 1 ? plotW / 2 : (i * plotW) / (n - 1)),
-                 y: baseY - (v / max) * PLOT_H };
+        return { x: xAt(i), y: baseY - (v / max) * PLOT_H };
       });
       var line = monotonePath(pts);
       if (line && n > 1) {
@@ -358,8 +374,7 @@
       var label = step >= 58 ? String(r.month) : step >= 26 ? String(r.month).slice(-2) : "";
       if (!label && i !== 0 && i !== n - 1) return;
       if (!label) label = String(r.month).slice(-2);
-      var x = GUT + (n === 1 ? plotW / 2 : (i * plotW) / (n - 1));
-      cTrace.g.append(s("text", { class: "ax", x: r2(x), y: axY,
+      cTrace.g.append(s("text", { class: "ax", x: r2(xAt(i)), y: axY,
         "text-anchor": i === 0 ? "start" : i === n - 1 ? "end" : "middle" }, label));
     });
     cTrace.desc.textContent = desc.join(". ") + ".";
