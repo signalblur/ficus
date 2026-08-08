@@ -201,5 +201,5 @@ Deterministic — same bytes on every run.
 
 ## License
 
-MIT. Upstream copyright Gaëtan Wittebolle; fork modifications copyright David.
+MIT. Upstream copyright Gaëtan Wittebolle; fork modifications copyright signalblur.
 See [LICENSE](LICENSE).
