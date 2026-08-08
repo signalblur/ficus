@@ -466,7 +466,7 @@ else
   echo "PASS dashboard: the trace is drawn as areas, not columns"
 fi
 want "trace lanes are labelled in words, not colour alone" 'class: "lane__n"'
-want "trace shares one time axis across the lanes" 'one time axis'
+want "the streams share one time axis" 'one shared axis'
 want "trace states the lanes are congruent by construction" 'congruent by construction'
 want "model breakdown kept its own panel" 'id="by-model"'
 # The measure: settled span solid, unsettled span OPEN. Filled-versus-open is
@@ -513,18 +513,22 @@ want "chart palette: carbon slot pinned" '\--viz-carbon:  #4a44a8'
 want "chart palette: electricity slot pinned" '\--viz-energy:  #a03d80'
 want "chart palette: water slot pinned" '\--viz-water:   #1b83c4'
 want "chart palette: settled slot pinned" '\--viz-settled: #0f9563'
+# The model-family bars carry their own token. Foam green could not replace
+# --viz-carbon: that token also draws the unsettled track on the measure, and a
+# green "unsettled" beside the mint "settled" inverts the page's own argument.
+want "chart palette: model-family slot pinned" '\--viz-model:   #127f74'
 # No oranges or reds in the charts, and no quietly-reintroduced rainbow: the
 # only chart tokens permitted are those four. Every one of them was searched
 # inside the cool half of the wheel only, because emitting carbon is the normal
 # state of doing the work and must never be dressed as an error.
 if grep -oE '\--viz-[a-z0-9-]+:' "$OUT" | sort -u |
-  grep -qvE '^--viz-(carbon|energy|water|settled):$'; then
+  grep -qvE '^--viz-(carbon|energy|water|settled|model):$'; then
   echo "FAIL dashboard: unexpected chart palette token(s):" >&2
   grep -oE '\--viz-[a-z0-9-]+:' "$OUT" | sort -u |
-    grep -vE '^--viz-(carbon|energy|water|settled):$' >&2
+    grep -vE '^--viz-(carbon|energy|water|settled|model):$' >&2
   fail=1
 else
-  echo "PASS dashboard: exactly four chart colours (carbon, electricity, water, settled)"
+  echo "PASS dashboard: exactly five chart colours (carbon, electricity, water, settled, model)"
 fi
 # The working mint is the one colour on this page under a WCAG obligation: it
 # draws the meaning-bearing rules (the header rule, the section-head rules, the

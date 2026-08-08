@@ -220,7 +220,7 @@
     host.append(card);
   });
 
-  /* --- SIGNATURE: the trace ------------------------------------------------
+  /* --- SIGNATURE: usage over time ------------------------------------------
      Three lanes, one monthly axis. Thin columns rather than lines, because a
      monthly total is a bin and not a sample. Each lane keeps its own scale —
      the units are not comparable — and says so in the gutter, so this is three
@@ -230,7 +230,7 @@
   (function buildTrace() {
     var body = doc.getElementById("trace-body");
     if (!months.length) {
-      body.append(h("p", { class: "empty" }, "No sessions recorded yet, so there is nothing to trace."));
+      body.append(h("p", { class: "empty" }, "No sessions recorded yet, so there is nothing to plot."));
       return;
     }
     var g = s("g", {});
@@ -242,7 +242,7 @@
     });
     var svg = s("svg", { class: "chart", id: "c-trace", role: "img",
       "aria-labelledby": "trace-t", "aria-describedby": "trace-d" },
-      s("title", { id: "trace-t" }, "Monthly carbon, electricity and water, three lanes on one time axis"),
+      s("title", { id: "trace-t" }, "Carbon, electricity and water over time, on one shared axis"),
       s("desc", { id: "trace-d" }), defs, g);
     body.append(h("figure", { class: "fig-wrap" }, svg));
     cTrace = { svg: svg, g: g, desc: svg.querySelector("desc") };
@@ -530,7 +530,7 @@
       var y = i * rh + 6, bw = Math.max(Math.round((vals[i] / max) * span), vals[i] > 0 ? 2 : 0);
       cModel.g.append(s("text", { class: "lane__n", x: "0", y: y + 15, "dominant-baseline": "middle" },
         String(m.family)));
-      var bar = s("rect", { class: "m-carbon", x: gut, y: y + 4, width: bw, height: "20", rx: "2" });
+      var bar = s("rect", { class: "m-model", x: gut, y: y + 4, width: bw, height: "20", rx: "2" });
       bar.append(s("title", {}, m.family + ": " + num(vals[i], 2) + " kg CO2e"));
       cModel.g.append(bar);
       cModel.g.append(s("text", { class: "val", x: gut + bw + 8, y: y + 15, "dominant-baseline": "middle" },

@@ -22,7 +22,9 @@
    The structure IS the argument: the same three readings, in the same order,
    for every stream, so the eye learns the pattern once and reads the rest.
 
-   SIGNATURE — THE TRACE (see the .lane__n rules and drawTrace()). Three lanes
+   SIGNATURE — USAGE OVER TIME (see the .lane__n rules and drawTrace(); the
+   internal names still say "trace", which is what this was called while it was
+   being built — the reader-facing name is the one that had to change). Three lanes
    stacked on one monthly axis, thin columns, each lane in its own colour and
    labelled with its own unit. It is the only element here that could not be
    lifted from an admin template, and it is honest about something a prettier
@@ -159,6 +161,38 @@
    labelled, given a distinct lightness step, and repeated as a number in the
    table underneath.
 
+   FOAM GREEN, AND WHERE IT COULD HONESTLY GO.
+
+     --viz-model  #127f74   4.87 sheet / 4.37 plane   deep seafoam
+
+   The model-family bars were the indigo. They are now a sea green, which is
+   what was asked for — but only there, and the reason is worth recording.
+
+   Foam green cannot become --viz-carbon. That token also draws the UNSETTLED
+   track on the settlement measure, and a green "unsettled" sitting beside the
+   mint "settled" would inhibit the one distinction this page exists to make.
+
+   It also cannot become a chart SERIES colour anywhere the mint appears as a
+   mark. Measured against --viz-settled #0f9563, every foam green tested lands
+   far under the separation a co-series needs (OKLab dE x100, normal vision):
+
+     #1f8f7a jade      4.4      #2a9d8f foam     6.6
+     #3aa08c pale foam 6.7      #127f74 seafoam  8.1   (hard gate 15)
+
+   That is not a defect in the search; it is what foam green IS. Mint sits at
+   OKLCH hue 160 and every seafoam is within about 25 degrees of it, so the two
+   are near-neighbours by definition.
+
+   #127f74 is the pick because it is the farthest from mint of the set while
+   still reading as a sea green rather than a blue, and it carries the most
+   contrast (4.87 on the sheet against 3.32 for a paler foam, which would also
+   have missed 3:1 on the plane at 2.98).
+
+   It is used on exactly one figure — the model-family bars — where it is the
+   ONLY series colour. A single-series chart has no pairs to confuse, every bar
+   is directly labelled with its kilograms, and the panel carries no
+   settled/unsettled dimension at all. Mint never appears there as a mark.
+
    THREE CHANNELS, NOT ONE. The streams differ by hue, by OKLCH lightness
    (0.451 carbon / 0.518 energy / 0.586 water — so the lanes still separate in
    a greyscale print), and by position and label. Settled versus unsettled on
@@ -212,6 +246,7 @@
   --viz-energy:  #a03d80;
   --viz-water:   #1b83c4;
   --viz-settled: #0f9563;
+  --viz-model:   #127f74;   /* the model-family bars — see FOAM GREEN below */
 
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", Consolas, "Liberation Mono", monospace;
@@ -575,6 +610,7 @@ a:hover { text-decoration-thickness: 2px; }
 .gs--water  { stop-color: var(--viz-water); }
 
 .m-carbon  { fill: var(--viz-carbon); }
+.m-model   { fill: var(--viz-model); }
 .m-energy  { fill: var(--viz-energy); }
 .m-water   { fill: var(--viz-water); }
 .m-settled { fill: var(--viz-settled); }
@@ -1115,8 +1151,8 @@ td a { color: var(--accent); }
     <section class="block" id="trace" aria-labelledby="h-trace">
       <div class="block__hd">
         <span class="block__eyebrow">By month</span>
-        <h2 class="block__t" id="h-trace">The trace</h2>
-        <p class="block__sub">Three lanes on one time axis, so a month reads across all three streams at once.</p>
+        <h2 class="block__t" id="h-trace">Usage over time</h2>
+        <p class="block__sub">The three streams on one shared time axis, so a period reads across all three at once.</p>
       </div>
       <div class="card"><div class="card__b">
         <div id="trace-body"></div>
@@ -1495,7 +1531,7 @@ const DATA = {"generated_at":"2026-08-07T09:00:00Z","caveat":"No vendor publishe
     host.append(card);
   });
 
-  /* --- SIGNATURE: the trace ------------------------------------------------
+  /* --- SIGNATURE: usage over time ------------------------------------------
      Three lanes, one monthly axis. Thin columns rather than lines, because a
      monthly total is a bin and not a sample. Each lane keeps its own scale —
      the units are not comparable — and says so in the gutter, so this is three
@@ -1505,7 +1541,7 @@ const DATA = {"generated_at":"2026-08-07T09:00:00Z","caveat":"No vendor publishe
   (function buildTrace() {
     var body = doc.getElementById("trace-body");
     if (!months.length) {
-      body.append(h("p", { class: "empty" }, "No sessions recorded yet, so there is nothing to trace."));
+      body.append(h("p", { class: "empty" }, "No sessions recorded yet, so there is nothing to plot."));
       return;
     }
     var g = s("g", {});
@@ -1517,7 +1553,7 @@ const DATA = {"generated_at":"2026-08-07T09:00:00Z","caveat":"No vendor publishe
     });
     var svg = s("svg", { class: "chart", id: "c-trace", role: "img",
       "aria-labelledby": "trace-t", "aria-describedby": "trace-d" },
-      s("title", { id: "trace-t" }, "Monthly carbon, electricity and water, three lanes on one time axis"),
+      s("title", { id: "trace-t" }, "Carbon, electricity and water over time, on one shared axis"),
       s("desc", { id: "trace-d" }), defs, g);
     body.append(h("figure", { class: "fig-wrap" }, svg));
     cTrace = { svg: svg, g: g, desc: svg.querySelector("desc") };
@@ -1805,7 +1841,7 @@ const DATA = {"generated_at":"2026-08-07T09:00:00Z","caveat":"No vendor publishe
       var y = i * rh + 6, bw = Math.max(Math.round((vals[i] / max) * span), vals[i] > 0 ? 2 : 0);
       cModel.g.append(s("text", { class: "lane__n", x: "0", y: y + 15, "dominant-baseline": "middle" },
         String(m.family)));
-      var bar = s("rect", { class: "m-carbon", x: gut, y: y + 4, width: bw, height: "20", rx: "2" });
+      var bar = s("rect", { class: "m-model", x: gut, y: y + 4, width: bw, height: "20", rx: "2" });
       bar.append(s("title", {}, m.family + ": " + num(vals[i], 2) + " kg CO2e"));
       cModel.g.append(bar);
       cModel.g.append(s("text", { class: "val", x: gut + bw + 8, y: y + 15, "dominant-baseline": "middle" },
