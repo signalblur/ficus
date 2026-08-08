@@ -48,6 +48,7 @@ TAIL="${REPO_DIR}/templates/dashboard-tail.html"
 EQUIV="${REPO_DIR}/data/equivalence-constants.json"
 FACTORS="${REPO_DIR}/data/factors.json"
 OFFSET_CONSTANTS="${REPO_DIR}/data/offset-constants.json"
+GIVING="${REPO_DIR}/data/giving-shortlist.json"
 
 NO_OPEN=0
 case "${1:-}" in --no-open) NO_OPEN=1 ;; esac
@@ -60,7 +61,7 @@ case "${1:-}" in --no-open) NO_OPEN=1 ;; esac
   echo "Missing dashboard templates (templates/dashboard-head.html + dashboard-tail.html)." >&2
   exit 1
 }
-for f in "$EQUIV" "$FACTORS" "$OFFSET_CONSTANTS"; do
+for f in "$EQUIV" "$FACTORS" "$OFFSET_CONSTANTS" "$GIVING"; do
   [ -f "$f" ] || {
     echo "Missing constants file: ${f}" >&2
     exit 1
@@ -80,8 +81,13 @@ TOTALS="$(Q "SELECT COALESCE(SUM(co2_grams),0) AS co2_g,
     COUNT(*) AS sessions
   FROM sessions WHERE COALESCE(excluded,0)=0;" | or_empty)"
 
+# The monthly aggregate carries ALL THREE headline metrics, not carbon alone:
+# the time-series panel draws one lane per metric off this single series, and a
+# lane that had to be back-computed in the browser would be a second physics
+# model living in the template.
 MONTHLY="$(Q "SELECT substr(started_at,1,7) AS month,
     ROUND(SUM(co2_grams),1) AS co2_g, ROUND(COALESCE(SUM(energy_wh),0),1) AS energy_wh,
+    ROUND(COALESCE(SUM(water_ml),0),1) AS water_ml,
     COUNT(*) AS sessions
   FROM sessions WHERE COALESCE(excluded,0)=0 AND started_at != ''
   GROUP BY month ORDER BY month;" | or_empty)"
@@ -135,8 +141,20 @@ DATA="$(jq -cn --arg ts "$TS" \
   --argjson offsets "$OFFSETS" --argjson donations "$DONATIONS" \
   --argjson contrib "$CONTRIB" \
   --slurpfile equiv "$EQUIV" --slurpfile factors "$FACTORS" \
-  --slurpfile oc "$OFFSET_CONSTANTS" '
+  --slurpfile oc "$OFFSET_CONSTANTS" --slurpfile giving "$GIVING" '
   def r2: . * 100 | round / 100;
+  # Month-on-month change for one metric, computed HERE rather than in the
+  # template: the third badge in every trio is a derived figure, and a figure
+  # derived in the browser is a figure that can disagree with the tables.
+  # pct is null when there is no prior month, or when the prior month was zero
+  # (a percentage change from zero is undefined, not infinite).
+  def trend($key): ($monthly | length) as $n
+    | if $n == 0 then {latest: 0, prev: 0, pct: null}
+      else ($monthly[$n-1][$key] // 0) as $l
+        | (if $n > 1 then ($monthly[$n-2][$key] // 0) else null end) as $p
+        | {latest: $l, prev: ($p // 0),
+           pct: (if $p == null or $p == 0 then null else ((($l - $p) / $p) * 100 | r2) end)}
+      end;
   ($totals[0] // {co2_g:0,energy_wh:0,water_ml:0,embodied_g:0,cost_usd:0,sessions:0}) as $T
   | ($equiv[0]) as $E | ($factors[0].physics) as $P
   | (($oc[0].removal_usd_per_tonne // 160)) as $rate
@@ -150,6 +168,13 @@ DATA="$(jq -cn --arg ts "$TS" \
     caveat: "No vendor publishes per-query energy: every figure is an order-of-magnitude estimate (±50%). Trends are meaningful; absolutes are indicative.",
     totals: $T,
     monthly: $monthly,
+    trend: {
+      month:      (if ($monthly | length) > 0 then $monthly[-1].month else "" end),
+      prev_month: (if ($monthly | length) > 1 then $monthly[-2].month else "" end),
+      carbon: (trend("co2_g")    | {latest_g:  .latest, prev_g:  .prev, pct: .pct}),
+      energy: (trend("energy_wh")| {latest_wh: .latest, prev_wh: .prev, pct: .pct}),
+      water:  (trend("water_ml") | {latest_ml: .latest, prev_ml: .prev, pct: .pct})
+    },
     by_model: $by_model,
     offset_state: (($offset_state[0] // {removal_verified_kg:0,prevention_verified_kg:0,unverified_kg:0,offset_spent_usd:0})
       + {balance_kg: (($kg - (($offset_state[0].removal_verified_kg) // 0)) | r2),
@@ -170,6 +195,11 @@ DATA="$(jq -cn --arg ts "$TS" \
       water:  ($E.water  | {value, unit, noun, cite, cite_url}),
       co2:    ($E.co2    | {value, unit, noun, cite, cite_url})
     },
+    # The giving shortlist is DATA, not template prose: every sentence about an
+    # organisation is traceable to data/giving-shortlist.json, which records the
+    # research documents each claim came from. The underscore-prefixed keys are
+    # provenance for a human reading the file and never reach the page.
+    giving: ($giving[0] | {tiers, orgs}),
     constants: {
       grid_cif_g_per_wh: $P.grid_cif_g_per_wh.value,
       pue: $P.pue.value,

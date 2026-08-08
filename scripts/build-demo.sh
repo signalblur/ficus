@@ -142,9 +142,10 @@ BUILT="${CARBON_LEDGER_DASHBOARD_DIR}/carbon-$(printf '%s' "$DEMO_TS" | tr ':' '
 
 # Same offline invariant tests/run-dashboard-tests.sh enforces: nothing the
 # browser would LOAD over the network may appear in a page we publish. Keep the
-# two exceptions identical to that test's — click-only anchor hrefs, and the
-# equivalence citation URLs the renderer only ever puts on an anchor's href.
-STRIP='s/href="https:\/\/[^"]*"//g; s/"cite_url":"https:\/\/[^"]*"//g'
+# three exceptions identical to that test's — click-only anchor hrefs, the
+# equivalence citation URLs, and the giving shortlist's link values. All three
+# only ever reach the page through setAttribute("href").
+STRIP='s/href="https:\/\/[^"]*"//g; s/"cite_url":"https:\/\/[^"]*"//g; s/"url":"https:\/\/[^"]*"//g'
 if sed "$STRIP" "$BUILT" |
   grep -qE 'https?://|<link|src="http|src='"'"'http|@import|url\(http'; then
   echo "build-demo: refusing to publish — external loaded references found" >&2

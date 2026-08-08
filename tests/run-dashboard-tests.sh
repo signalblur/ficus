@@ -85,15 +85,18 @@ else
 fi
 
 # --- zero external references ------------------------------------------------
-# Two narrow, named exceptions, both click-only and neither ever fetched:
-#   href="https://..."        donation, source and news anchors in the markup
-#   "cite_url":"https://..."  the equivalence citations inside the DATA object,
-#                             which the renderer only ever puts on an anchor's
-#                             href — never in a src, a stylesheet or an import.
+# Three narrow, named exceptions, all click-only and none ever fetched:
+#   href="https://..."        anchors the renderer built, already in the markup
+#   "cite_url":"https://..."  the equivalence citations inside the DATA object
+#   "url":"https://..."       the giving shortlist's donate, evidence and news
+#                             links, which ride in as data rather than template
+#                             prose (data/giving-shortlist.json)
+# The last two are values the renderer only ever hands to setAttribute("href") —
+# never to a src, a stylesheet, an import or an SVG reference.
 # Anything else the browser would LOAD over the network fails the page: it must
 # still render fully with Wi-Fi off, which is also why typography comes from a
 # system-font stack and never a webfont.
-STRIP='s/href="https:\/\/[^"]*"//g; s/"cite_url":"https:\/\/[^"]*"//g'
+STRIP='s/href="https:\/\/[^"]*"//g; s/"cite_url":"https:\/\/[^"]*"//g; s/"url":"https:\/\/[^"]*"//g'
 if sed "$STRIP" "$OUT" |
   grep -qE 'https?://|<link|src="http|src='"'"'http|@import|url\(http'; then
   echo "FAIL dashboard: external LOADED references found:" >&2
@@ -153,6 +156,44 @@ want "retirement id surfaced" 'PURO-1'
 want "receipt blob embedded as base64" '"receipt_b64":"JVBERg=="'
 want "blobless purchase carries empty receipt_b64" '"receipt_b64":""'
 want "receipt link is a self-contained data: URI download" 'data:application/pdf;base64'
+
+# --- monthly series: one row per month carrying every metric -----------------
+# The three headline metrics each get their own lane in the time-series panel,
+# so the monthly aggregate has to carry all three — not carbon alone. The
+# fixture emits in 2026-06 and 2026-07 only (the 2026-07 qwen row is excluded).
+want "monthly series carries carbon" '"month":"2026-06","co2_g":12500'
+want "monthly series carries energy" '"energy_wh":43554'
+want "monthly series carries water" '"water_ml":229421'
+
+# --- trend: the third badge in each trio -------------------------------------
+# Latest month against the one before it, computed in the generator. 2026-07 is
+# 2000 g against 2026-06's 12500 g: (2000-12500)/12500 = -84%.
+want "trend names the latest month" '"month":"2026-07"'
+want "trend names the month it compares against" '"prev_month":"2026-06"'
+want "trend carries the latest carbon figure" '"latest_g":2000'
+want "trend carries a signed percentage change" '"pct":-84'
+want "trend covers energy too" '"latest_wh":6968.6'
+want "trend covers water too" '"latest_ml":36706'
+
+# --- giving shortlist rides in as DATA, not template prose -------------------
+want "giving shortlist embedded as data" '"giving":{'
+want "giving shortlist is tiered" '"id":"settles"'
+want "prevention tier is named separately" '"id":"prevents"'
+want "conservation tier is named separately" '"id":"fund-separately"'
+want "each org states what it does" '"does":"'
+want "each org carries a price signal" '"price":"'
+want "each org carries the honest carbon verdict" '"verdict":"'
+want "each org carries supporting research or an update" '"update":"'
+org_missing=0
+for org in "Remove Carbon Today" "Tradewater" "Naturaland Trust" "American Rivers" \
+  "Congaree Land Trust" "Billion Oyster Project" "Coral Restoration Foundation"; do
+  grep -qF "\"name\":\"$org\"" "$OUT" || {
+    echo "FAIL dashboard: giving shortlist missing org: $org" >&2
+    org_missing=1
+    fail=1
+  }
+done
+[ "$org_missing" = "0" ] && echo "PASS dashboard: all seven orgs ride in as data"
 
 # --- giving shortlist: donate + sources + news per org -----------------------
 give_missing=0

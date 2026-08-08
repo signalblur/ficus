@@ -1,0 +1,146 @@
+{
+  "_doc": "The giving shortlist as DATA, not template prose. scripts/generate-dashboard.sh embeds this verbatim into the dashboard's DATA object and templates/dashboard-tail.html renders it; no copy about any organisation lives in the templates. Every sentence below is traceable to one of the two research documents named in _source — nothing here is inferred, rounded or filled in from memory. Add an organisation by adding an object; do not add a claim without adding the sentence in the research doc it came from.",
+  "_source": [
+    "research/charity-carbon-ranking-2026-08.md — Climate Impact Per Dollar: Seven Datacenter-Offset Giving Destinations (research agent report, 2026-08-07). Source of the ranking, the $/tCO2e estimates and uncertainty bands, the per-org detail sections, the water sidebar and the closing allocation recommendation.",
+    "research/carbon-offset-landscape-2026-08.md — The 2025-2026 Carbon Removal Landscape: A Buyer's Guide for Small-Tonnage Purchasers (2026-08-06). Source of the market-integrity findings, the biochar H:Corg durability revision, the SBTi V2.0 dates and the pathway price table."
+  ],
+  "_recorded": "2026-08-07",
+  "_tiers": "Three tiers, taken from the ranking's own closing recommendation: 'settles' is the only category that reduces the headline balance; 'prevents' is verified avoidance, which the GHG Protocol / SBTi distinction keeps out of that balance; 'fund-separately' is everything the research says should come from a conservation budget rather than the carbon ledger.",
+  "tiers": [
+    {
+      "id": "settles",
+      "label": "Settles the balance",
+      "blurb": "Verified removal. Carbon already taken out of the atmosphere and retired in your name, so a purchase moves the tonnes figure above."
+    },
+    {
+      "id": "prevents",
+      "label": "Prevents a future emission",
+      "blurb": "Verified avoidance. Real, third-party audited, and a different accounting category: it stops an emission that would otherwise happen rather than removing one that already did, so it never settles a removal debt."
+    },
+    {
+      "id": "fund-separately",
+      "label": "Fund from a conservation budget",
+      "blurb": "Land, river, wetland and reef work. The research is blunt that most of these cannot be honestly priced per tonne, and that two of them are probably net carbon sources. They are here because they are worth funding — not because they offset anything."
+    }
+  ],
+  "orgs": [
+    {
+      "tier": "settles",
+      "area": "Air — removal",
+      "name": "Remove Carbon Today",
+      "sub": "biochar CORCs",
+      "url": "https://www.removecarbontoday.com/collections",
+      "does": "Sells ex-post biochar carbon-removal certificates issued under the Puro Standard: the biochar is independently weighed and sampled, third-party audited, and the certificate is retired in your name on the public registry. Puro does not sell direct, so a reseller is the small-buyer route; the minimum here is 1 kg.",
+      "price": "≈ $160 / tonne",
+      "price_note": "Best estimate, ±40%. The Nasdaq CORCCHAR biochar index clustered around $125–145/t through late 2025 into 2026; broader spot and institutional quotes run $200–400/t.",
+      "verdict": "The only pathway on this page that settles the balance above — verified removal, already delivered rather than promised.",
+      "update": "Live durability revision: a 2025 peer-reviewed paper (Petersen & Sanei, GCB Bioenergy) found the H:Corg ratio biochar certification rests on can both under- and over-predict true stability, and field decay rates across six isotope-labelled experiments run from 0.8% to 7.0% a year. Puro responded by downgrading its top durability claim from a de facto millennial framing to a new CORC200+ class — several centuries, not millennia. Biochar still delivered 91% of all durable-removal volume in 2025.",
+      "evidence": [
+        { "label": "Puro CORCCHAR reference price index", "url": "https://puro.earth/insights/post/introducing-the-world-s-first-reference-price-indexes-for-engineered-carbon-removal/" },
+        { "label": "Retirement proof", "url": "https://www.removecarbontoday.com/pages/proof-of-removal" }
+      ],
+      "news": { "label": "Puro.earth insights", "url": "https://puro.earth/insights", "note": "the registry — the reseller publishes no newsroom" }
+    },
+    {
+      "tier": "prevents",
+      "area": "Air — prevention",
+      "name": "Tradewater",
+      "sub": "refrigerant destruction",
+      "url": "https://tradewater.co/buy-credits/",
+      "does": "Collects and destroys ozone-depleting refrigerants and plugs orphaned methane wells. Every container is third-party weighed, sampled and lab-analysed, destruction facilities are monitored to better than 99.99% completion, and the credits are certified under ACR or VCS. The research calls this the cleanest additionality story in the cheap tier.",
+      "price": "$15 / tonne, stated",
+      "price_note": "Not independently confirmed, and plausibly 3–5× off the market. The nearest public comparable — Recoolit, a rival refrigerant-destruction project — sells pilot credits around $75/t. Worth a direct quote before a large purchase.",
+      "verdict": "Avoidance, not removal. It stops a future emission; it does not take carbon back out, so it is recorded below the line and never settles the balance.",
+      "update": "The accounting is tightening around this distinction. SBTi's Corporate Net-Zero Standard V2.0, finalised 11 June 2026, is explicit that reduction and avoidance credits are disallowed for net-zero neutralisation claims — only removal credits qualify — and becomes mandatory for new targets from January 2028.",
+      "evidence": [
+        { "label": "VCS verification report, TW Ghana ODS (GHD Ltd, 2019)", "url": "https://tradewater.co/wp-content/uploads/2024/12/11197310-RPT-1-VCS-Verification-Report_TW-Ghana-08-14-19.pdf" },
+        { "label": "Giving Green refrigerants review", "url": "https://www.givinggreen.earth/carbon-offsets-research/refrigerants" }
+      ],
+      "news": { "label": "Tradewater press", "url": "https://tradewater.co/press", "note": "" }
+    },
+    {
+      "tier": "fund-separately",
+      "area": "Land & watershed",
+      "name": "Naturaland Trust",
+      "sub": "Blue Ridge escarpment",
+      "url": "https://naturalandtrust.org/donate-now",
+      "does": "Buys and protects escarpment land above Greenville — 1,090 acres at Saluda Bluffs for about $9M, and a 365-acre stretch of the Highway 11 corridor — inside the watershed that feeds Greenville Water's own reservoirs at Table Rock, North Saluda and Poinsett.",
+      "price": "≈ $20–150 / tonne",
+      "price_note": "Rough and self-constructed from public data, not a credit. Amortised-flux method: $8,250/acre ÷ (4.78 tCO2e/acre/yr × 40 years) ≈ $43/t, or ≈ $17/t over 100 years. Avoided-conversion stock method: $8,250 ÷ ~83 tCO2e/acre ≈ $100/t, and ≈ $165/t at the Highway 11 asking price. Both are defensible; they differ 5–8× purely by method, and that spread is the honest uncertainty band.",
+      "verdict": "The only non-market organisation here where a number can be built from public data with a paper trail. Additionality is plausible — this land carries genuine $8,000–20,000/acre development pricing — but Naturaland has published no baseline scenario and no leakage assessment, which is what a registry would require.",
+      "update": "The water case is the stronger one. The structural analogue is New York City's Catskill/Delaware programme: about $2.5B spent since 1997 on land buyouts and watershed protection avoided an estimated $6–10B filtration plant plus $250–300M a year to run it. No equivalent engineering study exists for this watershed, so no dollars-per-litre figure can be built — but it is the only organisation on this page protecting an actual drinking-water source, including the one this account drinks from.",
+      "evidence": [
+        { "label": "Greenville Journal — Saluda Bluffs, 1,090 acres", "url": "https://greenvillejournal.com/outdoors-recreation/naturaland-trust-leads-conservation-of-1100-acres-between-table-rock-caesars-head-saluda-bluffs/" },
+        { "label": "USFS Southeast carbon storage", "url": "https://www2.nau.edu/~gaud/bio326/class/ecosyst/USFScarb.htm" }
+      ],
+      "news": { "label": "Newsletter & archive", "url": "https://naturalandtrust.org/enewsletter", "note": "no newsroom published" }
+    },
+    {
+      "tier": "fund-separately",
+      "area": "Rivers",
+      "name": "American Rivers",
+      "sub": "dam removal",
+      "url": "https://www.americanrivers.org/donate",
+      "does": "Dam removal and river restoration. Reservoir surfaces are a large methane source — an estimated 0.8 (0.5–1.2) Pg CO2-eq a year globally, about 1.3% of all human emissions — and a CARB-hosted March 2026 report estimates the four removed Klamath River dams eliminated roughly 275,000 tonnes CO2e a year.",
+      "price": "No purchasable tonne",
+      "price_note": "Illustrative arithmetic only: the Klamath project's $450M total budget ÷ 5.5 Mt cumulative over 20 years ≈ $82/t; ÷ 27.5 Mt over 100 years ≈ $16/t. The horizon choice alone swings it 5×, and no registry standardises it.",
+      "verdict": "The methane avoidance is real and reasonably well quantified for specific dams. A donation still cannot be converted into tonnes: American Rivers is one policy, legal and technical partner among many funders on Klamath, not the payee of the $450M, and it sells no credit. Dam removal also creates a short-term emissions pulse from erosional carbon loss and sediment methane.",
+      "update": "A 2024 BioScience review of river restoration says it in its own title: river restoration can increase carbon storage but is not yet a suitable basis for carbon credits.",
+      "evidence": [
+        { "label": "CARB-hosted Klamath methane estimate (2026)", "url": "https://ww2.arb.ca.gov/sites/default/files/2026-04/Attachment-2-Estimate-of-California-Dam-and-Reservoir-Methane-Emissions-3-25-2026_v2.pdf" },
+        { "label": "Deemer et al. 2016, BioScience — reservoir greenhouse gases", "url": "https://academic.oup.com/bioscience/article/66/11/949/2754271" }
+      ],
+      "news": { "label": "Media center", "url": "https://www.americanrivers.org/media-center/", "note": "" }
+    },
+    {
+      "tier": "fund-separately",
+      "area": "Wetlands & swamp",
+      "name": "Congaree Land Trust",
+      "sub": "COWASEE basin",
+      "url": "https://congareelt.org/donate",
+      "does": "Holds conservation easements across 25,398 acres in the COWASEE basin around Congaree National Park — the largest old-growth bottomland hardwood forest in the eastern United States. The easements are overwhelmingly donated rather than bought, so a gift funds legal, stewardship and monitoring work rather than land purchase.",
+      "price": "No defensible number",
+      "price_note": "There is no market transaction to divide the carbon stock by. The stock itself is exceptional: floodplain forested wetlands hold 176.6 ± 84 MgC/ha in the top metre — about 262 tCO2e/acre in soil alone — plus roughly 80–90 tCO2e/acre of old-growth aboveground biomass. That is several times the upland figure, but it is a stock, not a flux.",
+      "verdict": "One of the highest carbon stocks of any protected forest type in North America, genuinely protected, with nothing to price it against. 'No defensible dollars per tonne' is the honest answer here, not a knock on the ecology.",
+      "update": "Open evidence gap: no Congaree-specific methane flux measurement was found. The wetland literature splits by hydrology — permanently inundated freshwater wetlands run high methane, while seasonally inundated types like this one tend to sequester more than they emit — but that is a general finding, not a measurement of this basin.",
+      "evidence": [
+        { "label": "Sapkota et al. 2025, Frontiers — freshwater forested wetland soil carbon", "url": "https://www.frontiersin.org/journals/forests-and-global-change/articles/10.3389/ffgc.2025.1528440/full" }
+      ],
+      "news": { "label": "CLT news", "url": "https://congareelt.org/news", "note": "" }
+    },
+    {
+      "tier": "fund-separately",
+      "area": "Coasts & estuaries",
+      "name": "Billion Oyster Project",
+      "sub": "New York Harbor",
+      "url": "https://www.billionoysterproject.org/donate",
+      "does": "Builds self-sustaining oyster reefs in New York Harbor — about 150 million oysters across 17 acres as of December 2025, at roughly $250,000 an acre — with a public-schools programme attached to the restoration work.",
+      "price": "No defensible number",
+      "price_note": "Filtration is the real benefit and it is genuine: an acre of reef, around 750,000 oysters, can filter 15–40 million gallons a day. But that is cleaning water rather than creating it, and it is saline estuarine water — no bearing on a datacentre's freshwater draw.",
+      "verdict": "Not a carbon investment, and probably a net source. Fodrie et al. 2017 find restored reefs can bury organic carbon at rates comparable to mangroves and marshes, but on exposed sandflats — much of this footprint — inorganic carbon burial vents more CO2 than the organic burial takes down, leaving them slight net sources at about 0.5 ± 0.3 MgC per hectare per year. The result holds across a 100–4,000 year sediment-core dataset, so it is not a transient artefact.",
+      "update": "Nitrogen cuts both ways too: the reefs remove reactive nitrogen through denitrification, a real water-quality benefit, but preliminary reef-scale work found nitrous-oxide production high enough that the researchers explicitly called for reevaluating the climate benefit of oyster-reef restoration. No BOP-specific carbon accounting exists in any BOP publication.",
+      "evidence": [
+        { "label": "Fodrie et al. 2017, Proc. R. Soc. B — oyster reefs as carbon sources and sinks", "url": "https://pubmed.ncbi.nlm.nih.gov/28747477/" },
+        { "label": "Bay Journal — filtration figures overstated in field conditions", "url": "https://www.bayjournal.com/news/fisheries/pumped-up-performance-oysters-filtering-feat-overstated/article_bbe67d38-8f09-11ea-a5ab-5fd7465dee21.html" }
+      ],
+      "news": { "label": "BOP stories", "url": "https://www.billionoysterproject.org/blog", "note": "" }
+    },
+    {
+      "tier": "fund-separately",
+      "area": "Oceans",
+      "name": "Coral Restoration Foundation",
+      "sub": "Florida Keys",
+      "url": "https://coralrestoration.org/donate",
+      "does": "Propagates and outplants staghorn coral in the Florida Keys. One empirical Florida study found that CRF-style high-density Acropora cervicornis outplanting restores positive net carbonate accretion on reefs that had gone net-erosional — that is reef structure rebuilt, not atmospheric carbon removed.",
+      "price": "No defensible number",
+      "price_note": "Florida's reefs carry a documented $1.8B flood-protection value, and the tourism and biodiversity case is strong. None of that converts into tonnes.",
+      "verdict": "No carbon benefit, defensible or otherwise. Net calcification lowers seawater alkalinity faster than dissolved inorganic carbon, producing a net CO2 flux to the atmosphere, and a search specifically for a CRF carbon claim found none at all — not even a marketing-level one. Fund it for the reef, the coastline and the biodiversity.",
+      "update": "The direction of travel is counterintuitive: a 2025 PNAS study projects that the decline of coral calcification under warming and acidification will modestly increase ocean carbon uptake — up to 0.48 GtCO2 a year, median, by midcentury. That is the opposite of what a restoration donor might hope, and it is another reason to fund this for the reef rather than the ledger.",
+      "evidence": [
+        { "label": "Florida reef carbonate-budget restoration study (2024)", "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11555216/" },
+        { "label": "PNAS 2025 — coral calcification decline and ocean carbon uptake", "url": "https://www.pnas.org/doi/10.1073/pnas.2501562122" }
+      ],
+      "news": { "label": "CRF blog", "url": "https://coralrestoration.org/blog/", "note": "" }
+    }
+  ]
+}
