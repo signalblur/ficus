@@ -134,12 +134,12 @@ want "equivalence cites EIA" 'eia.gov'
 want "equivalence cites EPA" 'epa.gov'
 
 # --- the dollar ledger: pure dollars, unclamped ------------------------------
-# overall = 14.5 kg = 0.0145 t x $160/t = $2.32.
+# overall = 14.5 kg = 0.0145 t x $227/t = $3.29.
 # contributed = every dollar given: offsets 1.60 + 3.00, donations 12.00 = $16.60.
-# owed = 2.32 − 16.60 = −$14.28. Clamping at zero would erase the achievement.
-want "dollar ledger overall" '"overall_usd":2.32'
+# owed = 3.29 − 16.60 = −$13.31. Clamping at zero would erase the achievement.
+want "dollar ledger overall" '"overall_usd":3.29'
 want "dollar ledger contributed" '"contributed_usd":16.6'
-want "dollar ledger owed is unclamped and negative" '"owed_usd":-14.28'
+want "dollar ledger owed is unclamped and negative" '"owed_usd":-13.31'
 want "carbon-negative state is named" 'carbon-negative'
 
 # --- tax audit trail ---------------------------------------------------------

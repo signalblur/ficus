@@ -17,7 +17,7 @@ emit_factors_env() {
 
   local fab_in fab_out opus_in opus_out son_in son_out hai_in hai_out cif water_per_wh emb removal_rate constants
   constants="$(dirname "$factors")/offset-constants.json"
-  removal_rate="$(jq -r '.removal_usd_per_tonne // 160' "$constants" 2>/dev/null)" || removal_rate=160
+  removal_rate="$(jq -r '.removal_usd_per_tonne // 227' "$constants" 2>/dev/null)" || removal_rate=227
   fab_in="$(jq -r '.models.fable.input // 156' "$factors")"
   fab_out="$(jq -r '.models.fable.output // 3304' "$factors")"
   opus_in="$(jq -r '.models.opus.input' "$factors")"

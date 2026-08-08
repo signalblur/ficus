@@ -24,9 +24,9 @@ refresh_segment_cache() {
   lib_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   constants="${lib_dir}/../../data/offset-constants.json"
 
-  rate="$(jq -r '.removal_usd_per_tonne // 160' "$constants" 2>/dev/null)" || rate=160
+  rate="$(jq -r '.removal_usd_per_tonne // 227' "$constants" 2>/dev/null)" || rate=227
   case "$rate" in
-  '' | *[!0-9.]*) rate=160 ;;
+  '' | *[!0-9.]*) rate=227 ;;
   esac
 
   seg="$(sqlite3 "$db" "SELECT printf('∑ ⚡ %.1fkWh 💧 %.0fL 💨 %.2ft',

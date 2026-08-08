@@ -32,7 +32,7 @@ esac
 
 # One awk: session readings + session offset cost (co2 x removal $/t)
 IFS="$(printf '\t')" read -r SEG SESS_COST <<EOF
-$(echo "$IN_TOK $OUT_TOK $FIN $FOUT $CL_CIF $CL_WATER_PER_WH ${CL_REMOVAL_USD_PER_T:-160}" | LC_ALL=C awk \
+$(echo "$IN_TOK $OUT_TOK $FIN $FOUT $CL_CIF $CL_WATER_PER_WH ${CL_REMOVAL_USD_PER_T:-227}" | LC_ALL=C awk \
   '{co2 = ($1 * $3 + $2 * $4) / 1000000
     e = (co2 > 0) ? co2 / $5 : 0
     printf "⚡ %.2fWh 💧 %.1fmL 💨 %.2fg\t%.2f", e, e * $6, co2, co2 * $7 / 1000000}')

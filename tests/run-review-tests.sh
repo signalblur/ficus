@@ -52,7 +52,7 @@ lacks() { # lacks <file> <needle> <label>
 #   days    = 1200 * 365 / 10791 = 40.6
 #   showers = 6000 / 63.6        = 94
 #   miles   = 600 / 0.393        = 1527   (embodied: 24 / 0.393 = 61)
-#   overall = 600 kg * $160/t    = $96.00
+#   overall = 600 kg * $227/t    = $136.20
 # shellcheck source=../scripts/lib/schema.sh
 source "${REPO_DIR}/scripts/lib/schema.sh"
 ensure_schema "$DB"
@@ -104,21 +104,21 @@ has "$OUT1" "opus" "model family: opus"
 has "$OUT1" "sonnet" "model family: sonnet"
 
 # --- 5. dollar ledger: pristine, then offset, then past-neutral -------------
-has "$OUT1" "\$96.00 owed of \$96.00" "dollar ledger with no contributions"
+has "$OUT1" "\$136.20 owed of \$136.20" "dollar ledger with no contributions"
 
 sqlite3 "$DB" "INSERT INTO offsets (purchase_date, vendor, pathway, kg_co2e, usd,
   category, payer, verified) VALUES
   ('2026-06-01', 'Puro reseller', 'biochar', 25.0, 16.0, 'removal', 'Acme Research LLC', 1);"
 OUT2="${TMPROOT}/review-2.md"
 bash "$REVIEW" >"$OUT2" 2>/dev/null
-has "$OUT2" "\$80.00 owed of \$96.00" "offset dollars net 1:1 from owed"
+has "$OUT2" "\$120.20 owed of \$136.20" "offset dollars net 1:1 from owed"
 has "$OUT2" "575.00" "tonnes balance nets verified removal only"
 
 sqlite3 "$DB" "INSERT INTO donations (donation_date, org, usd, payer) VALUES
-  ('2026-07-01', 'Tradewater', 90.0, 'Acme Research LLC');"
+  ('2026-07-01', 'Tradewater', 150.0, 'Acme Research LLC');"
 OUT3="${TMPROOT}/review-3.md"
 bash "$REVIEW" >"$OUT3" 2>/dev/null
-has "$OUT3" "\$-10.00 owed of \$96.00" "owed goes negative past carbon-neutral"
+has "$OUT3" "\$-29.80 owed of \$136.20" "owed goes negative past carbon-neutral"
 has "$OUT3" "575.00" "donation dollars never move the tonnes balance"
 
 # --- 6. deterministic: same DB, byte-identical output -----------------------

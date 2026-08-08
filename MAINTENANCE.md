@@ -47,7 +47,7 @@ sourced shell — add new constants to those guards in the same commit.
 | embodied intensity | 44.1 gCO2e/kWh | `.physics` | 8xH100 server LCA (BoaviztAPI + Lees-Perasso), 3-yr life at TDP — derivation in the file |
 | EcoLogits α/β/γ/B | 1.17e-6 / −0.0112 / 4.05e-5 / 64 | `.ecologits` | ecologits.ai methodology (fetched 2026-08-06), cross-check ONLY |
 | Claude parameter estimates | fable 800B, opus 400B, sonnet 200B, haiku 50B (+tps) | `.ecologits.models` | undisclosed by Anthropic; labeled estimates, cross-check ONLY |
-| offset prices | $160/t removal, $15/t prevention | `data/offset-constants.json` | workspace `research/carbon-offset-landscape-2026-08.md` |
+| offset prices | $227/t removal, $15/t prevention, $4.00/kgal water | `data/offset-constants.json` | workspace `research/offset-methodology-proposal-2026-08.md` (retail price, fetched 2026-08-08; FX-sensitive, refresh quarterly) |
 | prices | per `data/prices.json` | `data/prices.json` | Anthropic list prices |
 
 ## Live wiring (done 2026-08-06, Phase 9)

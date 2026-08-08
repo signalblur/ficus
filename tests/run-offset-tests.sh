@@ -197,15 +197,15 @@ get() { echo "$RAW" | LC_ALL=C awk -F'\t' -v k="$1" '$1 == k {print $2}'; }
 [ "$(get prevention_verified_kg)" = "200.00" ] && ok "raw prevention_verified_kg 200.00" || ko "raw prevention_verified_kg (got: $(get prevention_verified_kg))"
 [ "$(get unverified_kg)" = "50.00" ] && ok "raw unverified_kg 50.00" || ko "raw unverified_kg (got: $(get unverified_kg))"
 [ "$(get balance_kg)" = "500.00" ] && ok "raw balance = emitted - verified removal only" || ko "raw balance_kg (got: $(get balance_kg))"
-# cost to clear: 500 kg at $160/t = $80.00 removal; at $15/t = $7.50 prevention
-[ "$(get cost_to_clear_removal_usd)" = "80.00" ] && ok "cost-to-clear removal \$80.00" || ko "cost_to_clear_removal_usd (got: $(get cost_to_clear_removal_usd))"
+# cost to clear: 500 kg at $227/t = $113.50 removal; at $15/t = $7.50 prevention
+[ "$(get cost_to_clear_removal_usd)" = "113.50" ] && ok "cost-to-clear removal \$113.50" || ko "cost_to_clear_removal_usd (got: $(get cost_to_clear_removal_usd))"
 [ "$(get cost_to_clear_prevention_usd)" = "7.50" ] && ok "cost-to-clear prevention \$7.50" || ko "cost_to_clear_prevention_usd (got: $(get cost_to_clear_prevention_usd))"
 
 # segment cache line 1: all-time readings (kWh / L / tonnes; balance moved to
 # line 3). Seeded sessions have NULL energy/water -> 0.0kWh / 0L; 600 kg = 0.60 t.
-# Line 2: owed/overall cost pair, PURE DOLLAR ledger: overall = 600 kg x $160/t
-# = 96.00; owed = 96.00 minus every dollar contributed (offsets $16 + $3 + $8
-# and the $10.00 donation = $37.00) = 59.00. No kg translation, no clamp —
+# Line 2: owed/overall cost pair, PURE DOLLAR ledger: overall = 600 kg x $227/t
+# = 136.20; owed = 136.20 minus every dollar contributed (offsets $16 + $3 + $8
+# and the $10.00 donation = $37.00) = 99.20. No kg translation, no clamp —
 # owed goes NEGATIVE past carbon-neutral. Only verified removal settles tonnes.
 # Line 3: paid-off vs emitted in tonnes (100 kg verified removal / 600 kg).
 CACHE_L1="$(sed -n 1p "${STATE}/segment-cache" 2>/dev/null)"
@@ -216,8 +216,8 @@ if [ "$CACHE_L1" = "∑ ⚡ 0.0kWh 💧 0L 💨 0.60t" ]; then
 else
   ko "segment cache carries all-time readings (got: '$CACHE_L1')"
 fi
-if [ "$CACHE_L2" = "59.00/96.00" ]; then
-  ok "segment cache owed/overall pair nets out all contributed dollars (59.00 owed / 96.00 overall)"
+if [ "$CACHE_L2" = "99.20/136.20" ]; then
+  ok "segment cache owed/overall pair nets out all contributed dollars (99.20 owed / 136.20 overall)"
 else
   ko "segment cache owed/overall pair nets out all contributed dollars (got: '$CACHE_L2')"
 fi
@@ -228,12 +228,15 @@ else
 fi
 
 # going past carbon-neutral in dollars leaves owed NEGATIVE, not clamped at 0:
-# 96.00 - (37.00 + 80.00) = -21.00
-bash "$DONATE" --usd 80.00 --org "Tradewater" --payer "Acme Research LLC" \
+# 136.20 - (37.00 + 120.00) = -20.80. The donation is larger than it was at the
+# old $160/t rate for a reason: at $227/t the previous $80.00 no longer crosses
+# zero, and a test for "owed goes negative" that stops going negative is a test
+# that passes while proving nothing.
+bash "$DONATE" --usd 120.00 --org "Tradewater" --payer "Acme Research LLC" \
   --date 2026-07-02 >/dev/null 2>&1 || ko "over-contributing donation exits 0"
 CACHE_L2_NEG="$(sed -n 2p "${STATE}/segment-cache" 2>/dev/null)"
-if [ "$CACHE_L2_NEG" = "-21.00/96.00" ]; then
-  ok "owed goes negative past carbon-neutral (-21.00/96.00)"
+if [ "$CACHE_L2_NEG" = "-20.80/136.20" ]; then
+  ok "owed goes negative past carbon-neutral (-20.80/136.20)"
 else
   ko "owed goes negative past carbon-neutral (got: '$CACHE_L2_NEG')"
 fi

@@ -19,7 +19,7 @@ leading whitespace, and the escape stops the trim so the padding survives.)
 The totals row carries the 💨 paid-off/emitted pair (verified removal purchased
 vs total emitted, tonnes) and the estimated cost to offset — the current
 session (▲) and an owed/overall dollar pair — at the removal rate from
-`data/offset-constants.json` ($160/t biochar CORCs). In `$99.82/99.82 total`
+`data/offset-constants.json` ($227/t biochar CORCs). In `$99.82/99.82 total`
 the left number is what is still owed to clear the balance and the right is the
 overall cost of everything emitted; the gap between them is what has been
 contributed over time. The segment cache is three lines: the ∑ readings, the
