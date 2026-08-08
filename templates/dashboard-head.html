@@ -724,6 +724,95 @@ td a { color: var(--accent); }
 }
 .start__note { margin: 1rem 0 0; color: var(--ink-2); font-size: 0.75rem; line-height: 1.55; }
 
+/* --- the receipt picker ----------------------------------------------------
+   The primary way to file a receipt. It cannot save anything — the page is a
+   static file — so it does the half it honestly can, on this machine only:
+   take the file, hash it, and hand back the command that records it. */
+.pick {
+  margin: 0 0 1.1rem;
+  padding: 1.15rem 1.25rem;
+  background: var(--surface);
+  border: 2px dashed var(--rule-key);
+  border-radius: var(--r-md);
+  text-align: center;
+}
+.pick--over { background: var(--plane); border-style: solid; }
+/* The input is hidden from sight but NOT from the accessibility tree or the
+   keyboard: the label is its own control, and focus lands on the real input,
+   so clip-and-position rather than display:none. */
+.pick__i {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.pick__btn {
+  display: inline-block;
+  padding: 0.5rem 1.1rem;
+  border: 2px solid var(--ink-1);
+  border-radius: var(--r-sm);
+  color: var(--ink-1);
+  cursor: pointer;
+  font: 700 0.75rem/1.4 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.pick__btn:hover { background: var(--plane); }
+.pick__i:focus-visible + .pick__hint, .pick__i:focus-visible ~ .pick__hint { text-decoration: underline; }
+/* The label is the visible control, so the ring has to land on it when the
+   real input takes focus. */
+.pick__i:focus-visible + .pick__btn,
+.pick:has(.pick__i:focus-visible) .pick__btn { outline: 3px solid var(--ink-1); outline-offset: 2px; }
+.pick__hint { margin: 0.6rem 0 0; color: var(--ink-2); font-size: 0.75rem; }
+.pick__out:empty { display: none; }
+.pick__out {
+  margin: 0 0 1.25rem;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--rule-key);
+  border-radius: var(--r-md);
+}
+.pick__k {
+  margin: 0 0 0.5rem;
+  color: var(--ink-head);
+  font: 700 0.5625rem/1.6 var(--mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.pick__meta { display: grid; grid-template-columns: 5.5rem 1fr; gap: 0.25rem 0.75rem; margin: 0 0 1.1rem; }
+.pick__meta dt { color: var(--ink-3); font: 600 0.6875rem/1.5 var(--mono); }
+.pick__meta dd { margin: 0; color: var(--ink-1); font: 600 0.6875rem/1.5 var(--mono); overflow-wrap: anywhere; }
+.pick__hash { font-size: 0.625rem !important; word-break: break-all; }
+.pick__path { margin: 0.5rem 0 0; color: var(--ink-2); font-size: 0.6875rem; line-height: 1.55; }
+.pick__act { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin: 0.9rem 0 0; }
+.pick__copy {
+  padding: 0.35rem 0.8rem;
+  background: var(--surface);
+  border: 2px solid var(--ink-1);
+  border-radius: var(--r-sm);
+  color: var(--ink-1);
+  cursor: pointer;
+  font: 700 0.6875rem/1.5 var(--mono);
+  letter-spacing: 0.06em;
+}
+.pick__copy:hover { background: var(--plane); }
+.pick__said { color: var(--accent); font: 600 0.6875rem/1.5 var(--mono); }
+.pick__warn {
+  margin: 0.9rem 0 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--rule);
+  color: var(--ink-1);
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+.start__how { border-top: 1px solid var(--rule); margin-top: 1rem; }
+.start__how > summary { padding-left: 0; padding-right: 0; }
+.start__how .calc__b { padding-left: 0.85rem; padding-right: 0; border-left-color: var(--rule); }
+
 /* A receipt is the reason this section exists, so the download is an action
    with an edge around it, not a word in the ninth column. */
 .roll {

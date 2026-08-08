@@ -495,6 +495,38 @@ if grep -qE 'background(-color)?:[^;]*var\(--(mint|viz-)' "$OUT"; then
 else
   echo "PASS dashboard: mint and the chart palette are marks only, never a surface fill"
 fi
+# --- the receipt picker ------------------------------------------------------
+# The user wants to hand the page a file, not read a manual. The page is a
+# static offline document and CANNOT write the ledger — and no local server is
+# coming back, that attack surface was deleted deliberately. So the picker does
+# the honest half: it takes the file locally, hashes it in the browser, and
+# hands back the exact command that records it. Nothing leaves the machine.
+want "a real file input, not just instructions" 'type: "file"'
+want "the drop zone accepts a dragged file" 'dragover'
+want "the receipt is hashed in the browser" 'SHA-256'
+want "the hash uses the platform digest" 'crypto.subtle'
+want "there is a stated fallback when digest is unavailable" 'digest_unavailable'
+want "the generated command is copyable" 'Copy command'
+want "the page is explicit that nothing is saved yet" 'Nothing is recorded until'
+want "the manual steps collapse behind a disclosure" 'How this works'
+# The browser deliberately hides the real path (WHATWG HTML: the value IDL
+# attribute prefixes the filename with "C:\fakepath\" because legacy agents
+# leaking the full path was a security vulnerability). The page must say so
+# rather than emit a command with a wrong path in it.
+want "the page explains why it cannot know the folder" 'does not reveal'
+# ZERO NETWORK. Not a fetch, not an XHR, not a beacon, not a socket, not a
+# worker. A receipt is a tax document; it never leaves the machine.
+netfail=0
+for api in 'fetch(' 'XMLHttpRequest' 'navigator.sendBeacon' 'new WebSocket' 'EventSource' \
+  'new Worker' 'importScripts' 'navigator.geolocation'; do
+  if grep -qF "$api" "$OUT"; then
+    echo "FAIL dashboard: network/exfil-capable API present: $api" >&2
+    netfail=1
+    fail=1
+  fi
+done
+[ "$netfail" = "0" ] && echo "PASS dashboard: no network or exfiltration-capable API anywhere in the page"
+
 # --- the empty ledger: an empty screen is an invitation to act ---------------
 # A fresh install has no offsets and no donations, which is exactly the state a
 # user is in when they go looking for "where do I put my receipts". Rendering a

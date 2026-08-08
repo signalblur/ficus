@@ -724,6 +724,95 @@ td a { color: var(--accent); }
 }
 .start__note { margin: 1rem 0 0; color: var(--ink-2); font-size: 0.75rem; line-height: 1.55; }
 
+/* --- the receipt picker ----------------------------------------------------
+   The primary way to file a receipt. It cannot save anything — the page is a
+   static file — so it does the half it honestly can, on this machine only:
+   take the file, hash it, and hand back the command that records it. */
+.pick {
+  margin: 0 0 1.1rem;
+  padding: 1.15rem 1.25rem;
+  background: var(--surface);
+  border: 2px dashed var(--rule-key);
+  border-radius: var(--r-md);
+  text-align: center;
+}
+.pick--over { background: var(--plane); border-style: solid; }
+/* The input is hidden from sight but NOT from the accessibility tree or the
+   keyboard: the label is its own control, and focus lands on the real input,
+   so clip-and-position rather than display:none. */
+.pick__i {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.pick__btn {
+  display: inline-block;
+  padding: 0.5rem 1.1rem;
+  border: 2px solid var(--ink-1);
+  border-radius: var(--r-sm);
+  color: var(--ink-1);
+  cursor: pointer;
+  font: 700 0.75rem/1.4 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.pick__btn:hover { background: var(--plane); }
+.pick__i:focus-visible + .pick__hint, .pick__i:focus-visible ~ .pick__hint { text-decoration: underline; }
+/* The label is the visible control, so the ring has to land on it when the
+   real input takes focus. */
+.pick__i:focus-visible + .pick__btn,
+.pick:has(.pick__i:focus-visible) .pick__btn { outline: 3px solid var(--ink-1); outline-offset: 2px; }
+.pick__hint { margin: 0.6rem 0 0; color: var(--ink-2); font-size: 0.75rem; }
+.pick__out:empty { display: none; }
+.pick__out {
+  margin: 0 0 1.25rem;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--rule-key);
+  border-radius: var(--r-md);
+}
+.pick__k {
+  margin: 0 0 0.5rem;
+  color: var(--ink-head);
+  font: 700 0.5625rem/1.6 var(--mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.pick__meta { display: grid; grid-template-columns: 5.5rem 1fr; gap: 0.25rem 0.75rem; margin: 0 0 1.1rem; }
+.pick__meta dt { color: var(--ink-3); font: 600 0.6875rem/1.5 var(--mono); }
+.pick__meta dd { margin: 0; color: var(--ink-1); font: 600 0.6875rem/1.5 var(--mono); overflow-wrap: anywhere; }
+.pick__hash { font-size: 0.625rem !important; word-break: break-all; }
+.pick__path { margin: 0.5rem 0 0; color: var(--ink-2); font-size: 0.6875rem; line-height: 1.55; }
+.pick__act { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin: 0.9rem 0 0; }
+.pick__copy {
+  padding: 0.35rem 0.8rem;
+  background: var(--surface);
+  border: 2px solid var(--ink-1);
+  border-radius: var(--r-sm);
+  color: var(--ink-1);
+  cursor: pointer;
+  font: 700 0.6875rem/1.5 var(--mono);
+  letter-spacing: 0.06em;
+}
+.pick__copy:hover { background: var(--plane); }
+.pick__said { color: var(--accent); font: 600 0.6875rem/1.5 var(--mono); }
+.pick__warn {
+  margin: 0.9rem 0 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--rule);
+  color: var(--ink-1);
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+.start__how { border-top: 1px solid var(--rule); margin-top: 1rem; }
+.start__how > summary { padding-left: 0; padding-right: 0; }
+.start__how .calc__b { padding-left: 0.85rem; padding-right: 0; border-left-color: var(--rule); }
+
 /* A receipt is the reason this section exists, so the download is an action
    with an edge around it, not a word in the ninth column. */
 .roll {
@@ -1713,18 +1802,141 @@ const DATA = {"generated_at":"2026-08-07T09:00:00Z","caveat":"No vendor publishe
       h("p", { class: "start__k" }, kind),
       h("h4", { class: "start__t" }, title),
       h("p", { class: "start__d" }, what));
+    /* The picker is the primary path now, so the written-out steps fold away
+       behind a disclosure. They are still here in full for anyone who would
+       rather read the manual, or who is looking at this on paper. */
+    var d = h("details", { class: "calc start__how" },
+      h("summary", {}, "How this works — the full steps"));
     var ol = h("ol", { class: "start__steps" });
     steps.forEach(function (st) {
       ol.append(h("li", {}, h("div", {},
         h("p", { class: "start__what" }, st[0]),
         h("code", { class: "cmd" }, st[1]))));
     });
-    p.append(ol);
-    p.append(h("p", { class: "start__note" }, note));
+    d.append(h("div", { class: "calc__b" }, ol, h("p", { class: "start__note" }, note)));
+    p.append(d);
     return p;
   }
 
+  /* --- the receipt picker --------------------------------------------------
+     The user wants to hand the page a receipt, not read a manual. This page is
+     a static file: it cannot write the ledger, and no local server is coming
+     back — that was deleted deliberately as an attack surface. So the picker
+     does the honest half of the job entirely on this machine: take the file,
+     hash it, and hand back the exact command that records it.
+
+     Nothing here touches the network. There is no fetch, no XHR, no worker and
+     no beacon anywhere in this page, and a test fails the build if one appears.
+
+     The browser will not tell us where the file lives. Per WHATWG HTML the
+     file input's value IDL attribute "prefixes the filename with the string
+     'C:\fakepath\'" because "some legacy user agents actually included the
+     full path (which was a security vulnerability)". So the command is emitted
+     with a placeholder folder and the page says why. */
+  function hex(buf) {
+    var b = new Uint8Array(buf), out = "", i;
+    for (i = 0; i < b.length; i++) out += (b[i] < 16 ? "0" : "") + b[i].toString(16);
+    return out;
+  }
+  function shellQuote(v) {
+    /* Single-quote for the shell and escape any embedded quote, so a filename
+       containing a space, a quote or a $ cannot change what the command does
+       when it is pasted. */
+    return "'" + String(v).replace(/'/g, "'\\''") + "'";
+  }
+  function buildPicker(host) {
+    var zone = h("div", { class: "pick", id: "pick" });
+    var input = h("input", { type: "file", id: "rcpt", class: "pick__i",
+      accept: ".pdf,.png,.jpg,.jpeg,.webp,.heic,application/pdf,image/*" });
+    zone.append(h("label", { class: "pick__btn", for: "rcpt" }, "Choose a receipt\u2026"), input,
+      h("p", { class: "pick__hint" }, "or drop the file anywhere in this box \u00b7 PDF or image"));
+    var out = h("div", { class: "pick__out", id: "rcpt-out" });
+
+    function render(file, digest) {
+      out.textContent = "";
+      var cmd = "bash scripts/offset-record.sh \\\n"
+        + "  --kg 25 --usd 4.00 \\\n"
+        + "  --vendor remove-carbon-today --pathway biochar \\\n"
+        + "  --category removal --payer \"Your entity\" \\\n"
+        /* The filename is shell-quoted. Receipts routinely arrive called
+           "Puro receipt (Aug'26).pdf" — spaces, brackets and an apostrophe —
+           and pasting that unquoted would break the command at best. The
+           tilde stays OUTSIDE the quotes so the shell still expands it. */
+        + "  --receipt ~/Downloads/" + shellQuote(file.name);
+      out.append(h("p", { class: "pick__k" }, "Selected file"));
+      var meta = h("dl", { class: "pick__meta" },
+        h("dt", {}, "Name"), h("dd", {}, String(file.name)),
+        h("dt", {}, "Size"), h("dd", {}, num(file.size, 0) + " bytes"));
+      meta.append(h("dt", {}, "SHA-256"));
+      meta.append(h("dd", { class: "pick__hash" }, digest === "digest_unavailable"
+        ? "not computed here — offset-record.sh computes and stores it when you run the command"
+        : digest));
+      out.append(meta);
+      out.append(h("p", { class: "pick__k" }, "Run this to record it"));
+      var pre = h("code", { class: "cmd", id: "rcpt-cmd", tabindex: "0" }, cmd);
+      out.append(pre);
+      out.append(h("p", { class: "pick__path" },
+        "The browser does not reveal the folder a file came from, so the path above assumes "
+        + "~/Downloads. Change it if the receipt lives somewhere else."));
+      var btn = h("button", { type: "button", class: "pick__copy" }, "Copy command");
+      var said = h("span", { class: "pick__said", role: "status" });
+      btn.addEventListener("click", function () {
+        function done(msg) { said.textContent = msg; }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(cmd).then(function () { done("Copied."); },
+            function () { selectCmd(); done("Press Cmd-C or Ctrl-C to copy."); });
+        } else {
+          selectCmd();
+          done("Press Cmd-C or Ctrl-C to copy.");
+        }
+      });
+      out.append(h("p", { class: "pick__act" }, btn, said));
+      out.append(h("p", { class: "pick__warn" },
+        "Nothing is recorded until that command runs. This page is a static file and cannot write "
+        + "to the ledger \u2014 recording is what copies the receipt in, stores its bytes and its "
+        + "SHA-256, and makes it appear here against its payer."));
+    }
+    function selectCmd() {
+      var n = doc.getElementById("rcpt-cmd");
+      if (!n || !window.getSelection || !doc.createRange) return;
+      var r = doc.createRange();
+      r.selectNodeContents(n);
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(r);
+      n.focus();
+    }
+    function take(file) {
+      if (!file) return;
+      /* crypto.subtle is only exposed in a secure context, and whether a
+         file:// document counts as one differs by browser — so it is
+         feature-detected, never assumed. Without it the hash is simply not
+         shown: offset-record.sh computes and stores the real one anyway, so
+         nothing is lost but a preview. */
+      var sub = window.crypto && window.crypto.subtle;
+      if (!sub || !window.isSecureContext) { render(file, "digest_unavailable"); return; }
+      file.arrayBuffer().then(function (buf) {
+        return sub.digest("SHA-256", buf);
+      }).then(function (d) {
+        render(file, hex(d));
+      })["catch"](function () { render(file, "digest_unavailable"); });
+    }
+    input.addEventListener("change", function () { take(input.files && input.files[0]); });
+    ["dragenter", "dragover"].forEach(function (e) {
+      zone.addEventListener(e, function (ev) { ev.preventDefault(); zone.classList.add("pick--over"); });
+    });
+    ["dragleave", "drop"].forEach(function (e) {
+      zone.addEventListener(e, function (ev) { ev.preventDefault(); zone.classList.remove("pick--over"); });
+    });
+    zone.addEventListener("drop", function (ev) {
+      var dt = ev.dataTransfer;
+      take(dt && dt.files && dt.files[0]);
+    });
+    host.append(zone, out);
+  }
+
   var offHost = doc.getElementById("offsets-body");
+  buildPicker(offHost);
   if (!buys.length) {
     offHost.append(startPanel("Nothing on file yet", "File your first offset receipt",
       "Once a purchase is recorded, this section will show the receipt as a download rebuilt from the stored "
