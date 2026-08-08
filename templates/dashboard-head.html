@@ -496,6 +496,9 @@ a:hover { text-decoration-thickness: 2px; }
    pointer, and the panel is inset on the metric colour so an open disclosure
    still reads as belonging to its own card. */
 .calc { margin: 0; border-top: 1px solid var(--rule); }
+.fold { border-top: 0; }
+.fold > summary { padding-left: 0; padding-right: 0; font-size: 0.6875rem; }
+.fold > .calc__b { padding: 1.15rem 0 0; border-left: 0; }
 .calc > summary {
   padding: 0.7rem 1.1rem;
   color: var(--ink-head);
@@ -1244,10 +1247,20 @@ td a { color: var(--accent); }
           is measured. Anthropic publishes no per-query energy data, so the honest description of all of it is
           <strong>order-of-magnitude, roughly &plusmn;50%</strong>. Trends and relative comparisons are meaningful;
           absolute values are indicative.</p>
-        <dl class="meth" id="meth"></dl>
-        <p class="note" style="margin-top:1.5rem">Fuller derivations, the uncertainty bands per model family, and the
-          cross-check gate against an independent estimator are in <strong>METHODOLOGY.md</strong>.</p>
-        <div id="credits"></div>
+        <!-- Reference material, not part of the reading, so it folds away. It stays
+             in THIS file rather than becoming a second page: the value of this
+             artifact is that it is one self-contained thing you can archive, print
+             or hand to an accountant, and a second file drifts. It prints in full
+             regardless of whether it is open on screen — see the print guard. -->
+        <details class="calc fold" id="meth-fold">
+          <summary>How these are made &mdash; derived, not measured</summary>
+          <div class="calc__b">
+            <dl class="meth" id="meth"></dl>
+            <p class="note" style="margin-top:1.5rem">Fuller derivations, the uncertainty bands per model family, and
+              the cross-check gate against an independent estimator are in <strong>METHODOLOGY.md</strong>.</p>
+            <div id="credits"></div>
+          </div>
+        </details>
       </div></div>
     </section>
 

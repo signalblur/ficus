@@ -374,6 +374,23 @@ want "water formula stated" '0.18/1.14'
 want "embodied factor stated" '44.1'
 want "removal-only balance rule restated" 'verified removal'
 
+# --- the derivation collapses, but never out of the printed record -----------
+# "How these are made" is reference material, not part of the reading, so it
+# folds away. It stays in THIS file rather than becoming a second page: the
+# whole value of this artifact is that it is one self-contained thing you can
+# archive, print or hand to an accountant, and a second file can drift out of
+# sync with the ledger that generated it.
+want "the derivation is a disclosure" 'id="meth-fold"'
+want "the derivation summary names itself" 'Derived, not measured'
+# A collapsed disclosure PRINTS collapsed, which would silently gut the archive.
+# Per WHATWG HTML the open attribute is what decides: "If the attribute is
+# absent, only the summary is to be shown... if the attribute is added, the
+# information should be shown" — so the attribute is set before printing, and
+# restored afterwards. CSS alone cannot do this.
+want "every disclosure is opened before printing" 'beforeprint'
+want "and restored after, so the screen is unchanged" 'afterprint'
+want "printing is caught where beforeprint is not fired" 'matchMedia'
+
 # --- per-metric calculation explainers ---------------------------------------
 # Each metric hero carries its own disclosure explaining ITS maths: the formula,
 # the constants with their values, and where each constant came from. A reader

@@ -1005,6 +1005,43 @@
     doc.getElementById("credits").append(box);
   }
 
+  /* --- the print guard ------------------------------------------------------
+     Every disclosure on this page is closed by default, and a closed disclosure
+     PRINTS closed — which would quietly gut the archived document, since this
+     page exists to be filed. Per WHATWG HTML the open attribute is what decides:
+     "If the attribute is absent, only the summary is to be shown ... if the
+     attribute is added, the information should be shown." CSS cannot do this,
+     so the attribute is set before printing and restored afterwards, leaving the
+     screen exactly as the reader left it.
+
+     Two triggers, because not every engine fires the events: the beforeprint and
+     afterprint events, and a media-query listener on print as a fallback. */
+  var wasOpen = null;
+  function openAll() {
+    var all = doc.querySelectorAll("details");
+    wasOpen = [];
+    Array.prototype.forEach.call(all, function (d, i) {
+      wasOpen[i] = d.hasAttribute("open");
+      d.setAttribute("open", "");
+    });
+  }
+  function restoreAll() {
+    if (!wasOpen) return;
+    var all = doc.querySelectorAll("details");
+    Array.prototype.forEach.call(all, function (d, i) {
+      if (!wasOpen[i]) d.removeAttribute("open");
+    });
+    wasOpen = null;
+  }
+  addEventListener("beforeprint", openAll);
+  addEventListener("afterprint", restoreAll);
+  if (window.matchMedia) {
+    var mq = window.matchMedia("print");
+    var onMq = function (e) { if (e.matches) openAll(); else restoreAll(); };
+    if (mq.addEventListener) mq.addEventListener("change", onMq);
+    else if (mq.addListener) mq.addListener(onMq);
+  }
+
   /* --- draw, and redraw at the measured width on resize -------------------- */
   var pending = 0;
   function render() { drawMeasure(); drawTrace(); drawModel(); }
