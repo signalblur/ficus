@@ -142,20 +142,25 @@ CONTRIB="$(Q "SELECT ROUND((SELECT COALESCE(SUM(usd),0) FROM offsets)
 # its licence and where that licence is stated does not ship at all. This is a
 # build-stopping error on purpose: a silent skip would let an unattributed
 # illustration reach a document the user files with an accountant.
+# An image is either GEOMETRY (viewBox + path d strings) or a RASTER whose src
+# must already be an inline data: URI — a src pointing anywhere else would break
+# the offline invariant, so it stops the build rather than shipping.
 BAD_IMG="$(jq -r '[.orgs[] | select(has("image"))
-  | select(((.image.paths // []) | length) == 0
-        or ((.image.viewBox // "") == "")
+  | select((((.image.paths // []) | length) == 0 or ((.image.viewBox // "") == ""))
+           and (((.image.src // "") | startswith("data:")) | not)
         or ((.image.alt // "") == "")
         or ((.image.credit.title // "") == "")
         or ((.image.credit.author // "") == "")
+        or ((.image.credit.agency // "") == "")
         or ((.image.credit.source_url // "") == "")
         or ((.image.credit.license // "") == "")
         or ((.image.credit.license_url // "") == ""))
   | .name] | join(", ")' "$GIVING")"
 [ -z "$BAD_IMG" ] || {
   echo "Refusing to build: illustration provenance is incomplete for: ${BAD_IMG}" >&2
-  echo "Every image in data/giving-shortlist.json needs viewBox, paths, alt, and a" >&2
-  echo "credit block with title, author, source_url, license and license_url." >&2
+  echo "Every image in data/giving-shortlist.json needs alt, a credit block with" >&2
+  echo "title, author, agency, source_url, license and license_url, and either" >&2
+  echo "viewBox+paths or a src that is already an inline data: URI." >&2
   exit 1
 }
 

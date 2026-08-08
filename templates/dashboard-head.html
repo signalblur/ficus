@@ -745,7 +745,11 @@ td a { color: var(--accent); }
   margin: 0;
   color: var(--ink-3);
 }
-.org__fig svg { display: block; width: 100%; height: 100%; }
+.org__fig svg, .org__fig img { display: block; width: 100%; height: 100%; }
+/* A photograph gets an edge and a radius so it reads as a plate set into the
+   card rather than a picture floating on it, and so five photographs from four
+   agencies still look like one set. */
+.org__fig img { object-fit: cover; border: 1px solid var(--rule); border-radius: var(--r-md); }
 @media (max-width: 34rem) { .org__fig { width: 2.75rem; height: 2.75rem; } }
 
 /* The colophon: where every illustration's licence can actually be checked. */

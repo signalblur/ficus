@@ -625,6 +625,13 @@
             "fill-rule": img.fill_rule ? String(img.fill_rule) : null }));
         });
         head.append(h("figure", { class: "org__fig" }, art));
+      } else if (img && String(img.src || "").indexOf("data:") === 0) {
+        /* A raster rides in as an inline data: URI, so the page still draws it
+           with the network off. The alt describes the PHOTOGRAPH — what it
+           shows and where — rather than re-selling the organisation. */
+        head.append(h("figure", { class: "org__fig" },
+          h("img", { src: String(img.src), alt: String(img.alt || ""),
+            width: "128", height: "128", decoding: "sync" })));
       }
       li.append(head);
       if (o.price) li.append(h("p", {}, h("span", { class: "org__price" }, String(o.price))));
@@ -710,13 +717,17 @@
       cl.append(h("li", {},
         h("b", {}, String(c.org || "")), " — ",
         h("a", { href: String(c.source_url || "") }, String(c.title || "")),
-        ", " + String(c.author || "") + ". ",
+        ". " + String(c.agency || "") + (c.author ? ", " + String(c.author) : "") + ". ",
         h("a", { href: String(c.license_url || "") }, String(c.license || ""))));
     });
     box.append(cl);
     box.append(h("p", { class: "note", style: "margin-top:0.9rem" },
-      "Every illustration on this page is public domain or CC0 and was made by a person. "
-      + "Each is embedded in the file itself, so the page still draws them with the network off."));
+      "Every photograph here is a work of the U.S. federal government and therefore in the public "
+      + "domain; each licence was checked on the source page rather than assumed from the agency. "
+      + "All of them are greyscale-toned to one treatment so the set reads together, stripped of "
+      + "camera metadata, and embedded in this file, so the page still draws them with the network "
+      + "off. Where no verifiable federal image of the subject exists, the card carries no picture "
+      + "rather than a stretched one."));
     doc.getElementById("credits").append(box);
   }
 

@@ -96,7 +96,7 @@ fi
 # Anything else the browser would LOAD over the network fails the page: it must
 # still render fully with Wi-Fi off, which is also why typography comes from a
 # system-font stack and never a webfont.
-STRIP='s/href="https:\/\/[^"]*"//g; s/"cite_url":"https:\/\/[^"]*"//g; s/"url":"https:\/\/[^"]*"//g'
+STRIP='s/href="https:\/\/[^"]*"//g; s/"[a-z_]*url":"https:\/\/[^"]*"//g'
 if sed "$STRIP" "$OUT" |
   grep -qE 'https?://|<link|src="http|src='"'"'http|@import|url\(http'; then
   echo "FAIL dashboard: external LOADED references found:" >&2
@@ -249,6 +249,43 @@ else
   echo "PASS dashboard: no externally-loaded image on the page"
 fi
 want "the hero image slot exists in the renderer" 'org__fig'
+# Every card is accounted for: it either carries an image or is deliberately
+# text-only because no verifiable federal photograph of its subject exists.
+# Nothing may be silently missing.
+imaged=$(jq '[.orgs[] | select(has("image"))] | length' "${REPO_DIR}/data/giving-shortlist.json")
+total=$(jq '.orgs | length' "${REPO_DIR}/data/giving-shortlist.json")
+textonly=$(jq -r '[.orgs[] | select(has("image") | not) | .name] | join(", ")' \
+  "${REPO_DIR}/data/giving-shortlist.json")
+echo "PASS dashboard: ${imaged} of ${total} cards illustrated; text-only: ${textonly:-none}"
+if [ "$imaged" -lt 1 ]; then
+  echo "FAIL dashboard: no card carries an image at all" >&2
+  fail=1
+fi
+# Every image src must already be an inline data: URI — never a network fetch.
+if jq -e '[.orgs[] | select(has("image")) | .image
+     | select(has("src")) | select((.src | startswith("data:")) | not)] | length > 0' \
+  "${REPO_DIR}/data/giving-shortlist.json" >/dev/null 2>&1; then
+  echo "FAIL dashboard: an image src is not an inline data: URI" >&2
+  fail=1
+else
+  echo "PASS dashboard: every image src is an inline data: URI"
+fi
+# Every illustrated card carries a complete, checkable credit.
+missing_credit=$(jq -r '[.orgs[] | select(has("image"))
+  | select((.image.alt // "") == "" or (.image.credit.title // "") == ""
+        or (.image.credit.author // "") == "" or (.image.credit.agency // "") == ""
+        or (.image.credit.source_url // "") == "" or (.image.credit.license // "") == ""
+        or (.image.credit.license_url // "") == "")
+  | .name] | join(", ")' "${REPO_DIR}/data/giving-shortlist.json")
+if [ -n "$missing_credit" ]; then
+  echo "FAIL dashboard: incomplete image credit for: ${missing_credit}" >&2
+  fail=1
+else
+  echo "PASS dashboard: every illustrated card carries a complete credit"
+fi
+want "credits name the agency that made the work" '"agency"'
+want "credits cite the federal-works statute" '17 U.S.C. 105'
+
 want "an image supplies geometry, never markup" 'img.paths'
 want "credits are rendered where a reader can check them" 'id="credits"'
 
@@ -258,7 +295,8 @@ GATE_DIR="${TMPROOT}/gate"
 mkdir -p "$GATE_DIR"
 # (a) a complete image builds, and its credit reaches the page
 jq '.orgs[0].image = {viewBox:"0 0 48 48", paths:["M4 4h40v40H4z"], alt:"test mark",
-      credit:{title:"Test Plate", author:"A Human", source_url:"https://example.org/plate",
+      credit:{title:"Test Plate", author:"A Human", agency:"Test Agency",
+              source_url:"https://example.org/plate",
               license:"Public domain (PD-old-100)", license_url:"https://example.org/pd"}}' \
   "$GIVE_SRC" >"${GATE_DIR}/ok.json"
 # (b) the same image with its licence stripped must be refused
