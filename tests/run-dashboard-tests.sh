@@ -271,10 +271,13 @@ fi
 want "text-only cards are still marked as deliberate" 'org--plain'
 # Defensive: a full-width card must never scale a banner to an absurd height.
 want "the banner is height-capped" 'max-height: 17rem'
-if [ "$imaged" -lt 1 ]; then
-  echo "FAIL dashboard: no card carries an image at all" >&2
+if [ "$imaged" -ne "$total" ]; then
+  echo "FAIL dashboard: ${total} cards but only ${imaged} illustrated — every card carries a photograph" >&2
   fail=1
 fi
+# Two photographs are subject-adjacent rather than literal. That is a finding
+# the page states, not one it hides behind a caption.
+want "the colophon declares which images are subject-adjacent" 'subject-adjacent rather than literal'
 # Every image src must already be an inline data: URI — never a network fetch.
 if jq -e '[.orgs[] | select(has("image")) | .image
      | select(has("src")) | select((.src | startswith("data:")) | not)] | length > 0' \

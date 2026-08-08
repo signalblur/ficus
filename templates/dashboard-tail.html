@@ -997,11 +997,16 @@
     box.append(cl);
     box.append(h("p", { class: "note", style: "margin-top:0.9rem" },
       "Every photograph here is a work of the U.S. federal government and therefore in the public "
-      + "domain; each licence was checked on the source page rather than assumed from the agency. "
-      + "All of them are greyscale-toned to one treatment so the set reads together, stripped of "
-      + "camera metadata, and embedded in this file, so the page still draws them with the network "
-      + "off. Where no verifiable federal image of the subject exists, the card carries no picture "
-      + "rather than a stretched one."));
+      + "domain; each licence was checked on that file's own record rather than assumed from the "
+      + "agency, because .gov sites also host contractor and partner photographs that are not. All "
+      + "are toned to one treatment so the set reads together, stripped of camera metadata, and "
+      + "embedded in this file, so the page still draws them with the network off."));
+    box.append(h("p", { class: "note", style: "margin-top:0.6rem" },
+      "Two are subject-adjacent rather than literal. No public-domain photograph exists of a "
+      + "biochar certificate operation, or of Tradewater's own work, so those cards show a charcoal "
+      + "kiln — the vessel biochar is made in — and legacy well plugging and abandonment, which is "
+      + "half of what Tradewater does. Each alt text names what its photograph actually shows and "
+      + "where, and claims nothing beyond it."));
     doc.getElementById("credits").append(box);
   }
 
