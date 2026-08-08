@@ -1,106 +1,20 @@
 # Ficus
 
-A carbon ledger for your Claude Code usage — energy, water, CO2e, and the
-offsets that settle them.
+A local carbon ledger for Claude Code. It reads your session transcripts,
+estimates the electricity, water and CO2e behind them, keeps the total in your
+statusline, and records the offsets and donations you buy against it.
 
-A banyan fig is one tree that grows into a whole ecosystem, and keystone figs
-feed the forest around them. This tool works the same way on your sessions: one
-local ledger that accounts for what your Claude Code usage costs the world, and
-for whatever you put back.
+Everything runs on your machine. No network calls, no telemetry, no installer.
+
+![The Ficus dashboard, showing lifetime carbon, electricity and water totals with a monthly trend chart](docs/dashboard.png)
 
 **[Live demo dashboard →](https://signalblur.github.io/ficus/)** (fabricated
-data — fake sessions, fake purchases, fake receipt)
-
-Everything runs locally. No network calls, no installer, no auto-update, no
-telemetry.
-
-## What it does
-
-**Session accounting.** A `Stop` hook parses the session transcript when it
-ends and writes one row per session to SQLite: raw token counts per direction
-(input, output, cache read, cache write), the dominant model, the theoretical
-API list cost, and CO2e. A throttled `SessionStart` hook re-runs a backfill once
-a day to catch sessions the `Stop` hook missed. Claude Code purges transcripts
-after about 30 days, so the DB is the durable record.
-
-Each row also carries derived `energy_wh`, `water_ml` and `embodied_gco2e`.
-Raw tokens are stored, never just the derived figures, so revising a factor is
-`recompute.sh` rather than a lost history.
-
-**Statusline segment.** A right-hand column beside your existing statusline
-rows: all-time energy / water / CO2e, the tonnes paid off against tonnes
-emitted, and the dollar cost of clearing the rest. The render path does no
-database work at all — it sources a pre-written `factors.env`, runs one `awk`,
-and reads three pre-formatted lines out of a cache file that the write-side
-scripts maintain. Benchmarked at p95 under 50 ms.
-
-**Offset and donation recording.** `offset-record.sh` takes a purchase with a
-mandatory receipt file. The receipt is copied (never moved, never deleted) into
-`receipts/YYYY/`, its SHA-256 recorded, and its bytes stored in a
-`receipt_blobs` table so the database alone is a complete record. Receipt text
-is best-effort parsed into the same table so purchases are searchable. Registry
-retirement IDs usually arrive days after payment, so they land through a
-separate `--update` path. `--no-receipt` exists, stores the row `verified=0`,
-and says so everywhere the row appears. Donations to conservation orgs are
-recorded separately by `donation-record.sh`.
-
-**Tax-year export.** `offset-export.sh --tax-year YYYY` writes one CSV per
-payer, with the receipt hash and the retirement ID on every row. It records; it
-does not give tax advice, and the header says to classify donation-vs-expense
-with a CPA.
-
-**Dashboard.** `generate-dashboard.sh` builds a single self-contained HTML file
-— inline CSS, vanilla-JS SVG charts, receipts embedded as `data:` URIs — and
-opens it over `file://`. It renders with the network off. A test proves it:
-zero references the browser would load, and byte-identical output from the same
-data under a pinned timestamp.
-
-**Equivalences.** Totals are also expressed against real-world reference
-figures (car-km, train-km, a median Gemini prompt) so a number in grams means
-something. Those factors are lifecycle values while this tool's CO2 is
-usage-only, so they are illustrative, not scope-matched.
-
-## Methodology, honestly
-
-Anthropic publishes no per-query energy data. Every figure here is an
-order-of-magnitude estimate carrying roughly **±50%** uncertainty. Trends and
-relative comparisons are meaningful; absolute values are indicative. Do not use
-them for regulatory reporting.
-
-The CO2e factors derive from Jegham et al. 2025 (arXiv:2505.09598), an arXiv
-preprint whose method has been publicly criticized, cross-checked against
-EcoLogits and Simon Couch's independent price-ratio estimate. Only Sonnet-class
-models are covered directly; Opus, Haiku and Fable are extrapolations, and
-Fable is a double extrapolation (2x Opus, itself 2x Sonnet). The `cache_read`
-energy factor is an engineering estimate, not a measurement, and it is the
-widest single lever in the tool — cache reads are 90%+ of tokens in Claude Code.
-
-Four consequences worth stating plainly:
-
-- **Energy is not a second model.** `energy_wh = co2_grams / 0.287` is the CIF
-  identity: the CO2 factors are facility energy times the grid carbon intensity,
-  so dividing recovers the energy exactly. Water and embodied carbon derive from
-  that same energy. There is one estimate in the ledger, not four.
-- **The headline balance counts verified removal only.** Prevention purchases
-  (refrigerant or methane destruction) and unverified rows appear on their own
-  lines and never fold into the balance. Destroying a tonne of refrigerant is
-  worth doing and is not a tonne removed from the air.
-- **The cost pair is a pure dollar ledger.** Every dollar recorded — offset or
-  donation — subtracts 1:1 from the owed side, and owed goes negative past
-  carbon-neutral rather than clamping at zero. It does not translate dollars
-  into tonnes; only verified removal settles tonnes.
-- **The cost column is list price, not what you paid.** `cost_usd` is what the
-  usage would have cost on pay-as-you-go API pricing, not the subscription
-  price.
-
-Full derivations, every constant with its source and date, and the uncertainty
-bands are in [METHODOLOGY.md](METHODOLOGY.md). No script hardcodes a constant;
-they all live in `data/*.json` next to a `_source`.
+data: fake sessions, fake purchases, fake receipt)
 
 ## Install
 
-Requires `bash`, `jq` and `sqlite3`. There is no installer and nothing to add
-to a package manager — clone the repo and wire it by hand.
+You need `bash`, `jq` and `sqlite3`. Nothing else, and there is nothing to add
+to a package manager.
 
 ```bash
 git clone https://github.com/signalblur/ficus.git
@@ -108,9 +22,10 @@ cd ficus
 bash scripts/setup.sh
 ```
 
-`setup.sh` checks dependencies, creates `~/.claude/carbon-ledger/carbon.db`,
-writes `factors.env`, backfills whatever transcripts still exist, and prints the
-hook block to paste into `~/.claude/settings.json`:
+`setup.sh` checks those three dependencies, creates
+`~/.claude/carbon-ledger/carbon.db`, writes `factors.env`, backfills whatever
+transcripts are still on disk, and prints a hook block. Paste it into
+`~/.claude/settings.json` and reload Claude Code:
 
 ```json
 {
@@ -121,85 +36,190 @@ hook block to paste into `~/.claude/settings.json`:
 }
 ```
 
-For the statusline, merge the segment into your existing
-`~/.claude/statusline.sh` — [docs/statusline-segment.md](docs/statusline-segment.md)
-walks through the single-jq-call pattern, and `statusline-snippet.sh` at the
-repo root is the reference implementation.
-
-For the `/carbon` and `/carbon-offset` commands, symlink the skills:
+For `/carbon`, `/carbon-offset` and `/carbon-review`, symlink the three skills:
 
 ```bash
-ln -s "$PWD/skills/carbon/SKILL.md" ~/.claude/commands/carbon.md
+ln -s "$PWD/skills/carbon/SKILL.md"        ~/.claude/commands/carbon.md
 ln -s "$PWD/skills/carbon-offset/SKILL.md" ~/.claude/commands/carbon-offset.md
+ln -s "$PWD/skills/carbon-review/SKILL.md" ~/.claude/commands/carbon-review.md
 ```
 
-Both skills resolve the repo through `$CARBON_LEDGER_DIR`; set it if you cloned
-somewhere other than the default path in those files.
+Each skill resolves the repo through `$CARBON_LEDGER_DIR`, so export that in
+your shell profile pointing at your clone.
 
-State (database, receipts, exports, dashboards) lives in
-`~/.claude/carbon-ledger/`. Override the database path with `CARBON_LEDGER_DB`;
-everything else is derived from it, which is how the whole test suite runs
-against throwaway sandboxes.
+The statusline segment is opt-in and merges into your own
+`~/.claude/statusline.sh`. [docs/statusline-segment.md](docs/statusline-segment.md)
+walks through it; `statusline-snippet.sh` at the repo root is the reference
+implementation.
 
-## Fork provenance
+State lives in `~/.claude/carbon-ledger/` (database, receipts, exports,
+dashboards). `CARBON_LEDGER_DB` overrides the database path and everything else
+is derived from it, which is how the tests run against throwaway sandboxes.
+
+## Where the numbers come from
+
+No vendor publishes per-query energy for a hosted model. Every figure in this
+tool is an estimate carrying roughly **±50%** uncertainty. Trends and relative
+comparisons hold up; absolute values are indicative, and none of it is fit for
+regulatory reporting.
+
+No script hardcodes a constant. They all live in `data/*.json` next to a
+`_source` field, and these are the ones that matter:
+
+| Constant | Value | Source recorded in `data/factors.json` |
+| --- | --- | --- |
+| CO2e per million tokens | 39 in / 826 out (Sonnet), scaled for the rest | Jegham et al. 2025, [arXiv:2505.09598](https://arxiv.org/abs/2505.09598). Opus is 2x Sonnet, Haiku 0.5x, Fable 2x Opus. |
+| Grid carbon intensity | 0.287 gCO2e/Wh | AWS location-based intensity, same paper |
+| PUE | 1.14 | AWS fleet, same paper |
+| Water | 0.18 L/kWh on-site + 5.11 L/kWh off-site | AWS 2023 sustainability figure; WRI generation-water intensity via Li et al. |
+| Embodied carbon | 44.1 gCO2e/kWh | 8xH100 server LCA (BoaviztAPI + Lees-Perasso), 3-year life at TDP |
+| Cache-read energy | 0.08 of an input token | Engineering estimate, not a measurement. The widest single lever here, because cache reads are most of the tokens. |
+
+Energy is not a second model. `energy_wh = co2_grams / 0.287` is an identity:
+the CO2 factors are facility energy times grid intensity, so dividing recovers
+the energy exactly. Water and embodied carbon derive from that same energy.
+There is one estimate in the ledger, not four.
+
+Full derivations, every constant with its date, and the uncertainty bands are in
+[METHODOLOGY.md](METHODOLOGY.md).
+
+## What the footprint actually lands on
+
+Three things this tool counts, and one published measurement for each.
+
+**Electricity.** US data centres used **176 TWh in 2023, 4.4% of all US
+electricity**, up from 76 TWh (1.9%) in 2018, and are projected at 325 to 580
+TWh (6.7% to 12.0%) by 2028. Berkeley Lab, [*2024 United States Data Center
+Energy Usage Report*](https://escholarship.org/uc/item/32d6m0d1) (LBNL-2001637,
+December 2024). Globally the IEA puts data centres at around 415 TWh in 2024,
+about 1.5% of world electricity, roughly doubling to 950 TWh by 2030
+([*Key Questions on Energy and AI*](https://www.iea.org/reports/key-questions-on-energy-and-ai),
+April 2026).
+
+**Water.** The same Berkeley Lab report puts direct US data centre water
+consumption at **66 billion litres in 2023**, with hyperscale facilities alone
+projected at 60 to 124 billion litres by 2028, and the indirect footprint from
+generating their electricity at nearly 800 billion litres (4.52 L/kWh). Li et
+al. found that training GPT-3 in Microsoft's US data centres **can directly
+evaporate 700,000 litres of clean freshwater**, and project global AI demand at
+4.2 to 6.6 billion cubic metres of withdrawal in 2027
+([arXiv:2304.03271](https://arxiv.org/abs/2304.03271)).
+
+**Wetlands and land.** At a Michigan EGLE hearing in June 2026 on a permit for a
+Google data centre in Van Buren Township, a state environmental quality analyst
+said the site would **permanently impact 13.55 acres of wetlands, need six
+culverts in regulated streams, and fill and abandon 573 linear feet of stream**
+([Planet Detroit, 17 June
+2026](https://planetdetroit.org/2026/06/google-data-center-wetlands/)). Many
+sites no longer need a federal permit at all: after the Supreme Court's 2023
+*Sackett* decision, E&E News counted at least **26 data centres taking
+streamlined nationwide permits since January 2024 and 27 sites with identified
+wetlands or streams that now fall outside the Clean Water Act**
+([E&E News by POLITICO, 8 July
+2026](https://www.eenews.net/articles/the-time-consuming-permits-dozens-of-data-centers-are-skipping/)).
+
+## Where the money goes
+
+Seven organisations, from the research in
+`data/giving-shortlist.json`. The split that matters is between carbon that has
+verifiably been taken out of the air and everything else. Only the first
+settles the balance the statusline shows.
+
+**Settles the balance**
+
+**[Remove Carbon Today](https://www.removecarbontoday.com/collections)** ·
+biochar CORCs · ≈ $160/tonne. Ex-post removal certificates issued under the Puro
+Standard: the biochar is independently weighed and sampled, third-party audited,
+and the certificate retired in your name on a public registry. Puro does not
+sell direct, so a reseller is the small-buyer route, and the minimum here is 1
+kg. The Nasdaq CORCCHAR index sat around $125–145/t through late 2025 into 2026,
+with broader quotes at $200–400/t, so treat $160 as ±40%.
+
+**Prevents a future emission, and is recorded separately**
+
+**[Tradewater](https://tradewater.co/buy-credits/)** · refrigerant destruction ·
+$15/tonne stated. Collects and destroys ozone-depleting refrigerants and plugs
+orphaned methane wells. Every container is third-party weighed, sampled and
+lab-analysed, destruction runs to better than 99.99% completion, and the credits
+are ACR- or VCS-certified. It stops an emission rather than removing one, so it
+never folds into the balance. The $15 could not be independently confirmed; the
+nearest public comparable, Recoolit, sells around $75/t.
+
+**Funded from a conservation budget, not the carbon ledger**
+
+**[Naturaland Trust](https://naturalandtrust.org/donate-now)** · Blue Ridge
+escarpment. Buys escarpment land above Greenville, 1,090 acres at Saluda Bluffs
+for about $9M, inside the watershed feeding Greenville Water's own reservoirs.
+It is the one organisation here where a rough $/tonne can be built from public
+data, and the honest answer is a $20–150 band, because the choice of method
+alone swings it five- to eightfold. Chosen for the drinking water as much as the
+carbon.
+
+**[Congaree Land Trust](https://congareelt.org/donate)** · COWASEE basin. Holds
+easements across 25,398 acres around Congaree National Park, the largest
+old-growth bottomland hardwood forest in the eastern United States. Floodplain
+forested wetlands hold 176.6 ± 84 MgC/ha in the top metre, several times the
+upland figure. The easements are donated rather than bought, so there is no
+transaction to divide that stock by and no defensible price per tonne.
+
+**[American Rivers](https://www.americanrivers.org/donate)** · dam removal.
+Reservoir surfaces are a large methane source, an estimated 0.8 Pg CO2-eq a year
+globally, and a CARB-hosted 2026 report puts the four removed Klamath dams at
+roughly 275,000 tonnes CO2e a year eliminated. The avoidance is real for
+specific dams. A donation still cannot be converted into tonnes: American Rivers
+is one partner among many funders and sells no credit.
+
+**[Billion Oyster Project](https://www.billionoysterproject.org/donate)** · New
+York Harbor. About 150 million oysters across 17 acres as of December 2025, at
+roughly $250,000 an acre, with a public-schools programme attached. Funded for
+the harbour: habitat, storm-surge buffering, filtration, and the students. There
+is no BOP carbon accounting to cite and the reef-chemistry literature does not
+support one, so nothing here touches the ledger.
+
+**[Coral Restoration Foundation](https://coralrestoration.org/donate)** ·
+Florida Keys. Propagates and outplants staghorn coral. A Florida study found
+that high-density outplanting restores positive net carbonate accretion on reefs
+that had gone erosional, which is reef structure rebuilt rather than atmospheric
+carbon removed. Florida's reefs carry a documented $1.8B flood-protection value.
+Funded for the reef, the coastline and the biodiversity.
+
+The dashboard carries the full per-organisation detail, including the evidence
+that argues against the carbon case for several of them.
+
+## Credit
 
 Ficus is a hardened fork of
 [claude-carbon](https://github.com/gwittebolle/claude-carbon) by Gaëtan
-Wittebolle (MIT), pinned at commit `43fb883ac1989d962c8699afb0be37fbe69c4476`
-(tag `upstream-43fb883`) after a line-by-line security audit. The audit's
-verdict was safe-with-caveats; the caveats were removed by deletion:
+Wittebolle (MIT), pinned at commit
+`43fb883ac1989d962c8699afb0be37fbe69c4476` (tag `upstream-43fb883`) after a
+line-by-line audit.
 
-- `scripts/statusline.sh` read the Claude Code OAuth token and called
-  `api.anthropic.com` for quota — deleted; this fork ships a snippet for your
-  own statusline instead
-- `install.sh` and `bin/claude-carbon.js` were pipe-to-shell and `npx`
-  installers — deleted
-- `scripts/check-update.sh`, `scripts/update.sh`, the update-check dispatch in
-  `safety-rescan.sh`, and the `/carbon-update` skill were the auto-update
-  surface — deleted; upstream changes are reviewed and cherry-picked by hand
-- the report templates (webfont loads), the `/carbon-card` skill (which rendered
-  through `python3 -m http.server`), and the release/CI/traffic tooling —
-  deleted
+Kept from upstream: the transcript parser, the throttled backfill, the SQLite
+ledger of raw tokens, the Jegham-derived factors and price tracking, and the
+golden-vector tests. Deleted: the statusline script that read the OAuth token
+and called `api.anthropic.com`, the pipe-to-shell and `npx` installers, the
+auto-update surface, and the templates that loaded webfonts.
+`tests/run-hygiene.sh` holds the line at zero network call sites in `scripts/`,
+`hooks/` and `skills/`.
 
-`tests/run-hygiene.sh` locks the invariant: zero network call sites anywhere in
-`scripts/`, `hooks/` or `skills/`.
-
-Kept from upstream: the transcript parser (per-model token extraction,
-deduplication by `(message.id, requestId)`, subagent inclusion), the throttled
-backfill, the SQLite ledger of raw tokens, the Jegham-derived factors and price
-tracking, and the golden-vector test suite. Added by the fork: the derived
-physics columns, the offsets/donations ledger with receipt storage, the tax-year
-export, the dashboard, the statusline segment, the EcoLogits cross-check gate,
-and most of the tests.
-
-The upstream remote is fetch-only with push disabled. The review-and-cherry-pick
-procedure, the consolidation-tier policy (which files may drift from upstream
-and which must stay byte-close for cherry-picks), and the constants provenance
-table are in [MAINTENANCE.md](MAINTENANCE.md).
+Added by the fork: the derived energy, water and embodied-carbon columns, the
+offsets and donations ledger with receipt storage, the tax-year export, the
+dashboard, the statusline segment, the EcoLogits cross-check, and most of the
+tests. [MAINTENANCE.md](MAINTENANCE.md) has the cherry-pick procedure and the
+constants provenance table.
 
 ## Tests
 
 ```bash
-bash tests/run-tests.sh   # auto-discovers every tests/run-*.sh
+bash tests/run-tests.sh
 ```
 
-Golden methodology vectors, parser reconciliation against the pinned upstream
-tag, the three physics write paths, the offsets ledger, the EcoLogits
-cross-check plus its mutation test, a statusline latency benchmark, dashboard
-determinism and offline-safety, the network-hygiene invariant, and
-shellcheck/shfmt. Everything runs against sandbox databases; your real
-`~/.claude` is never touched and nothing hits the network.
-
-## Rebuilding the demo
-
-```bash
-bash scripts/build-demo.sh
-```
-
-Writes `docs/index.html` from fabricated data in a throwaway temp directory.
-Deterministic — same bytes on every run.
+Ten suites, every one against a sandbox database, none of them touching the
+network or your real `~/.claude`.
 
 ## License
 
-MIT. Upstream copyright Gaëtan Wittebolle; fork modifications copyright signalblur.
-See [LICENSE](LICENSE).
+MIT. Upstream copyright Gaëtan Wittebolle, fork modifications copyright
+signalblur. Third-party material bundled here, including the seven US federal
+public-domain photographs in the dashboard, is inventoried in
+[NOTICE.md](NOTICE.md). See [LICENSE](LICENSE).
