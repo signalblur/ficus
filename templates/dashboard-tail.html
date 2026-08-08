@@ -440,8 +440,17 @@
 
   var payerHost = doc.getElementById("payer-body");
   var roll = payerRoll();
+  /* The templates ship in a public repository, so no payer name is written in
+     them. The page still names payers — it reads them off the ledger here. */
+  if (roll.length) {
+    var names = roll.map(function (r) { return r.payer; });
+    doc.getElementById("payer-names").textContent = " — "
+      + (names.length === 1 ? names[0]
+        : names.slice(0, -1).join(", ") + " and " + names[names.length - 1]);
+  }
   if (!roll.length) {
-    payerHost.append(h("p", { class: "empty" }, "Nothing on record yet, so there is no tax year to reconcile."));
+    payerHost.append(h("p", { class: "empty" },
+      "No purchases or donations on record yet, so there is no tax year to reconcile."));
   } else {
     var tk = 0, tu = 0, td = 0;
     var prows = roll.map(function (r) {
@@ -466,11 +475,40 @@
        ["Donations", 1], ["Donated", 1], ["Total spend", 1]], prows, foot));
   }
 
+  /* An empty screen is an invitation to act. Both registers get a real empty
+     state naming what will appear and the exact command that files it. */
+  function startPanel(kind, title, what, steps, note) {
+    var p = h("div", { class: "start" },
+      h("p", { class: "start__k" }, kind),
+      h("h4", { class: "start__t" }, title),
+      h("p", { class: "start__d" }, what));
+    var ol = h("ol", { class: "start__steps" });
+    steps.forEach(function (st) {
+      ol.append(h("li", {}, h("div", {},
+        h("p", { class: "start__what" }, st[0]),
+        h("code", { class: "cmd" }, st[1]))));
+    });
+    p.append(ol);
+    p.append(h("p", { class: "start__note" }, note));
+    return p;
+  }
+
   var offHost = doc.getElementById("offsets-body");
   if (!buys.length) {
-    offHost.append(h("p", { class: "empty" },
-      "No offset purchases on record. Record the first with scripts/offset-record.sh — it copies the receipt, "
-      + "stores its bytes and SHA-256, and the purchase appears here against its payer."));
+    offHost.append(startPanel("Nothing on file yet", "File your first offset receipt",
+      "Once a purchase is recorded, this section will show the receipt as a download rebuilt from the stored "
+      + "bytes, the SHA-256 of the file as it was at filing time, the registry retirement ID, and a per-payer "
+      + "CSV for the tax year.",
+      [["Ask for it in Claude Code — it walks through the fields and files the receipt for you.",
+        "/carbon-offset"],
+       ["Or record it directly. The receipt is copied into the ledger, never moved or deleted.",
+        "bash scripts/offset-record.sh \\\n  --kg 25 --usd 4.00 \\\n  --vendor remove-carbon-today --pathway biochar \\\n"
+        + "  --category removal --payer \"Your entity\" \\\n  --receipt ~/Downloads/receipt.pdf"],
+       ["Add the registry retirement ID when it is issued, so the purchase counts as verified.",
+        "bash scripts/offset-record.sh --update 1 \\\n  --retirement-id PURO-0000"]],
+      "This page is a static file, so it cannot accept an upload. Recording is what puts a receipt in the "
+      + "ledger: the bytes are stored in the database itself, and the download button here is rebuilt from "
+      + "them, so the record survives with no server and no link to rot."));
   } else {
     var rows = buys.map(function (o) {
       var ok = Number(o.verified) === 1, path = String(o.receipt_path || "");
@@ -482,9 +520,10 @@
         ? "data:application/pdf;base64,"
         : "data:application/octet-stream;base64,";
       var receipt = b64
-        ? h("a", { href: pref + b64, download: fname }, "Download")
+        ? h("a", { class: "dl", href: pref + b64, download: fname },
+            h("span", { "aria-hidden": "true" }, "\u2193 "), "Download")
         : path
-          ? h("a", { href: "file://" + path }, path.split("/").pop())
+          ? h("a", { class: "dl", href: "file://" + path }, path.split("/").pop())
           : "—";
       var sha = String(o.receipt_sha256 || "");
       return h("tr", {},
@@ -503,6 +542,17 @@
         h("td", { class: "hash" }, sha || "—"),
         h("td", {}, receipt));
     });
+    /* The receipts are the reason a user opens this section, so their count is
+       stated before the register rather than left to be inferred from it. */
+    var withBlob = buys.filter(function (o) { return String(o.receipt_b64 || ""); }).length;
+    var withId = buys.filter(function (o) { return String(o.retirement_id || ""); }).length;
+    /* Stated as counts rather than a sentence, so the copy never has to agree
+       with a number it does not know ("1 carry a retirement ID"). */
+    doc.getElementById("receipt-roll").append(h("p", { class: "roll" },
+      "Receipts on file: ", h("b", {}, withBlob + " of " + buys.length),
+      ". Registry retirement IDs: ", h("b", {}, withId + " of " + buys.length),
+      ". Every download below is rebuilt from bytes stored in the ledger itself, "
+      + "so the record works with no server and no link to rot."));
     offHost.append(table(buys.length + " purchase" + (buys.length === 1 ? "" : "s")
       + " · " + usd(OS.offset_spent_usd) + " spent · newest first. "
       + "The hash is the SHA-256 of the receipt file as recorded; the download is rebuilt from the stored bytes.",
@@ -512,9 +562,15 @@
 
   var giftHost = doc.getElementById("donations-body");
   if (!gifts.length) {
-    giftHost.append(h("p", { class: "empty" },
-      "No donations on record. Record one with scripts/donation-record.sh — the dollars subtract from Owed above "
-      + "and never from the tonnes balance."));
+    giftHost.append(startPanel("Nothing on file yet", "Record a donation",
+      "Donations are logged in dollars against the payer that gave them. They reduce the dollar ledger above "
+      + "and never the tonnes balance, because a gift does not buy a verified removal.",
+      [["Record one with the organisation and the entity that paid.",
+        "bash scripts/donation-record.sh \\\n  --usd 25.00 --org \"American Rivers\" \\\n  --payer \"Your entity\""],
+       ["Attach the acknowledgement letter if you have one, and its SHA-256 is recorded alongside.",
+        "bash scripts/donation-record.sh \\\n  --usd 25.00 --org \"American Rivers\" \\\n"
+        + "  --payer \"Your entity\" \\\n  --receipt ~/Downloads/thank-you.pdf"]],
+      "The seven destinations below are the shortlist this ledger was built against."));
   } else {
     var grows = gifts.map(function (g) {
       var sha = String(g.receipt_sha256 || "");

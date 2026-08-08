@@ -53,14 +53,14 @@ sqlite3 "$DB" "INSERT INTO sessions (session_id, project, model, input_tokens, o
    '2026-07-20T00:00:00Z','2026-07-20T01:00:00Z','backfill',2,1);
   INSERT INTO offsets (purchase_date, vendor, pathway, kg_co2e, usd, category, payer,
     receipt_path, receipt_sha256, verified, retirement_id, created_at) VALUES
-  ('2026-08-01','remove-carbon-today','biochar',10.0,1.60,'removal','Signalblur Security',
+  ('2026-08-01','remove-carbon-today','biochar',10.0,1.60,'removal','Acme Research LLC',
    '/tmp/r1.pdf','abc123',1,'PURO-1','2026-08-01T00:00:00Z'),
-  ('2026-08-02','tradewater','refrigerant-destruction',200.0,3.00,'prevention','Lies Above Media',
+  ('2026-08-02','tradewater','refrigerant-destruction',200.0,3.00,'prevention','Example Media Co',
    '/tmp/r2.pdf','def456',1,'','2026-08-02T00:00:00Z');
   INSERT INTO receipt_blobs (offset_id, filename, sha256, content, stored_at) VALUES
   (1,'2026-08-01-remove-carbon-today-1.pdf','abc123',x'25504446','2026-08-01T00:00:00Z');
   INSERT INTO donations (donation_date, org, usd, payer, receipt_path, receipt_sha256, created_at) VALUES
-  ('2026-08-03','naturaland-trust',12.00,'Lies Above Media','/tmp/d1.pdf','fed789','2026-08-03T00:00:00Z');"
+  ('2026-08-03','naturaland-trust',12.00,'Example Media Co','/tmp/d1.pdf','fed789','2026-08-03T00:00:00Z');"
 
 export CARBON_LEDGER_DASHBOARD_DIR="${TMPROOT}/dash"
 export CARBON_LEDGER_DASHBOARD_TS="2026-08-06T12:00:00Z"
@@ -144,8 +144,8 @@ want "carbon-negative state is named" 'carbon-negative'
 
 # --- tax audit trail ---------------------------------------------------------
 want "audit trail section" 'id="h-audit"'
-want "per-payer attribution: Signalblur Security" 'Signalblur Security'
-want "per-payer attribution: Lies Above Media" 'Lies Above Media'
+want "per-payer attribution: first payer" 'Acme Research LLC'
+want "per-payer attribution: second payer" 'Example Media Co'
 want "receipt SHA-256 recorded" '"receipt_sha256":"abc123"'
 want "donation recorded with payer" '"org":"naturaland-trust"'
 want "tax-year CSV export named" 'offset-export.sh'
@@ -229,6 +229,29 @@ if [ "$give_missing" = "0" ]; then
   echo "PASS dashboard: giving shortlist carries donate + sources + news for all seven orgs"
 fi
 want "giving section heading" 'id="h-give"'
+
+# --- privacy: payer names come from the ledger, never from the template -------
+# The templates ship in a public repository. A payer name baked into template
+# prose is the maintainer's own business identity published to everyone who
+# clones it, and it is wrong for every other user besides. The page still names
+# payers — it reads them out of the DB at generation time.
+for tpl in "${REPO_DIR}/templates/dashboard-head.html" "${REPO_DIR}/templates/dashboard-tail.html"; do
+  if grep -qE 'Signalblur|Lies Above' "$tpl"; then
+    echo "FAIL dashboard: a real payer name is hardcoded in $(basename "$tpl")" >&2
+    fail=1
+  fi
+done
+echo "PASS dashboard: no payer name hardcoded in the templates"
+want "payers are derived from the ledger at generation time" 'id="payer-names"'
+
+# --- receipts: findable even with nothing on file ----------------------------
+# The section a user goes looking for when they want to file a receipt must
+# announce itself when it is empty, not render as a blank space between two
+# headings. Assert the standing scaffolding here; the empty-ledger run below
+# asserts what actually appears when there is nothing to show.
+want "receipts section is named for what a user is looking for" 'id="h-audit"'
+want "receipt downloads are a labelled action, not bare text" 'class: "dl"'
+want "receipts are summarised above the register" 'id="receipt-roll"'
 
 # --- methodology -------------------------------------------------------------
 want "methodology section" 'id="h-method"'
@@ -353,6 +376,52 @@ if grep -qE 'background(-color)?:[^;]*var\(--(mint|viz-)' "$OUT"; then
 else
   echo "PASS dashboard: mint and the chart palette are marks only, never a surface fill"
 fi
+# --- the empty ledger: an empty screen is an invitation to act ---------------
+# A fresh install has no offsets and no donations, which is exactly the state a
+# user is in when they go looking for "where do I put my receipts". Rendering a
+# blank space between two headings is how that user concludes the feature does
+# not exist. Regenerate against a books-empty DB and assert the section tells
+# them what will appear here and the exact command that puts it there.
+EMPTY_DB="${TMPROOT}/empty.db"
+CARBON_LEDGER_DB="$EMPTY_DB" ensure_schema "$EMPTY_DB"
+sqlite3 "$EMPTY_DB" "INSERT INTO sessions (session_id, project, model, input_tokens,
+    output_tokens, cost_usd, co2_grams, energy_wh, water_ml, embodied_gco2e, started_at,
+    ended_at, source, methodology_version, excluded) VALUES
+  ('dddddddd-dddd-4ddd-8ddd-dddddddddddd','p1','claude-opus-5',1,1,3.0,900.0,3136.0,16515.0,138.3,
+   '2026-08-01T00:00:00Z','2026-08-01T01:00:00Z','backfill',2,0);"
+EMPTY_OUT="${CARBON_LEDGER_DASHBOARD_DIR}/empty/carbon-2026-08-06T12-00-00Z.html"
+CARBON_LEDGER_DB="$EMPTY_DB" \
+  CARBON_LEDGER_DASHBOARD_DIR="${CARBON_LEDGER_DASHBOARD_DIR}/empty" \
+  bash "${REPO_DIR}/scripts/generate-dashboard.sh" --no-open >/dev/null 2>&1
+[ -f "$EMPTY_OUT" ] || {
+  echo "FAIL dashboard: empty-ledger render produced no file" >&2
+  fail=1
+}
+ewant() { # ewant DESCRIPTION PATTERN — assert against the empty-ledger render
+  # -e, so a pattern that begins with a dash is a pattern and not an option.
+  if grep -q -e "$2" "$EMPTY_OUT"; then
+    echo "PASS dashboard (empty ledger): $1"
+  else
+    echo "FAIL dashboard (empty ledger): $1 (missing: $2)" >&2
+    fail=1
+  fi
+}
+ewant "the empty books announce themselves" 'class: "start"'
+ewant "names what will appear here once a purchase is filed" 'this section will show'
+ewant "names the retirement ID that will appear here" 'registry retirement ID'
+ewant "gives the skill that records a purchase" '/carbon-offset'
+ewant "gives the exact recording command" 'offset-record.sh'
+ewant "gives the purchase flags" '--kg 25 --usd'
+ewant "gives the receipt flag by name" '--receipt'
+ewant "says why a static page cannot take an upload" 'cannot accept an upload'
+ewant "gives the donation command too" 'donation-record.sh'
+# The page is built by script, so grepping the source cannot tell a rendered
+# register from the code that would render one. Assert the thing that IS
+# state-specific — the embedded DATA — so the assertions above are known to be
+# about the empty state and not about a register that happened to have rows.
+ewant "the render really had empty books" '"offsets":\[\]'
+ewant "and no donations either" '"donations":\[\]'
+
 want "single main landmark" '<main'
 want "skip link to the record" 'class="skip"'
 

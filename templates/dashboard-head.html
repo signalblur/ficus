@@ -634,6 +634,79 @@ td a { color: var(--accent); }
 .badge--ok { color: var(--accent); }
 .badge--no { color: var(--critical); border-width: 2px; }
 
+/* --- the empty books --------------------------------------------------------
+   A fresh ledger has no purchases, and this is the section a user opens while
+   holding a receipt and wondering where it goes. Rendering a blank space
+   between two headings is how that user concludes the feature does not exist,
+   so the empty state is a designed object rather than an absence: it names
+   what will appear here, and it gives the exact command that puts it there.
+   The steps are numbered because they genuinely are a sequence — record the
+   purchase, then add the retirement ID when the registry issues it. */
+.start {
+  margin: 0 0 0.5rem;
+  padding: 1.15rem 1.25rem;
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--rule-key);
+  border-radius: var(--r-md);
+}
+.start__k {
+  margin: 0;
+  color: var(--ink-3);
+  font: 700 0.5625rem/1.6 var(--mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.start__t { margin: 0.15rem 0 0; font: 600 1.0625rem/1.3 var(--sans); letter-spacing: -0.01em; }
+.start__d { margin: 0.5rem 0 0; max-width: 44rem; color: var(--ink-2); font-size: 0.8125rem; }
+.start__steps { margin: 1rem 0 0; padding: 0; list-style: none; display: grid; gap: 0.85rem; counter-reset: step; }
+.start__steps > li { display: grid; grid-template-columns: 1.5rem 1fr; gap: 0.75rem; align-items: start; }
+.start__steps > li::before {
+  counter-increment: step;
+  content: counter(step);
+  display: block;
+  padding-top: 0.05rem;
+  border-top: 2px solid var(--rule-key);
+  color: var(--ink-head);
+  font: 700 0.75rem/1.5 var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+.start__what { margin: 0; color: var(--ink-1); font-size: 0.8125rem; }
+.cmd {
+  display: block;
+  margin: 0.35rem 0 0;
+  padding: 0.5rem 0.7rem;
+  background: var(--plane);
+  border-radius: var(--r-sm);
+  overflow-x: auto;
+  color: var(--ink-1);
+  font: 600 0.75rem/1.7 var(--mono);
+  white-space: pre;
+}
+.start__note { margin: 1rem 0 0; color: var(--ink-2); font-size: 0.75rem; line-height: 1.55; }
+
+/* A receipt is the reason this section exists, so the download is an action
+   with an edge around it, not a word in the ninth column. */
+.roll {
+  margin: 0 0 0.9rem;
+  padding: 0.5rem 0.75rem;
+  border-left: 3px solid var(--rule-key);
+  color: var(--ink-2);
+  font-size: 0.8125rem;
+}
+.roll b { color: var(--ink-1); font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.dl {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border: 1px solid var(--rule-key);
+  border-radius: var(--r-sm);
+  color: var(--accent);
+  font: 700 0.6875rem/1.6 var(--mono);
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.dl:hover { text-decoration: underline; text-underline-offset: 0.18em; }
+
 /* --- the giving briefing ----------------------------------------------------
    Grouped by what a gift actually DOES to the balance above, because that is
    the only grouping a reader of this page needs: one tier settles it, one
@@ -941,25 +1014,29 @@ td a { color: var(--accent); }
       </div>
     </section>
 
-    <!-- 6. AUDIT TRAIL ---------------------------------------------------------->
+    <!-- 6. RECEIPTS AND BOOKS ----------------------------------------------------
+         Named for the thing a user comes looking for. "Audit trail" is what it
+         is; "Receipts" is what it is called when you are holding a PDF and
+         wondering where to put it. -->
     <section class="block" id="audit" aria-labelledby="h-audit">
       <div class="block__hd">
         <span class="block__eyebrow">Tax year</span>
-        <h2 class="block__t" id="h-audit">Audit trail</h2>
-        <p class="block__sub">Offsets and donations, with receipts.</p>
+        <h2 class="block__t" id="h-audit">Receipts &amp; books</h2>
+        <p class="block__sub">Every offset purchase and every donation, with the receipt attached.</p>
       </div>
       <div class="card"><div class="card__b">
         <p class="note">Everything a tax year needs, in one place: who paid, what was bought, what it cost, and the
           proof. Each purchase carries the <strong>SHA-256</strong> of its receipt as recorded at filing time, the
           <strong>registry retirement ID</strong> where one was issued, and the receipt itself as a download built
-          from the stored bytes &mdash; no server, no link to rot. Two payers keep separate books:
-          <strong>Signalblur Security</strong> and <strong>Lies Above Media</strong>.</p>
+          from the stored bytes &mdash; no server, no link to rot. Each payer keeps separate
+          books<span id="payer-names"></span>.</p>
         <p class="note">For an accountant-ready CSV, one file per payer with a totals row, run
           <strong>scripts/offset-export.sh --tax-year YYYY</strong> (add <strong>--payer NAME</strong> to narrow
           it). The export records; it does not give tax advice &mdash; classify donation-versus-expense with your CPA.</p>
         <h3 class="sub__h">By payer</h3>
         <div id="payer-body"></div>
         <h3 class="sub__h">Offset purchases</h3>
+        <div id="receipt-roll"></div>
         <div id="offsets-body"></div>
         <h3 class="sub__h">Donations</h3>
         <div id="donations-body"></div>
