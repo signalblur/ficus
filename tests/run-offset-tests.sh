@@ -74,7 +74,7 @@ printf 'fake tradewater receipt %s\n' "two" >"$RECEIPT2"
 
 # --- 1. record removal with receipt -----------------------------------------
 if bash "$RECORD" --kg 100 --usd 16.00 --vendor remove-carbon-today --pathway biochar \
-  --category removal --payer "Signalblur Security" --receipt "$RECEIPT1" \
+  --category removal --payer "Acme Research LLC" --receipt "$RECEIPT1" \
   --date 2026-06-15 --notes "it's a test" >/dev/null 2>&1; then
   ok "record removal exits 0"
 else
@@ -126,7 +126,7 @@ esac
 
 # --- 2. record prevention + unverified removal ------------------------------
 bash "$RECORD" --kg 200 --usd 3.00 --vendor tradewater --pathway refrigerant-destruction \
-  --category prevention --payer "Lies Above Media" --receipt "$RECEIPT2" \
+  --category prevention --payer "Example Media Co" --receipt "$RECEIPT2" \
   --date 2025-12-31 >/dev/null 2>&1 || ko "record prevention (year-boundary 2025) exits 0"
 TEXT2="$(sqlite3 "$DB" "SELECT COALESCE(extracted_text,'') FROM receipt_blobs WHERE offset_id=2;" 2>/dev/null)"
 if [ -z "$TEXT2" ]; then
@@ -136,7 +136,7 @@ else
 fi
 
 if bash "$RECORD" --kg 50 --usd 8.00 --vendor other --pathway biochar \
-  --category removal --payer "Signalblur Security" --no-receipt \
+  --category removal --payer "Acme Research LLC" --no-receipt \
   --date 2026-07-01 >/dev/null 2>&1; then
   ok "no-receipt override exits 0"
 else
@@ -174,14 +174,14 @@ RID="$(sqlite3 "$DB" "SELECT retirement_id FROM offsets WHERE id=1;")"
 
 # --- 4b. donations: dollars subtract from the owed total --------------------
 DONATE="${REPO_DIR}/scripts/donation-record.sh"
-if bash "$DONATE" --usd 10.00 --org "American Rivers" --payer "Signalblur Security" \
+if bash "$DONATE" --usd 10.00 --org "American Rivers" --payer "Acme Research LLC" \
   --date 2026-07-01 >/dev/null 2>&1; then
   ok "donation record exits 0"
 else
   ko "donation record exits 0"
 fi
 DROW="$(sqlite3 -separator '|' "$DB" "SELECT org, usd, payer FROM donations WHERE id=1;" 2>/dev/null)"
-[ "$DROW" = "American Rivers|10.0|Signalblur Security" ] && ok "donation row recorded" ||
+[ "$DROW" = "American Rivers|10.0|Acme Research LLC" ] && ok "donation row recorded" ||
   ko "donation row recorded (got: '$DROW')"
 bash "$DONATE" --usd 0 --org x --payer p >/dev/null 2>&1 && ko "donation usd=0 rejected" ||
   ok "donation usd=0 rejected"
@@ -229,7 +229,7 @@ fi
 
 # going past carbon-neutral in dollars leaves owed NEGATIVE, not clamped at 0:
 # 96.00 - (37.00 + 80.00) = -21.00
-bash "$DONATE" --usd 80.00 --org "Tradewater" --payer "Signalblur Security" \
+bash "$DONATE" --usd 80.00 --org "Tradewater" --payer "Acme Research LLC" \
   --date 2026-07-02 >/dev/null 2>&1 || ko "over-contributing donation exits 0"
 CACHE_L2_NEG="$(sed -n 2p "${STATE}/segment-cache" 2>/dev/null)"
 if [ "$CACHE_L2_NEG" = "-21.00/96.00" ]; then
@@ -246,22 +246,22 @@ echo "$HUMAN" | grep -qi "unverified" && ok "report shows unverified line" || ko
 
 # --- 6. export: tax year + payer separation + year boundary ------------------
 bash "$EXPORT" --tax-year 2026 >/dev/null 2>&1 || ko "export 2026 exits 0"
-CSV_SIG="${STATE}/exports/tax-2026-signalblur-security.csv"
-CSV_LIES="${STATE}/exports/tax-2026-lies-above-media.csv"
-if [ -f "$CSV_SIG" ]; then
-  ok "export creates per-payer CSV (Signalblur Security)"
+CSV_ACME="${STATE}/exports/tax-2026-acme-research-llc.csv"
+CSV_EXMEDIA="${STATE}/exports/tax-2026-example-media-co.csv"
+if [ -f "$CSV_ACME" ]; then
+  ok "export creates per-payer CSV (Acme Research LLC)"
 else
-  ko "export creates per-payer CSV (Signalblur Security)"
+  ko "export creates per-payer CSV (Acme Research LLC)"
 fi
-[ -f "$CSV_LIES" ] && ko "2025 purchase leaks into 2026 export" || ok "year boundary respected (2025-12-31 not in 2026)"
-grep -qi "classify.*CPA" "$CSV_SIG" && ok "export carries classify-with-CPA header" || ko "export carries classify-with-CPA header"
-grep -q "$SHA_EXPECTED" "$CSV_SIG" && ok "export includes receipt sha256" || ko "export includes receipt sha256"
-grep -q "PURO-2026-00042" "$CSV_SIG" && ok "export includes retirement id" || ko "export includes retirement id"
+[ -f "$CSV_EXMEDIA" ] && ko "2025 purchase leaks into 2026 export" || ok "year boundary respected (2025-12-31 not in 2026)"
+grep -qi "classify.*CPA" "$CSV_ACME" && ok "export carries classify-with-CPA header" || ko "export carries classify-with-CPA header"
+grep -q "$SHA_EXPECTED" "$CSV_ACME" && ok "export includes receipt sha256" || ko "export includes receipt sha256"
+grep -q "PURO-2026-00042" "$CSV_ACME" && ok "export includes retirement id" || ko "export includes retirement id"
 # rows for this payer in 2026: id 1 (100 kg, verified) + id 3 (50 kg, unverified)
-grep -c '^[0-9]' "$CSV_SIG" | grep -qx "2" && ok "export row count (2 rows for payer)" || ko "export row count"
+grep -c '^[0-9]' "$CSV_ACME" | grep -qx "2" && ok "export row count (2 rows for payer)" || ko "export row count"
 
 bash "$EXPORT" --tax-year 2025 >/dev/null 2>&1 || ko "export 2025 exits 0"
-[ -f "${STATE}/exports/tax-2025-lies-above-media.csv" ] && ok "2025 export has the year-boundary row" || ko "2025 export has the year-boundary row"
+[ -f "${STATE}/exports/tax-2025-example-media-co.csv" ] && ok "2025 export has the year-boundary row" || ko "2025 export has the year-boundary row"
 
 echo ""
 if [ "$FAILED" -gt 0 ]; then
