@@ -229,8 +229,6 @@ if [ "$give_missing" = "0" ]; then
   echo "PASS dashboard: giving shortlist carries donate + sources + news for all seven orgs"
 fi
 want "giving section heading" 'id="h-give"'
-# The ranking research is blunt about reefs; the copy must not launder it.
-want "honest carbon verdict on reef restoration" 'not a carbon'
 
 # --- methodology -------------------------------------------------------------
 want "methodology section" 'id="h-method"'
@@ -239,82 +237,123 @@ want "water formula stated" '0.18/1.14'
 want "embodied factor stated" '44.1'
 want "removal-only balance rule restated" 'verified removal'
 
-# --- dashboard idiom ---------------------------------------------------------
-# The page is a console, not a statement of account. These lock the shape so a
-# later content edit cannot quietly reintroduce the bill: a zoned page header, a
-# card grid, and every panel a labelled section.
-want "zoned page header" 'class="topbar"'
-want "card grid" 'class="grid"'
-want "hero panel carries the headline reading" 'class="card card--hero"'
-want "charts are first-class panels, not table annexes" 'id="by-month"'
-want "model breakdown is its own panel" 'id="by-model"'
-# SIGNATURE: the settlement meter is a gauge with a real tick scale, which is
-# what makes it a reading rather than a progress bar. Both marks are drawn at
-# load time from the embedded script, so they exist in the page as the source
-# that builds them, not as static attributes — assert that source.
-want "settlement meter has a tick scale" 'tick--major'
-want "settlement meter marks the settled boundary" 'class: "bound"'
-want "settlement meter reports the settled percentage" '% settled'
-# Ledger vocabulary must stay gone.
-for dead in "Statement of account" "Detach for your records" 'class="sheet"' 'class="mast"' 'class="perf"'; do
+# --- station-record idiom ----------------------------------------------------
+# The page is a station record: three streams, each with the same trio of
+# readings, then one shared time axis carrying all three traces. These lock that
+# shape so a later content edit cannot quietly collapse it back into a bill or a
+# generic admin console.
+want "station header" 'class="bar"'
+want "streams block" 'id="h-streams"'
+want "one card per stream, keyed to its lane" 'stream stream--'
+want "carbon stream present" 'stream--carbon'
+want "electricity stream present" 'stream--energy'
+want "water stream present" 'stream--water'
+# The trio is the system: the SAME three readings, in the same order, for every
+# stream. Assert all three labels, and that the third is a real month-on-month
+# comparison rather than a repeat of the lifetime figure.
+want "trio badge 1: lifetime total" 'Lifetime total'
+want "trio badge 2: familiar-scale equivalence" 'In familiar terms'
+want "trio badge 3: latest month" 'Latest month'
+want "trend badge compares against the prior month" '% vs '
+# SIGNATURE: the trace. Three lanes on one monthly axis, drawn at load time by
+# the embedded script, so it exists in the page as the source that builds it.
+want "trace panel" 'id="h-trace"'
+want "trace draws one lane per stream" 'function drawTrace'
+want "trace lanes are labelled in words, not colour alone" 'class: "lane__n"'
+want "trace shares one time axis across the lanes" 'one time axis'
+want "trace states the lanes are congruent by construction" 'congruent by construction'
+want "model breakdown kept its own panel" 'id="by-model"'
+# The measure: settled span solid, unsettled span OPEN. Filled-versus-open is
+# the channel that survives greyscale, CVD and forced colours, which is exactly
+# what the 45-degree hatch it replaced did not do reliably at small sizes.
+want "measure marks the settled boundary" 'class: "bound"'
+want "measure reports the settled percentage" '% settled'
+want "unsettled span is an open track, not a hatch" 'class: "m-open"'
+want "open track is a stroke with no fill" '\.m-open { fill: none;'
+if grep -q 'patternTransform\|repeating-linear-gradient' "$OUT"; then
+  echo "FAIL dashboard: the hatch fill returned — unsettled is an open track" >&2
+  fail=1
+else
+  echo "PASS dashboard: unsettled is drawn as an open track (no hatch pattern)"
+fi
+# An empty station and an unsettled one must never look the same.
+want "no-data track is dashed, distinct from the open track" 'track-none'
+# Ledger and console vocabulary must stay gone.
+for dead in "Statement of account" "Detach for your records" 'class="sheet"' 'class="mast"' 'class="perf"' 'class="topbar"'; do
   if grep -qF "$dead" "$OUT"; then
-    echo "FAIL dashboard: ledger vocabulary returned: $dead" >&2
+    echo "FAIL dashboard: retired vocabulary returned: $dead" >&2
     fail=1
   fi
 done
-echo "PASS dashboard: ledger/bill vocabulary retired"
+echo "PASS dashboard: ledger/bill/console vocabulary retired"
+
+# --- giving briefing: tiered, and clear about what each org does -------------
+want "giving briefing groups orgs by what a gift does" 'class: "tier"'
+want "each org card states its carbon verdict under a heading" 'Carbon verdict'
+want "each org card surfaces the supporting research" 'Supporting research'
+want "the price signal is its own object, not a sentence" 'org__price'
+# The ranking research is blunt about reefs; the copy must not launder it.
+want "honest carbon verdict on reef restoration" 'Not a carbon investment'
 
 # --- quality floor: the page's own accessibility scaffolding ------------------
 want "reduced motion honoured" 'prefers-reduced-motion'
 want "print stylesheet present" '@media print'
 want "visible keyboard focus" ':focus-visible'
-# Charts measure two quantities, so the palette is two colours, both pinned at
-# the values the dataviz validator cleared on all pairs (CVD dE 22.4 deutan,
-# normal-vision dE 25.5, both >= 3:1 on white).
-want "chart palette: emitted slot pinned" '\--viz-emitted: #414a8c'
+# FOUR chart slots, because the page draws four things: the three streams and
+# the settled span. Every value is pinned at what the dataviz validator cleared
+# on ALL PAIRS (worst CVD dE 8.3 protan, worst normal-vision dE 16.6, all four
+# >= 3:1 on the white sheet and on the neutral plane).
+want "chart palette: carbon slot pinned" '\--viz-carbon:  #4a44a8'
+want "chart palette: electricity slot pinned" '\--viz-energy:  #a03d80'
+want "chart palette: water slot pinned" '\--viz-water:   #1b83c4'
 want "chart palette: settled slot pinned" '\--viz-settled: #0f9563'
 # No oranges or reds in the charts, and no quietly-reintroduced rainbow: the
-# only chart tokens permitted are those two.
+# only chart tokens permitted are those four. Every one of them was searched
+# inside the cool half of the wheel only, because emitting carbon is the normal
+# state of doing the work and must never be dressed as an error.
 if grep -oE '\--viz-[a-z0-9-]+:' "$OUT" | sort -u |
-  grep -qvE '^--viz-(emitted|settled):$'; then
+  grep -qvE '^--viz-(carbon|energy|water|settled):$'; then
   echo "FAIL dashboard: unexpected chart palette token(s):" >&2
   grep -oE '\--viz-[a-z0-9-]+:' "$OUT" | sort -u |
-    grep -vE '^--viz-(emitted|settled):$' >&2
+    grep -vE '^--viz-(carbon|energy|water|settled):$' >&2
   fail=1
 else
-  echo "PASS dashboard: exactly two chart colours (emitted, settled)"
+  echo "PASS dashboard: exactly four chart colours (carbon, electricity, water, settled)"
 fi
 # The working mint is the one colour on this page under a WCAG obligation: it
-# draws the meaning-bearing rules (column rules, table-head underlines, callout
-# bars), which SC 1.4.11 Non-text Contrast requires to reach 3:1 against the
-# adjacent colour. #0f9563 measures 3.81:1 on the #ffffff sheet. Pin it, so a
-# later palette pass cannot lighten it back under the threshold unnoticed.
+# draws the meaning-bearing rules (the header rule, the section-head rules, the
+# settled span, callout bars), which SC 1.4.11 Non-text Contrast requires to
+# reach 3:1 against the adjacent colour. #0f9563 measures 3.82:1 on the #ffffff
+# sheet and 3.43:1 on the #f1f3f2 plane. Pin it, so a later palette pass cannot
+# lighten it back under the threshold unnoticed.
 want "meaning-bearing mint pinned at its measured value" '\--mint:      #0f9563'
 want "decorative mint kept separate from the working mint" '\--mint-soft: #9cd8c2'
-# One mode, and it is light. A statement of account that changes colour with the
-# reader's OS setting is one you cannot check against the copy you filed, so
-# there is no dark variant and no theme toggle — and the page says so twice, in
-# CSS and in a meta element, so the browser does not auto-darken its own
-# furniture before the stylesheet has loaded.
+# One mode, and it is light. A record that changes colour with the reader's OS
+# setting is one you cannot check against the copy you filed, so there is no
+# dark variant and no theme toggle — and the page says so twice, in CSS and in a
+# meta element, so the browser does not auto-darken its own furniture before the
+# stylesheet has loaded.
 want "page declares itself light in CSS" 'color-scheme: light'
 want "page declares itself light before CSS loads" '<meta name="color-scheme" content="light">'
 if grep -q 'prefers-color-scheme' "$OUT"; then
-  echo "FAIL dashboard: dark mode reintroduced — the statement renders light for everyone" >&2
+  echo "FAIL dashboard: dark mode reintroduced — the record renders light for everyone" >&2
   fail=1
 else
   echo "PASS dashboard: no dark variant (single light palette for every reader)"
 fi
 
 # Mint is the ruling, not the paper. No surface on this page may be filled with
-# it: every background resolves to the white sheet or the neutral plane.
-if grep -qE 'background(-color)?:[^;]*var\(--mint' "$OUT"; then
-  echo "FAIL dashboard: mint used as a surface fill — it is line-work only" >&2
-  grep -nE 'background(-color)?:[^;]*var\(--mint' "$OUT" | head -3 >&2
+# it, and no chart colour may become a background either: chart marks are drawn
+# as SVG, including the legend swatches, so every background on the page
+# resolves to the white sheet or the neutral plane.
+if grep -qE 'background(-color)?:[^;]*var\(--(mint|viz-)' "$OUT"; then
+  echo "FAIL dashboard: mint or a chart colour used as a surface fill — both are marks, not fields" >&2
+  grep -nE 'background(-color)?:[^;]*var\(--(mint|viz-)' "$OUT" | head -3 >&2
   fail=1
 else
-  echo "PASS dashboard: mint is line-work only, never a surface fill"
+  echo "PASS dashboard: mint and the chart palette are marks only, never a surface fill"
 fi
 want "single main landmark" '<main'
-want "skip link to the statement" 'class="skip"'
+want "skip link to the record" 'class="skip"'
 
 exit "$fail"

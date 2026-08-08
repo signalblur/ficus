@@ -1,15 +1,16 @@
-/* Renders the statement from DATA. Every value reaches the DOM as a text node
-   (Node.append with a string, or textContent) — never as parsed markup — so no
-   ledger string can inject HTML. The only attributes ever built from data are
-   href (set through setAttribute, never parsed) and download.
+/* Renders the station record from DATA. Every value reaches the DOM as a text
+   node (Node.append with a string, or textContent) — never as parsed markup —
+   so no ledger string and no shortlist sentence can inject HTML. The only
+   attributes ever built from data are href (set through setAttribute, never
+   parsed) and download.
 
    Charts are inline SVG built through the namespace read off the static <svg>
    in the skeleton, which keeps the URL of the SVG namespace out of this file:
-   the dashboard must carry zero external references and be openable over
-   file:// with the network off. */
+   the page must carry zero external references and open over file:// with the
+   network off. */
 (function () {
   "use strict";
-  var doc = document, settle = doc.getElementById("c-settle"), NS = settle.namespaceURI;
+  var doc = document, measure = doc.getElementById("c-measure"), NS = measure.namespaceURI;
 
   function make(ns, tag, attrs, kids) {
     var n = ns ? doc.createElementNS(ns, tag) : doc.createElement(tag), k;
@@ -25,17 +26,28 @@
     return (x < 0 ? "−" : "") + p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",") + (p[1] ? "." + p[1] : "");
   }
   function usd(v) { var x = Number(v) || 0; return (x < 0 ? "−$" : "$") + num(Math.abs(x), 2); }
-  function width(node) { return Math.max(240, Math.round(node.getBoundingClientRect().width) || 720); }
+  function width(node) { return Math.max(280, Math.round(node.getBoundingClientRect().width) || 720); }
+
+  /* SIGNATURE — the split readout. Integer large, fraction small, the way a
+     meter face reads. Both halves live inside one element as plain text, so a
+     screen reader still announces "41.60" and a find-in-page still matches. */
+  function fig(v, unit) {
+    var p = String(v).split("."), n = h("span", { class: "fig" }, p[0]);
+    if (p.length > 1) n.append(h("span", { class: "fig__f" }, "." + p[1]));
+    if (unit) n.append(h("span", { class: "fig__u" }, unit));
+    return n;
+  }
 
   var T = DATA.totals || {}, OS = DATA.offset_state || {}, EQ = DATA.equivalences || {};
-  var C = DATA.constants || {}, COST = DATA.cost || {};
+  var C = DATA.constants || {}, COST = DATA.cost || {}, TR = DATA.trend || {};
   var months = DATA.monthly || [], models = DATA.by_model || [];
   var buys = DATA.offsets || [], gifts = DATA.donations || [];
+  var GIVE = DATA.giving || { tiers: [], orgs: [] };
   var emitted = (Number(T.co2_g) || 0) / 1000;
   var removal = Number(OS.removal_verified_kg) || 0;
   var settled = Math.min(removal, emitted), unsettled = Math.max(emitted - removal, 0);
 
-  /* --- masthead and standing text ----------------------------------------- */
+  /* --- station header ------------------------------------------------------ */
   set("caveat", DATA.caveat || "");
   [["gen", DATA.generated_at], ["m-issued", DATA.generated_at]].forEach(function (p) {
     var n = doc.getElementById(p[0]);
@@ -48,40 +60,239 @@
     : "no sessions yet");
   set("m-sessions", num(T.sessions, 0));
 
-  /* --- SIGNATURE: the three meter readings, each with its equivalence -------
-     The readings are three different units, not a series, so none of them
-     wears a chart color: color would be encoding nothing. Identity comes from
-     the label and the equivalence beneath it. */
-  var reads = doc.getElementById("reads");
-  [["Energy", num((Number(T.energy_wh) || 0) / 1000, 2), "kWh",
-    EQ.home_days, EQ.energy],
-   ["Water", num((Number(T.water_ml) || 0) / 1000, 1), "L",
-    EQ.showers, EQ.water],
-   ["Carbon", num(emitted / 1000, 3), "t CO2e",
-    EQ.car_miles, EQ.co2]
-  ].forEach(function (r) {
-    var f = r[4] || {}, eq = [];
+  /* --- the three streams ---------------------------------------------------
+     One definition per stream, consumed three times: once for the reading
+     trio, once for the trace lane, once for the details table. The order —
+     carbon, electricity, water — is the same everywhere on the page. */
+  var STREAMS = [
+    { id: "carbon", name: "Carbon", cls: "m-carbon", key: "co2_g", tkey: "latest_g",
+      unit: "kg CO2e", laneUnit: "kg CO2e", div: 1000, dp: 2,
+      total: num(emitted, 2), totalUnit: "kg CO2e",
+      eq: EQ.car_miles, eqf: EQ.co2,
+      mark: function () {
+        return glyph([["M3 7c2-2 4 2 6 0s4-2 6 0 4 2 6 0"],
+          ["M3 12c2-2 4 2 6 0s4-2 6 0 4 2 6 0"], ["M3 17c2-2 4 2 6 0s4-2 6 0"]]);
+      } },
+    { id: "energy", name: "Electricity", cls: "m-energy", key: "energy_wh", tkey: "latest_wh",
+      unit: "kWh", laneUnit: "kWh", div: 1000, dp: 2,
+      total: num((Number(T.energy_wh) || 0) / 1000, 2), totalUnit: "kWh",
+      eq: EQ.home_days, eqf: EQ.energy,
+      mark: function () { return glyph([["M13.5 2.5 6 13h4.8l-1.3 8.5L17 11h-4.8z"]]); } },
+    { id: "water", name: "Water", cls: "m-water", key: "water_ml", tkey: "latest_ml",
+      unit: "L", laneUnit: "L", div: 1000, dp: 1,
+      total: num((Number(T.water_ml) || 0) / 1000, 1), totalUnit: "L",
+      eq: EQ.showers, eqf: EQ.water,
+      mark: function () { return glyph([["M12 3c3.7 4.4 6 7.5 6 10a6 6 0 0 1-12 0c0-2.5 2.3-5.6 6-10z"]]); } }
+  ];
+  function glyph(paths) {
+    var g = s("svg", { class: "stream__mark", viewBox: "0 0 24 24", "aria-hidden": "true", focusable: "false" });
+    paths.forEach(function (p) {
+      g.append(s("path", { d: p[0], fill: "none", stroke: "currentColor",
+        "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round" }));
+    });
+    return g;
+  }
+
+  var host = doc.getElementById("stream-cards");
+  STREAMS.forEach(function (m) {
+    var f = m.eqf || {}, t = TR[m.id] || {};
+    var card = h("section", { class: "card stream stream--" + m.id });
+
+    card.append(h("div", { class: "stream__hd" }, m.mark(),
+      h("h3", { class: "stream__n" }, m.name)));
+
+    var trio = h("ul", { class: "trio" });
+
+    /* 1 — the lifetime total. */
+    trio.append(h("li", {},
+      h("p", { class: "badge__k" }, "Lifetime total"),
+      h("p", { class: "badge__v" }, fig(m.total, m.totalUnit))));
+
+    /* 2 — the same total on a familiar scale. The factor, the noun and the
+       citation all come from data/equivalence-constants.json, and the division
+       happened in the generator: no reader and no model is asked to do it. */
+    var eqLi = h("li", {}, h("p", { class: "badge__k" }, "In familiar terms"));
     if (f.noun) {
-      eq.push("≈ ", h("b", {}, num(r[3], Number(r[3]) >= 10 ? 0 : 2)), " " + f.noun);
+      eqLi.append(h("p", { class: "badge__v" }, fig(num(m.eq, Number(m.eq) >= 10 ? 0 : 2), "")));
+      eqLi.append(h("p", { class: "badge__why" }, f.noun));
+    } else {
+      eqLi.append(h("p", { class: "badge__why" }, "No factor on file."));
     }
-    var cite = f.cite
-      ? h("span", { class: "read__src" }, f.cite + " · ",
-          f.cite_url ? h("a", { href: f.cite_url }, "source") : null)
-      : null;
-    /* The space between the figure and its unit is a real text node, not a
-       margin: at 320px it is the only break opportunity the pair has, and
-       without it the unit runs off the sheet (SC 1.4.10 Reflow). */
-    reads.append(h("li", { class: "read" },
-      h("p", { class: "read__k" }, r[0]),
-      h("p", { class: "read__v" }, r[1], " ", h("span", { class: "read__u" }, r[2])),
-      h("p", { class: "read__eq" }, make(null, "span", {}, eq), cite)));
+    if (f.cite) {
+      eqLi.append(h("p", { class: "badge__src" }, f.cite + " · ",
+        f.cite_url ? h("a", { href: f.cite_url }, "source") : null));
+    }
+    trio.append(eqLi);
+
+    /* 3 — the latest month, against the one before it. Direction is carried by
+       an arrow and by the sign, never by colour: a heavier month is not an
+       error and a lighter one is not a success. */
+    var latest = Number(t[m.tkey]) || 0, pct = t.pct;
+    var chip;
+    if (pct === null || pct === undefined) {
+      chip = h("span", { class: "delta" }, TR.prev_month ? "no prior month" : "first month on record");
+    } else {
+      var up = Number(pct) >= 0;
+      chip = h("span", { class: "delta" },
+        h("span", { class: "delta__d", "aria-hidden": "true" }, up ? "▲" : "▼"),
+        (up ? "+" : "−") + num(Math.abs(Number(pct)), 1) + "% vs " + String(TR.prev_month || ""));
+    }
+    trio.append(h("li", {},
+      h("p", { class: "badge__k" }, "Latest month" + (TR.month ? " · " + TR.month : "")),
+      h("p", { class: "badge__v" }, fig(num(latest / m.div, m.dp), m.laneUnit)),
+      chip));
+
+    card.append(trio);
+    host.append(card);
   });
 
-  /* --- balance ------------------------------------------------------------ */
-  set("bal-value", num(OS.balance_kg, 2));
+  /* --- SIGNATURE: the trace ------------------------------------------------
+     Three lanes, one monthly axis. Thin columns rather than lines, because a
+     monthly total is a bin and not a sample. Each lane keeps its own scale —
+     the units are not comparable — and says so in the gutter, so this is three
+     small multiples sharing an axis, never a two-scale chart. */
+  var LANE_H = 80, PLOT_H = 52, LANE_TOP = 22, AX_H = 24, RPAD = 8;
+  var cTrace = null;
+  (function buildTrace() {
+    var body = doc.getElementById("trace-body");
+    if (!months.length) {
+      body.append(h("p", { class: "empty" }, "No sessions recorded yet, so there is nothing to trace."));
+      return;
+    }
+    var g = s("g", {});
+    var svg = s("svg", { class: "chart", id: "c-trace", role: "img",
+      "aria-labelledby": "trace-t", "aria-describedby": "trace-d" },
+      s("title", { id: "trace-t" }, "Monthly carbon, electricity and water, three lanes on one time axis"),
+      s("desc", { id: "trace-d" }), g);
+    body.append(h("figure", { class: "fig-wrap" }, svg));
+    cTrace = { svg: svg, g: g, desc: svg.querySelector("desc") };
+  })();
+
+  function drawTrace() {
+    if (!cTrace) return;
+    var W = width(cTrace.svg.parentNode);
+    var H = STREAMS.length * LANE_H + AX_H;
+    cTrace.svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    cTrace.g.textContent = "";
+    /* The gutter carries the lane name and unit. Fixed at 98px it would eat a
+       third of a 320px viewport, so it gives ground before the plot does. */
+    var GUT = Math.round(Math.min(98, Math.max(56, W * 0.22)));
+    var plotW = Math.max(W - GUT - RPAD, 60);
+    var step = plotW / months.length;
+    var bw = Math.max(Math.min(step * 0.58, 24), 2);
+    var labelAll = step >= 62;
+    var desc = [];
+
+    STREAMS.forEach(function (m, li) {
+      var top = li * LANE_H, plotTop = top + LANE_TOP, baseY = plotTop + PLOT_H;
+      var vals = months.map(function (r) { return (Number(r[m.key]) || 0) / m.div; });
+      var max = Math.max.apply(null, vals.concat([0])) || 1;
+      var peak = vals.indexOf(max);
+
+      /* Lane identity lives in the gutter, in words: the colour is a second
+         channel on top of the label, never the only one. */
+      cTrace.g.append(s("text", { class: "lane__n", x: "0", y: plotTop + PLOT_H / 2 - 3 }, m.name));
+      cTrace.g.append(s("text", { class: "lane__u", x: "0", y: plotTop + PLOT_H / 2 + 12 }, m.laneUnit));
+
+      months.forEach(function (r, i) {
+        var v = vals[i], bh = Math.max(Math.round((v / max) * PLOT_H), v > 0 ? 2 : 0);
+        var x = Math.round(GUT + i * step + (step - bw) / 2), y = baseY - bh;
+        var bar = s("rect", { class: m.cls, x: x, y: y, width: Math.round(bw), height: bh, rx: "2" });
+        bar.append(s("title", {}, r.month + " · " + m.name + " " + num(v, m.dp) + " " + m.laneUnit));
+        cTrace.g.append(bar);
+        if (labelAll || i === peak) {
+          cTrace.g.append(s("text", { class: "val", x: x + bw / 2, y: y - 6, "text-anchor": "middle" },
+            num(v, m.dp)));
+        }
+      });
+
+      cTrace.g.append(s("line", { class: "base", x1: GUT - 0.5, y1: baseY + 0.5, x2: GUT + plotW, y2: baseY + 0.5 }));
+      desc.push(m.name + " in " + m.laneUnit + ": " + months.map(function (r, i) {
+        return r.month + " " + num(vals[i], m.dp); }).join(", "));
+    });
+
+    /* One time axis under the stack, shared by all three lanes. */
+    var axY = STREAMS.length * LANE_H + 14;
+    months.forEach(function (r, i) {
+      var label = step >= 58 ? String(r.month) : step >= 26 ? String(r.month).slice(-2) : "";
+      if (!label && i !== 0 && i !== months.length - 1) return;
+      if (!label) label = String(r.month).slice(-2);
+      cTrace.g.append(s("text", { class: "ax", x: Math.round(GUT + i * step + step / 2), y: axY,
+        "text-anchor": "middle" }, label));
+    });
+    cTrace.desc.textContent = desc.join(". ") + ".";
+  }
+
+  /* --- the measure ---------------------------------------------------------
+     Settled solid, unsettled OPEN, with a caliper rule where they meet. Filled
+     versus open is the channel that survives a greyscale print, colour-vision
+     deficiency and forced colours; hue is the second channel, not the only
+     one, and both spans are labelled with their figure in the legend. */
+  var TOPLAB_Y = 9, TRACK_Y = 15, TRACK_H = 34, CAL_TOP = 7, CAL_BOT = 55, PCT_Y = 67, MH = 70;
+  doc.getElementById("bal-value").append(fig(num(OS.balance_kg, 2), "kg CO2e outstanding"));
   set("bal-eq", num(emitted, 2) + " kg emitted − " + num(removal, 2) + " kg verified removal"
     + (emitted > 0 && unsettled === 0 ? " · fully settled" : ""));
 
+  function drawMeasure() {
+    var g = doc.getElementById("measure-marks"), W = width(measure.parentNode);
+    measure.setAttribute("viewBox", "0 0 " + W + " " + MH);
+    g.textContent = "";
+    if (emitted <= 0) {
+      /* Nothing emitted is not the same state as nothing settled, so it does
+         not get the same mark: a dashed hairline track, never an open one. */
+      g.append(s("rect", { class: "track-none", x: "1", y: TRACK_Y, width: W - 2, height: TRACK_H, rx: "3" }));
+      g.append(s("text", { class: "ax", x: "0", y: PCT_Y }, "Nothing emitted yet — nothing to settle"));
+      set("measure-d", "No emissions recorded, so there is nothing to settle.");
+      return;
+    }
+    var wS = Math.round((settled / emitted) * W), gap = wS > 0 && wS < W ? 3 : 0;
+    g.append(s("text", { class: "ax", x: "0", y: TOPLAB_Y }, "0"));
+    g.append(s("text", { class: "ax", x: W, y: TOPLAB_Y, "text-anchor": "end" },
+      num(emitted, 2) + " kg emitted"));
+    if (wS > 0) {
+      g.append(s("rect", { class: "m-settled", x: "0", y: TRACK_Y,
+        width: Math.max(wS - gap, 1), height: TRACK_H, rx: "3" }));
+    }
+    if (wS < W) {
+      /* Inset by one so the 2px stroke stays inside the viewBox rather than
+         being clipped in half at the right edge. */
+      g.append(s("rect", { class: "m-open", x: wS + 1, y: TRACK_Y + 1,
+        width: Math.max(W - wS - 2, 1), height: TRACK_H - 2, rx: "3" }));
+    }
+    g.append(s("line", { class: "base", x1: "0", y1: TRACK_Y + TRACK_H + 5.5, x2: W, y2: TRACK_Y + TRACK_H + 5.5 }));
+    var pct = (settled / emitted) * 100;
+    if (wS > 0 && wS < W) {
+      var mx = Math.min(Math.max(wS, 1), W - 1);
+      var anchor = pct > 72 ? "end" : pct < 28 ? "start" : "middle";
+      g.append(s("g", { class: "bound" },
+        s("line", { x1: mx, y1: CAL_TOP, x2: mx, y2: CAL_BOT }),
+        s("text", { x: mx, y: PCT_Y, "text-anchor": anchor }, num(pct, 1) + "% settled")));
+    } else {
+      g.append(s("text", { class: "ax", x: "0", y: PCT_Y },
+        wS >= W ? "100% settled" : "0% settled"));
+    }
+    set("measure-d", "Of " + num(emitted, 2) + " kg CO2e emitted, " + num(settled, 2)
+      + " kg is settled by verified removal and " + num(unsettled, 2) + " kg is unsettled."
+      + (removal > emitted ? " Verified removal exceeds emissions by " + num(removal - emitted, 2) + " kg." : ""));
+  }
+
+  /* The legend swatches are the chart's own marks at 12px, drawn as SVG rather
+     than as CSS backgrounds: a chart colour never becomes a background
+     anywhere, which is what keeps "mint is line-work, never a field" testable. */
+  function swatch(kind) {
+    var g = s("svg", { class: "legend__sw", viewBox: "0 0 12 12", "aria-hidden": "true", focusable: "false" });
+    g.append(kind === "settled"
+      ? s("rect", { class: "m-settled", width: "12", height: "12", rx: "2" })
+      : s("rect", { class: "m-open", x: "1", y: "1", width: "10", height: "10", rx: "2" }));
+    return g;
+  }
+  var legend = doc.getElementById("measure-legend");
+  [["settled", "Settled by verified removal", settled], ["open", "Unsettled", unsettled]].forEach(function (l) {
+    legend.append(h("span", { class: "legend__i" }, swatch(l[0]),
+      l[1] + " ", h("span", { class: "legend__v" }, num(l[2], 2) + " kg")));
+  });
+
+  /* --- below the line ------------------------------------------------------ */
   var memo = doc.getElementById("memo-list");
   function mark(kind) {
     var g = s("svg", { class: "memo__mark mk mk--" + kind, viewBox: "0 0 18 18", "aria-hidden": "true" },
@@ -110,22 +321,22 @@
         h("p", {}, "Contributions have passed the cost of everything this account has emitted, by "
           + usd(Math.abs(owed)) + ". The ledger stays unclamped so the surplus keeps showing.")));
   }
-  var pair = doc.getElementById("pair");
+  var pairs = doc.getElementById("pairs");
   [["Overall", usd(COST.overall_usd), "Everything emitted, priced at the removal rate.", null],
    ["Contributed", usd(COST.contributed_usd), "Every dollar given: offset purchases and donations, 1:1.", null],
    ["Owed", usd(owed), negative
       ? "In credit. Contributions exceed the overall cost."
       : "Overall minus contributed. Never clamped at zero.", negative ? "owed--neg" : null]
   ].forEach(function (p) {
-    pair.append(h("div", {}, h("dt", {}, p[0]),
-      h("dd", { class: p[3] }, p[1], h("small", {}, p[2]))));
+    pairs.append(h("div", {}, h("dt", {}, p[0]),
+      h("dd", { class: p[3] }, fig(p[1], ""), h("small", {}, p[2]))));
   });
   set("rate-note", "Removal rate: " + usd(COST.rate_usd_per_tonne) + " per tonne (data/offset-constants.json). "
     + "Dollars given never move the tonnes balance above — only verified removal does.");
 
-  /* --- tables ------------------------------------------------------------- */
-  /* The wrapper scrolls horizontally on a narrow viewport, so it takes focus:
-     a scrollable region a keyboard user cannot reach is a keyboard trap in
+  /* --- tables --------------------------------------------------------------
+     The wrapper scrolls horizontally on a narrow viewport, so it takes focus: a
+     scrollable region a keyboard user cannot reach is a keyboard trap in
      reverse (SC 2.1.1 Keyboard; EN 301 549 9.2.1.1). */
   function table(caption, cols, rows, foot) {
     return h("div", { class: "tw", tabindex: "0" }, h("table", {}, h("caption", {}, caption),
@@ -134,119 +345,39 @@
       }))), make(null, "tbody", {}, rows), foot || null));
   }
 
-  /* --- charts ------------------------------------------------------------- */
-  function chart(hostId, id, titleText) {
-    var host = doc.getElementById(hostId);
+  /* --- model families ------------------------------------------------------
+     Horizontal bars, ranked, every bar directly labelled. One nominal series,
+     so every bar takes the same slot: length already carries the magnitude,
+     and colouring by rank would repaint the survivors under any filter. */
+  var cModel = null;
+  (function buildModel() {
+    var body = doc.getElementById("model-body");
+    if (!models.length) return;
     var g = s("g", {});
-    var svg = s("svg", { class: "chart", id: id, role: "img",
-      "aria-labelledby": id + "-t", "aria-describedby": id + "-d" },
-      s("title", { id: id + "-t" }, titleText), s("desc", { id: id + "-d" }), g);
-    host.append(h("figure", { class: "fig" }, svg));
-    return { svg: svg, g: g, desc: svg.querySelector("desc") };
-  }
-  function frame(c, w, hgt) { c.svg.setAttribute("viewBox", "0 0 " + w + " " + hgt); c.g.textContent = ""; }
-
-  /* SIGNATURE — the settlement meter.
-     One track, split at the verified-removal boundary, dressed as an instrument
-     rather than a progress bar: a tick scale runs above it (minor every 10% of
-     what was emitted, major at 0/50/100) and a marker drops at the boundary
-     carrying the settled percentage. The scale is the point — it turns "some of
-     the bar is filled" into a reading you can take. The unsettled remainder is
-     hatched as well as colored, and prevention is nowhere on it. */
-  var TICK_TOP_MAJ = 4, TICK_TOP_MIN = 7, TICK_BOT = 13;
-  var TRACK_Y = 17, TRACK_H = 28, BASE_Y = 46.5, AX_Y = 58, MARK_Y = 70;
-  function drawSettle() {
-    var g = doc.getElementById("settle-marks"), W = width(settle.parentNode), H = 78;
-    settle.setAttribute("viewBox", "0 0 " + W + " " + H);
-    g.textContent = "";
-    if (emitted <= 0) {
-      g.append(s("rect", { class: "track-empty", x: "0.5", y: TRACK_Y, width: W - 1, height: TRACK_H, rx: "3" }));
-      g.append(s("text", { class: "ax", x: "0", y: AX_Y }, "Nothing emitted yet — nothing to settle"));
-      set("settle-d", "No emissions recorded, so there is nothing to settle.");
-      return;
-    }
-    /* Tick scale. Drawn first so the track and the boundary marker sit over it. */
-    for (var p = 0; p <= 100; p += 10) {
-      var major = p === 0 || p === 50 || p === 100;
-      var tx = Math.round((p / 100) * W) + 0.5;
-      tx = Math.min(Math.max(tx, 0.5), W - 0.5);
-      g.append(s("line", { class: "tick" + (major ? " tick--major" : ""),
-        x1: tx, y1: major ? TICK_TOP_MAJ : TICK_TOP_MIN, x2: tx, y2: TICK_BOT }));
-    }
-    var wS = Math.round((settled / emitted) * W), gap = wS > 0 && wS < W ? 2 : 0;
-    if (wS > 0) g.append(s("rect", { class: "m-credit", x: "0", y: TRACK_Y, width: Math.max(wS - gap, 1), height: TRACK_H, rx: "3" }));
-    if (wS < W) g.append(s("rect", { x: wS, y: TRACK_Y, width: W - wS, height: TRACK_H, rx: "3", fill: "url(#hatch)" }));
-    g.append(s("line", { class: "base", x1: "0", y1: BASE_Y, x2: W, y2: BASE_Y }));
-    g.append(s("text", { class: "ax", x: "0", y: AX_Y }, "0"));
-    g.append(s("text", { class: "ax", x: W, y: AX_Y, "text-anchor": "end" }, num(emitted, 2) + " kg emitted"));
-    /* The boundary marker only earns its place when there is a boundary to
-       mark: at 0% or 100% it would just restate an end of the track. */
-    var pct = (settled / emitted) * 100;
-    if (wS > 0 && wS < W) {
-      var mx = Math.min(Math.max(wS, 0.5), W - 0.5);
-      var anchor = pct > 70 ? "end" : pct < 30 ? "start" : "middle";
-      var mark = s("g", { class: "bound" },
-        s("line", { x1: mx, y1: TICK_BOT, x2: mx, y2: BASE_Y }),
-        s("text", { x: mx, y: MARK_Y, "text-anchor": anchor }, num(pct, 1) + "% settled"));
-      g.append(mark);
-    }
-    set("settle-d", "Of " + num(emitted, 2) + " kg CO2e emitted, " + num(settled, 2)
-      + " kg is settled by verified removal and " + num(unsettled, 2) + " kg is unsettled."
-      + (removal > emitted ? " Verified removal exceeds emissions by " + num(removal - emitted, 2) + " kg." : ""));
-  }
-  var legend = doc.getElementById("settle-legend");
-  [["credit", "Settled by verified removal", settled], ["debit", "Unsettled", unsettled]].forEach(function (l) {
-    legend.append(h("span", { class: "legend__i" }, h("span", { class: "legend__sw legend__sw--" + l[0] }),
-      l[1] + " ", h("span", { class: "legend__v" }, num(l[2], 2) + " kg")));
-  });
-
-  /* Monthly columns. One measure, one axis, one series — so no legend box; the
-     title names it. Every column is directly labelled when there is room, and
-     the data table below carries the full numbers. */
-  var cMonth = months.length ? chart("monthly-body", "c-month", "Operational CO2e by month, in kilograms") : null;
-  function drawMonthly() {
-    if (!cMonth) return;
-    var W = width(cMonth.svg.parentNode), H = 190, top = 24, bot = 26, plot = H - top - bot;
-    var vals = months.map(function (m) { return (Number(m.co2_g) || 0) / 1000; });
-    var max = Math.max.apply(null, vals.concat([0])) || 1;
-    /* Cap the column pitch so two months cluster at the left instead of
-       drifting half a page apart; a long history still fills the width. */
-    var step = Math.min(W / months.length, 110), bw = Math.min(step * 0.6, 56), label = step >= 44;
-    var axis = Math.min(months.length * step, W);
-    frame(cMonth, W, H);
-    months.forEach(function (m, i) {
-      var v = vals[i], bh = Math.max(Math.round((v / max) * plot), v > 0 ? 2 : 0);
-      var x = Math.round(i * step + (step - bw) / 2), y = top + plot - bh;
-      var bar = s("rect", { class: "m-debit", x: x, y: y, width: Math.round(bw), height: bh, rx: "3" });
-      bar.append(s("title", {}, m.month + ": " + num(v, 2) + " kg CO2e"));
-      cMonth.g.append(bar);
-      if (label) cMonth.g.append(s("text", { class: "val", x: x + bw / 2, y: y - 7, "text-anchor": "middle" }, num(v, 2)));
-      cMonth.g.append(s("text", { class: "ax", x: x + bw / 2, y: H - 8, "text-anchor": "middle" },
-        step >= 62 ? String(m.month) : String(m.month).slice(-2)));
-    });
-    cMonth.g.append(s("line", { class: "base", x1: "0", y1: top + plot + 0.5, x2: axis, y2: top + plot + 0.5 }));
-    cMonth.desc.textContent = "Kilograms of operational CO2e per month: " + months.map(function (m, i) {
-      return m.month + " " + num(vals[i], 2); }).join("; ") + ".";
-  }
-
-  /* Model families: horizontal bars, ranked, every bar directly labelled. One
-     nominal series, so every bar takes the same slot rather than coloring by
-     value — bar length already carries the magnitude. */
-  var cModel = models.length ? chart("model-body", "c-model", "Operational CO2e by model family, in kilograms") : null;
+    var svg = s("svg", { class: "chart", id: "c-model", role: "img",
+      "aria-labelledby": "model-t", "aria-describedby": "model-d" },
+      s("title", { id: "model-t" }, "Operational CO2e by model family, in kilograms"),
+      s("desc", { id: "model-d" }), g);
+    body.append(h("figure", { class: "fig-wrap" }, svg));
+    cModel = { svg: svg, g: g, desc: svg.querySelector("desc") };
+  })();
   function drawModel() {
     if (!cModel) return;
-    var W = width(cModel.svg.parentNode), rh = 32, gut = 88, right = 84;
+    var W = width(cModel.svg.parentNode), rh = 34, gut = 80, right = 86;
     var span = Math.max(W - gut - right, 40), H = models.length * rh + 4;
     var vals = models.map(function (m) { return (Number(m.co2_g) || 0) / 1000; });
     var max = Math.max.apply(null, vals.concat([0])) || 1;
-    frame(cModel, W, H);
+    cModel.svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    cModel.g.textContent = "";
     models.forEach(function (m, i) {
       var y = i * rh + 6, bw = Math.max(Math.round((vals[i] / max) * span), vals[i] > 0 ? 2 : 0);
-      cModel.g.append(s("text", { class: "cat", x: "0", y: y + 14, "dominant-baseline": "middle" }, String(m.family)));
-      var bar = s("rect", { class: "m-debit", x: gut, y: y + 3, width: bw, height: "18", rx: "3" });
+      cModel.g.append(s("text", { class: "lane__n", x: "0", y: y + 15, "dominant-baseline": "middle" },
+        String(m.family)));
+      var bar = s("rect", { class: "m-carbon", x: gut, y: y + 4, width: bw, height: "20", rx: "2" });
       bar.append(s("title", {}, m.family + ": " + num(vals[i], 2) + " kg CO2e"));
       cModel.g.append(bar);
-      cModel.g.append(s("text", { class: "val", x: gut + bw + 8, y: y + 14, "dominant-baseline": "middle" }, num(vals[i], 2) + " kg"));
+      cModel.g.append(s("text", { class: "val", x: gut + bw + 8, y: y + 15, "dominant-baseline": "middle" },
+        num(vals[i], 2) + " kg"));
     });
     cModel.g.append(s("line", { class: "base", x1: gut - 0.5, y1: "4", x2: gut - 0.5, y2: H - 4 }));
     cModel.desc.textContent = "Kilograms of operational CO2e by model family: " + models.map(function (m, i) {
@@ -254,30 +385,41 @@
   }
 
   /* --- the numbers behind each chart, and the fresh-install empty state ---- */
-  [["monthly-body", months, "month", "Month", "monthly figures", "month"],
-   ["model-body", models, "family", "Family", "model figures", "model family"]
-  ].forEach(function (d) {
-    var host = doc.getElementById(d[0]);
-    if (!d[1].length) { host.append(h("p", { class: "empty" }, "No sessions recorded yet.")); return; }
-    host.append(h("details", {}, h("summary", {}, "Show " + d[4]),
-      table("Operational CO2e, energy and session count by " + d[5] + ".",
-        [[d[3]], [h("span", { class: "cs" }, "kg CO2e"), 1], ["kWh", 1], ["Sessions", 1]], d[1].map(function (r) {
-          return h("tr", {}, h("th", { scope: "row" }, String(r[d[2]])),
+  (function traceTable() {
+    var body = doc.getElementById("trace-body");
+    if (!months.length) return;
+    body.append(h("details", {}, h("summary", {}, "Show the monthly figures"),
+      table("Operational CO2e, energy, water and session count by month.",
+        [["Month"], [h("span", { class: "cs" }, "kg CO2e"), 1], ["kWh", 1], ["L", 1], ["Sessions", 1]],
+        months.map(function (r) {
+          return h("tr", {}, h("th", { scope: "row" }, String(r.month)),
+            h("td", { class: "n" }, num((Number(r.co2_g) || 0) / 1000, 2)),
+            h("td", { class: "n" }, num((Number(r.energy_wh) || 0) / 1000, 2)),
+            h("td", { class: "n" }, num((Number(r.water_ml) || 0) / 1000, 1)),
+            h("td", { class: "n" }, num(r.sessions, 0)));
+        }))));
+  })();
+  (function modelTable() {
+    var body = doc.getElementById("model-body");
+    if (!models.length) { body.append(h("p", { class: "empty" }, "No sessions recorded yet.")); return; }
+    body.append(h("details", {}, h("summary", {}, "Show the model figures"),
+      table("Operational CO2e, energy and session count by model family.",
+        [["Family"], [h("span", { class: "cs" }, "kg CO2e"), 1], ["kWh", 1], ["Sessions", 1]],
+        models.map(function (r) {
+          return h("tr", {}, h("th", { scope: "row" }, String(r.family)),
             h("td", { class: "n" }, num((Number(r.co2_g) || 0) / 1000, 2)),
             h("td", { class: "n" }, num((Number(r.energy_wh) || 0) / 1000, 2)),
             h("td", { class: "n" }, num(r.sessions, 0)));
         }))));
-  });
+  })();
 
-  /* --- the two figures the reading band does not carry --------------------
-     Energy, water and carbon already lead the page; repeating them here would
-     be decoration. Only embodied CO2e and API value are new information. */
+  /* --- the two figures the stream trios deliberately do not carry ---------- */
   var tiles = doc.getElementById("tiles");
   [["Embodied CO2e", num((Number(T.embodied_g) || 0) / 1000, 2), "kg, hardware manufacture"],
    ["API value", usd(T.cost_usd), "list price, not money spent"]
   ].forEach(function (t) {
-    tiles.append(h("div", { class: "tile" }, h("dt", { class: "tile__k" }, t[0]),
-      h("dd", { class: "tile__v" }, t[1], h("span", { class: "tile__u" }, t[2]))));
+    tiles.append(h("div", {}, h("dt", {}, t[0]),
+      h("dd", {}, fig(t[1], ""), h("small", {}, t[2]))));
   });
 
   /* --- audit trail: by payer, then the two registers ---------------------- */
@@ -388,7 +530,56 @@
       [["Date"], ["Payer"], ["Organisation"], ["USD", 1], ["Receipt SHA-256"]], grows));
   }
 
-  /* --- methodology: static prose, live constants --------------------------- */
+  /* --- the giving briefing -------------------------------------------------
+     Rendered entirely from DATA.giving. Not one sentence about any
+     organisation is written in this template: the copy, the price signal, the
+     honest verdict and the research behind them all live in
+     data/giving-shortlist.json, which records the document each claim came
+     from. Links are set through setAttribute, never parsed as markup. */
+  var giveHost = doc.getElementById("give-body");
+  (GIVE.tiers || []).forEach(function (tier) {
+    var orgs = (GIVE.orgs || []).filter(function (o) { return o.tier === tier.id; });
+    if (!orgs.length) return;
+    var sec = h("section", { class: "tier" },
+      h("div", { class: "tier__hd" },
+        h("h3", { class: "tier__t" }, String(tier.label || "")),
+        h("p", { class: "tier__d" }, String(tier.blurb || ""))));
+    var list = h("ul", { class: "orgs" + (orgs.length > 1 ? " orgs--multi" : "") });
+    orgs.forEach(function (o) {
+      var li = h("li", { class: "card org" });
+      li.append(h("span", { class: "org__area" }, String(o.area || "")));
+      li.append(h("h4", { class: "org__n" },
+        h("a", { href: String(o.url || "") }, String(o.name || "")),
+        o.sub ? h("small", {}, String(o.sub)) : null));
+      if (o.price) li.append(h("p", {}, h("span", { class: "org__price" }, String(o.price))));
+      li.append(h("p", { class: "org__does" }, String(o.does || "")));
+      if (o.price_note) li.append(h("p", { class: "org__pn" }, String(o.price_note)));
+      if (o.verdict) {
+        li.append(h("p", { class: "org__verdict" },
+          h("b", {}, "Carbon verdict"), String(o.verdict)));
+      }
+      if (o.update) {
+        li.append(h("p", { class: "org__update" },
+          h("b", {}, "Supporting research"), String(o.update)));
+      }
+      var links = h("ul", { class: "org__links" });
+      (o.evidence || []).forEach(function (e, i) {
+        links.append(h("li", {}, i === 0 ? h("b", {}, "Evidence ") : null,
+          h("a", { href: String(e.url || "") }, String(e.label || ""))));
+      });
+      if (o.news && o.news.url) {
+        links.append(h("li", {}, h("b", {}, "News "),
+          h("a", { href: String(o.news.url) }, String(o.news.label || "News")),
+          o.news.note ? " (" + String(o.news.note) + ")" : null));
+      }
+      li.append(links);
+      list.append(li);
+    });
+    sec.append(list);
+    giveHost.append(sec);
+  });
+
+  /* --- derivation: static prose, live constants ---------------------------- */
   var meth = doc.getElementById("meth"), F = DATA.formulas || {};
   [["Operational CO2e",
     "Estimated from deduplicated token counts by per-model factors in gCO2e per million tokens (Jegham et al. 2025, "
@@ -432,7 +623,7 @@
 
   /* --- draw, and redraw at the measured width on resize -------------------- */
   var pending = 0;
-  function render() { drawSettle(); drawMonthly(); drawModel(); }
+  function render() { drawMeasure(); drawTrace(); drawModel(); }
   render();
   addEventListener("resize", function () {
     cancelAnimationFrame(pending);
