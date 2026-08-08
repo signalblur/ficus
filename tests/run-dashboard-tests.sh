@@ -248,7 +248,7 @@ if grep -oE '<img[^>]*src="[^"]*"' "$OUT" | grep -qvE 'src="data:'; then
 else
   echo "PASS dashboard: no externally-loaded image on the page"
 fi
-want "the hero image slot exists in the renderer" 'org__fig'
+want "the hero image runs the full width of the card" 'org__banner'
 # Every card is accounted for: it either carries an image or is deliberately
 # text-only because no verifiable federal photograph of its subject exists.
 # Nothing may be silently missing.
@@ -257,6 +257,9 @@ total=$(jq '.orgs | length' "${REPO_DIR}/data/giving-shortlist.json")
 textonly=$(jq -r '[.orgs[] | select(has("image") | not) | .name] | join(", ")' \
   "${REPO_DIR}/data/giving-shortlist.json")
 echo "PASS dashboard: ${imaged} of ${total} cards illustrated; text-only: ${textonly:-none}"
+# A subject with no public-domain federal photograph gets a typographic plate at
+# the same size, so the card reads as a decision rather than a hole.
+want "cards without a photograph get a deliberate plate" 'org__banner--none'
 if [ "$imaged" -lt 1 ]; then
   echo "FAIL dashboard: no card carries an image at all" >&2
   fail=1

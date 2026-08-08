@@ -852,7 +852,39 @@ td a { color: var(--accent); }
 @media (min-width: 62rem) {
   .orgs--multi { grid-template-columns: 1fr 1fr; }
 }
-.org { min-width: 0; padding: 1.15rem 1.25rem; }
+.org { min-width: 0; padding: 0; overflow: hidden; }
+.org__b { padding: 1.15rem 1.25rem; }
+/* The photograph runs the full width of the card and sets its own height by
+   ratio, so five cards keep one silhouette whatever the column width. It is
+   the first thing in the card, above the name — at this size it is the card's
+   opening statement rather than a decoration in the corner. */
+.org__banner {
+  display: block;
+  width: 100%;
+  aspect-ratio: 8 / 3;
+  margin: 0;
+  border-bottom: 1px solid var(--rule);
+}
+.org__banner img { display: block; width: 100%; height: 100%; object-fit: cover; }
+/* Two subjects have no public-domain federal photograph in existence, so those
+   cards get a deliberate typographic plate at exactly the same size instead of
+   a hole: the area label set large on the neutral plane, with the mint rule
+   that marks the tier. A missing picture should look like a decision. */
+.org__banner--none {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 1.5rem;
+  background: var(--plane);
+  border-bottom: 2px solid var(--rule-key);
+  text-align: center;
+}
+.org__banner--none span {
+  color: var(--ink-head);
+  font: 700 clamp(0.875rem, 2.2vw, 1.25rem)/1.35 var(--mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
 .org__area {
   display: block;
   color: var(--ink-3);
@@ -861,38 +893,6 @@ td a { color: var(--accent); }
   text-transform: uppercase;
 }
 .org__n { margin: 0.2rem 0 0; font: 600 1.0625rem/1.25 var(--sans); letter-spacing: -0.01em; }
-/* The hero mark sits top-right of the card, out of the reading path, so the
-   name and the price signal still lead. It is optional: with no image the
-   header simply has nothing in that corner and the card is unchanged. The
-   figure is decorative-adjacent — the alt text names the subject, and nothing
-   in the card depends on seeing it. */
-.org__hd { display: grid; grid-template-columns: 1fr auto; gap: 0.75rem 1rem; align-items: start; }
-.org__fig {
-  width: 3.5rem;
-  height: 3.5rem;
-  flex: none;
-  margin: 0;
-  color: var(--ink-3);
-}
-.org__fig svg, .org__fig img { display: block; width: 100%; height: 100%; }
-/* A photograph gets an edge and a radius so it reads as a plate set into the
-   card rather than a picture floating on it, and so five photographs from four
-   agencies still look like one set. */
-.org__fig img { object-fit: cover; border: 1px solid var(--rule); border-radius: var(--r-md); }
-@media (max-width: 34rem) { .org__fig { width: 2.75rem; height: 2.75rem; } }
-
-/* The colophon: where every illustration's licence can actually be checked. */
-.credits { margin: 1.5rem 0 0; padding-top: 1.15rem; border-top: 1px solid var(--rule); }
-.credits__h {
-  margin: 0 0 0.6rem;
-  color: var(--ink-head);
-  font: 700 0.6875rem/1.4 var(--mono);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-.credits__list { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.5rem; }
-.credits__list li { color: var(--ink-2); font-size: 0.75rem; line-height: 1.55; }
-.credits__list b { color: var(--ink-1); font-weight: 600; }
 .org__n small { display: block; margin-top: 0.1rem; color: var(--ink-3); font: 400 0.75rem/1.4 var(--sans); }
 /* The price signal is the single most decision-relevant fact about an
    organisation, so it is a distinct object rather than a sentence: a mono
@@ -991,7 +991,7 @@ td a { color: var(--accent); }
   .bar__in { padding: 0.7rem 0.9rem; }
   .page { padding: 0.9rem 0.9rem 2rem; }
   .foot { padding: 1rem 0.9rem 2rem; }
-  .card__b, .org { padding-left: 0.9rem; padding-right: 0.9rem; }
+  .card__b, .org__b { padding-left: 0.9rem; padding-right: 0.9rem; }
   .trio > li, .stream__hd { padding-left: 0.9rem; padding-right: 0.9rem; }
   .meta { margin-left: 0; width: 100%; }
   .pairs { grid-template-columns: 1fr; }
@@ -1029,8 +1029,9 @@ td a { color: var(--accent); }
   .card { border: 0; border-radius: 0; box-shadow: none; }
   .streams, .row, .orgs, .meth { display: block; }
   .stream, .card, .org { margin-top: 0.6rem; }
-  .card__b, .org { padding-left: 0; padding-right: 0; }
+  .card__b, .org__b { padding-left: 0; padding-right: 0; }
   .org { border: 0; border-top: 1px solid var(--rule); border-radius: 0; }
+  .org__banner { max-height: 4cm; }
   .skip { display: none; }
   details { display: block; }
   details > summary { display: none; }

@@ -799,39 +799,43 @@
         h("p", { class: "tier__d" }, String(tier.blurb || ""))));
     var list = h("ul", { class: "orgs" + (orgs.length > 1 ? " orgs--multi" : "") });
     orgs.forEach(function (o) {
-      var li = h("li", { class: "card org" });
-      /* The hero mark, when the organisation has one. It arrives as GEOMETRY —
-         a viewBox and a list of path "d" strings — never as markup, so an
-         illustration goes through createElementNS and setAttribute like every
-         other value on this page and can never be an injection vector. The
-         generator refuses to build unless its provenance is complete, so an
-         image that renders here is an image whose licence is on the page. */
-      var head = h("div", { class: "org__hd" });
-      var col = h("div", {});
-      col.append(h("span", { class: "org__area" }, String(o.area || "")));
-      col.append(h("h4", { class: "org__n" },
-        h("a", { href: String(o.url || "") }, String(o.name || "")),
-        o.sub ? h("small", {}, String(o.sub)) : null));
-      head.append(col);
+      var card = h("li", { class: "card org" });
+      /* The photograph leads the card. It arrives either as GEOMETRY (viewBox
+         plus path d strings) or as a RASTER whose src is already an inline
+         data: URI — never as markup, so an illustration goes through
+         createElementNS and setAttribute like every other value here and can
+         never be an injection vector. The generator refuses to build unless
+         provenance is complete, so an image that renders is one whose licence
+         is printed in the colophon. */
       var img = o.image;
       if (img && (img.paths || []).length) {
         var art = s("svg", { viewBox: String(img.viewBox), role: "img",
-          "aria-label": String(img.alt || "") });
+          "aria-label": String(img.alt || ""), preserveAspectRatio: "xMidYMid slice" });
         img.paths.forEach(function (d) {
           art.append(s("path", { d: String(d), fill: "currentColor",
             "fill-rule": img.fill_rule ? String(img.fill_rule) : null }));
         });
-        head.append(h("figure", { class: "org__fig" }, art));
+        card.append(h("figure", { class: "org__banner" }, art));
       } else if (img && String(img.src || "").indexOf("data:") === 0) {
-        /* A raster rides in as an inline data: URI, so the page still draws it
-           with the network off. The alt describes the PHOTOGRAPH — what it
-           shows and where — rather than re-selling the organisation. */
-        head.append(h("figure", { class: "org__fig" },
+        card.append(h("figure", { class: "org__banner" },
           h("img", { src: String(img.src), alt: String(img.alt || ""),
-            width: "128", height: "128", decoding: "sync" })));
+            width: "800", height: "300", decoding: "sync" })));
+      } else {
+        /* No public-domain federal photograph of this subject exists. That is
+           a finding, not an omission, so the card says so at the same size a
+           photograph would have taken rather than leaving a hole. */
+        card.append(h("div", { class: "org__banner org__banner--none", "aria-hidden": "true" },
+          h("span", {}, String(o.area || ""))));
       }
-      li.append(head);
-      if (o.price) li.append(h("p", {}, h("span", { class: "org__price" }, String(o.price))));
+      var body = h("div", { class: "org__b" });
+      body.append(h("span", { class: "org__area" }, String(o.area || "")));
+      body.append(h("h4", { class: "org__n" },
+        h("a", { href: String(o.url || "") }, String(o.name || "")),
+        o.sub ? h("small", {}, String(o.sub)) : null));
+      if (o.price) body.append(h("p", {}, h("span", { class: "org__price" }, String(o.price))));
+      card.append(body);
+      /* Everything after this point fills the padded body, not the card. */
+      var li = body;
       li.append(h("p", { class: "org__does" }, String(o.does || "")));
       if (o.price_note) li.append(h("p", { class: "org__pn" }, String(o.price_note)));
       if (o.verdict) {
@@ -853,7 +857,7 @@
           o.news.note ? " (" + String(o.news.note) + ")" : null));
       }
       li.append(links);
-      list.append(li);
+      list.append(card);
     });
     sec.append(list);
     giveHost.append(sec);
