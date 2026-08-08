@@ -132,7 +132,18 @@
         consts: [["grid carbon intensity g/Wh", C.grid_cif_g_per_wh, CS.grid_cif_g_per_wh]],
         also: null,
         note: "That figure is the AWS location-based regional intensity the factors were built on; "
-          + "the US average is higher, so this is the low-side assumption."
+          + "the US average is higher, so this is the low-side assumption.",
+        /* The question a reader asks when they notice carbon has a price and
+           electricity does not. Answered where they are standing. */
+        why: ["Why there is no cost line for electricity",
+          "Because it would charge twice for one thing. The identity above runs both ways: the kilowatt-hours "
+          + "here are the carbon figure divided by the grid-intensity constant, so the energy and the carbon are "
+          + "the same measurement in two units, not two separate quantities. The cost to clear already prices "
+          + "the emission consequence of every one of these kilowatt-hours, and a second energy charge would be "
+          + "paying twice for one externality. The purchasable instrument would not help either: unbundled "
+          + "renewable-energy certificates retail around $5/MWh, so this whole lifetime would 'settle' for about "
+          + "eleven dollars — and Bjorn et al. 2022 in Nature Climate Change project that on REC-heavy trends "
+          + "42% of committed scope-2 reductions would not correspond to real-world mitigation."]
       };
     }
     return {
@@ -172,6 +183,49 @@
         h("dd", {}, String(r.also[2][2] || "No source recorded."))));
     }
     b.append(h("p", { class: "calc__note" }, r.note));
+    if (r.why) {
+      b.append(h("p", { class: "calc__why" }, h("b", {}, r.why[0]), r.why[1]));
+    }
+    d.append(b);
+    return d;
+  }
+
+  /* The optional water restoration match. It sits under the water reading, on
+     its own, deliberately far from the carbon dollar pair: this is a
+     CONTRIBUTION and it settles nothing, and the copy says so four different
+     ways because the whole risk of the line is being read as an offset. */
+  function waterMatchBlock() {
+    var w = DATA.water_match || {};
+    var d = h("details", { class: "calc" },
+      h("summary", {}, "Restoration match — a contribution, not a settlement"));
+    var b = h("div", { class: "calc__b" });
+    b.append(h("p", { class: "calc__lead" },
+      "If you want a purchasable gesture toward the water, this is the only audited one that exists. "
+      + "A Water Restoration Certificate returns 1,000 US gallons of flow to a stressed stream, "
+      + "third-party reviewed and registered."));
+    b.append(h("dl", { class: "calc__c" },
+      h("dt", {}, "this account ≈ ", h("b", {}, num(w.gallons, 0) + " US gallons")),
+      h("dd", {}, num(w.liters, 1) + " L converted at 3.785411784 L per US gallon."),
+      h("dt", {}, "≈ ", h("b", {}, num(w.wrc, 2) + " certificates")),
+      h("dd", {}, "1 certificate = 1,000 gallons restored."),
+      h("dt", {}, "≈ ", h("b", {}, usd(w.usd))),
+      h("dd", {}, "at " + usd(w.rate) + " per 1,000 gallons, the issuer's own store price. The same "
+        + "certificate resells for about " + usd(w.rate_low) + " (" + usd(w.usd_low) + " for this account) "
+        + "— a 2× spread in a market with one issuer, which is what a thin market looks like in price "
+        + "form. The first-party price is the one used here; the cheaper quote would understate what the "
+        + "gesture costs at its source.")));
+    b.append(h("p", { class: "calc__why" }, h("b", {}, "What this is not"),
+      "The litres above are an estimate produced by this tool, not a meter reading: about 97% of the "
+      + "figure is a US-average generation-water term applied to modelled energy, so it is a statistical "
+      + "shadow rather than a volume drawn from an identifiable watershed. The certificate is audited, but "
+      + "it is not fungible with that estimate — water is basin-local, and a gallon returned to a stressed "
+      + "stream in one watershed does not repay a gallon drawn in another. Nothing here is verified carbon "
+      + "removal. This line settles nothing: it never touches the carbon balance, it is not an offset of "
+      + "the water this account used, and buying it leaves the figures above exactly where they are."));
+    b.append(h("p", { class: "calc__why" }, h("b", {}, "What is verified"),
+      "That the money reaches an organisation doing measured restoration work — returning flow to a "
+      + "stressed stream, reviewed by a third party and recorded on a registry — rather than an advocacy "
+      + "campaign. That is the whole of the claim."));
     d.append(b);
     return d;
   }
@@ -236,6 +290,7 @@
 
     card.append(trio);
     card.append(calcBlock(m.id));
+    if (m.id === "water") card.append(waterMatchBlock());
     host.append(card);
   });
 

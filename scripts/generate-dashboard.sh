@@ -273,6 +273,20 @@ DATA="$(jq -cn --arg ts "$TS" \
     # research documents each claim came from. The underscore-prefixed keys are
     # provenance for a human reading the file and never reach the page.
     giving: ($giving[0] | {tiers, orgs}),
+    # The optional water restoration match. A CONTRIBUTION, never a settlement:
+    # it is computed here so the page never asks a reader to convert litres to
+    # gallons to certificates in their head, and it is kept entirely out of the
+    # carbon cost pair so it can never be mistaken for one. 1 WRC = 1,000 US
+    # gallons; both ends of the single-issuer price spread ride along so the
+    # page can show the spread instead of one tidy number.
+    water_match: (((($T.water_ml // 0) / 1000) as $wl
+      | ($wl / 3.785411784) as $gal
+      | {liters: ($wl | r2), gallons: ($gal | r2),
+         wrc: (($gal / 1000) | r2),
+         usd: ((($gal / 1000) * ($oc[0].water_usd_per_kgal_restored // 4)) | r2),
+         usd_low: ((($gal / 1000) * ($oc[0].water_usd_per_kgal_reseller // 2)) | r2),
+         rate: ($oc[0].water_usd_per_kgal_restored // 4),
+         rate_low: ($oc[0].water_usd_per_kgal_reseller // 2)})),
     # Flattened so the colophon can print the provenance of every illustration
     # without walking the org list a second time. Empty when nothing is
     # illustrated, and the credits block then does not render at all.

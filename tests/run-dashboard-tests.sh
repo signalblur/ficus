@@ -111,6 +111,34 @@ grep -q '@font-face' "$OUT" && {
   fail=1
 } || echo "PASS dashboard: no @font-face (system-font stack only)"
 
+# --- the embedded script must actually parse -----------------------------
+# Every other assertion in this file greps the source. None of them execute it,
+# so a syntax error in the renderer ships a blank page while the suite stays
+# green — which is exactly what happened when the water copy landed with a
+# stray semicolon inside an object literal. Extract the script and parse it.
+# Containerised, and skipped rather than failed where no container runtime is
+# available, so this file still runs anywhere.
+if command -v container >/dev/null 2>&1; then
+  SCRIPT_JS="${TMPROOT}/embedded.js"
+  awk '/^<script>$/{flag=1;next} /^<\/script>$/{flag=0} flag' "$OUT" >"$SCRIPT_JS"
+  if [ ! -s "$SCRIPT_JS" ]; then
+    echo "FAIL dashboard: could not extract the embedded script" >&2
+    fail=1
+  elif container run --rm --platform linux/arm64 \
+    --mount "type=bind,source=${TMPROOT},target=/t" node:22-slim \
+    node --check /t/embedded.js >/dev/null 2>&1; then
+    echo "PASS dashboard: the embedded renderer parses"
+  else
+    echo "FAIL dashboard: the embedded renderer has a syntax error" >&2
+    container run --rm --platform linux/arm64 \
+      --mount "type=bind,source=${TMPROOT},target=/t" node:22-slim \
+      node --check /t/embedded.js 2>&1 | head -5 >&2
+    fail=1
+  fi
+else
+  echo "SKIP dashboard: no container runtime, embedded script not parsed"
+fi
+
 # --- content invariants ------------------------------------------------------
 want "DATA embedded" 'const DATA = '
 want "caveat present" '±50%'
@@ -376,6 +404,33 @@ want "CIF identity stated" 'co2_g / 0.287'
 want "water formula stated" '0.18/1.14'
 want "embodied factor stated" '44.1'
 want "removal-only balance rule restated" 'verified removal'
+
+# --- water: a benchmark and a contribution, never a settlement ---------------
+# The user asked for this line and asked that four things be said plainly about
+# it. All four are asserted here, because the whole point of the line is that it
+# does NOT claim what a carbon offset claims.
+want "the water figures are computed for the reader" '"water_match":{'
+want "the certificate count is worked out, not left as arithmetic" '"wrc":'
+want "both ends of the single-issuer spread ride in" '"usd_low":'
+want "the line is named a contribution, not a settlement" 'a contribution, not a settlement'
+want "(a) it rests on an estimate this tool produced" 'estimate produced by this tool'
+want "(b) it is not fungible with the water used" 'not fungible'
+want "(c) it is not verified removal and settles nothing" 'settles nothing'
+want "(d) what IS verified is measured restoration work, not advocacy" 'rather than an advocacy'
+want "water is basin-local, and the page says so" 'basin-local'
+want "the 2x price spread is disclosed rather than hidden" 'one issuer'
+# The carbon dollar pair must stay pure. A water figure that leaked into it
+# would silently redefine what "owed" means.
+if grep -qE '"(overall_usd|owed_usd|contributed_usd)":[0-9.-]*[^,}]*water' "$OUT"; then
+  echo "FAIL dashboard: a water figure leaked into the carbon dollar ledger" >&2
+  fail=1
+else
+  echo "PASS dashboard: the water line stays out of the carbon dollar ledger"
+fi
+
+# --- energy: unpriced, and the reason is on the page -------------------------
+want "energy explains why it carries no price" 'charge twice for one'
+want "the CIF identity is the reason given" 'same measurement in two units'
 
 # --- the derivation collapses, but never out of the printed record -----------
 # "How these are made" is reference material, not part of the reading, so it

@@ -567,6 +567,26 @@ a:hover { text-decoration-thickness: 2px; }
 .calc__c dt b { color: var(--ink-1); }
 .calc__c dd { margin: 0.15rem 0 0; color: var(--ink-2); font-size: 0.6875rem; line-height: 1.55; }
 .calc__note { margin: 0; color: var(--ink-2); font-size: 0.75rem; line-height: 1.55; }
+/* The paragraphs that answer "why is this like that" rather than "how is this
+   computed" — set apart so a reader scanning for the reasoning finds it. */
+.calc__why {
+  margin: 0.9rem 0 0;
+  padding: 0.6rem 0.75rem;
+  background: var(--plane);
+  border-left: 3px solid var(--rule-key);
+  border-radius: var(--r-sm);
+  color: var(--ink-1);
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+.calc__why b {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: var(--ink-head);
+  font: 700 0.5625rem/1.6 var(--mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
 
 /* --- SIGNATURE 1: the trace ------------------------------------------------- */
 .fig-wrap { margin: 0; }
