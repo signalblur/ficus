@@ -259,7 +259,18 @@ textonly=$(jq -r '[.orgs[] | select(has("image") | not) | .name] | join(", ")' \
 echo "PASS dashboard: ${imaged} of ${total} cards illustrated; text-only: ${textonly:-none}"
 # A subject with no public-domain federal photograph gets a typographic plate at
 # the same size, so the card reads as a decision rather than a hole.
-want "cards without a photograph get a deliberate plate" 'org__banner--none'
+# A card with no photograph must not RESERVE photo-sized space. The plate
+# inherited the banner's 8:3 ratio, so on a full-width tier card it became a
+# ~600px empty box with one small label adrift in the middle of it.
+if grep -q 'org__banner--none' "$OUT"; then
+  echo "FAIL dashboard: the empty photo plate is back — text-only cards must not reserve photo space" >&2
+  fail=1
+else
+  echo "PASS dashboard: text-only cards reserve no photo-sized space"
+fi
+want "text-only cards are still marked as deliberate" 'org--plain'
+# Defensive: a full-width card must never scale a banner to an absurd height.
+want "the banner is height-capped" 'max-height: 17rem'
 if [ "$imaged" -lt 1 ]; then
   echo "FAIL dashboard: no card carries an image at all" >&2
   fail=1
@@ -404,6 +415,31 @@ want "trend badge compares against the prior month" '% vs '
 # the embedded script, so it exists in the page as the source that builds it.
 want "trace panel" 'id="h-trace"'
 want "trace draws one lane per stream" 'function drawTrace'
+# The trace is a smooth area chart now, not columns. Two things have to be true
+# of the smoothing: it must be a real curve, and it must never invent a peak.
+# A Catmull-Rom style spline through five monthly points can overshoot and draw
+# a maximum that is not in the data — on a page whose whole claim is that it
+# does not make numbers up, that is not a styling choice. Fritsch-Carlson
+# monotone cubic limits every tangent so the interpolant stays inside the
+# interval it spans, so the curve cannot rise above the highest month or fall
+# below the lowest.
+want "the curve is a monotone cubic, not a free spline" 'monotonePath'
+want "the smoothing is named and justified in the source" 'Fritsch'
+want "the curve is emitted as cubic beziers" '"C"'
+want "each series has a gradient area fill" 'linearGradient'
+want "the fill fades to transparent" 'stop-opacity'
+want "the plot carries a faint gridline field" 'grid'
+# The curve is interpolated; the dots are the data. Both are drawn, so a reader
+# can see which is which.
+want "every month is marked as an actual sample" 'dot'
+# The model-family panel is legitimately a bar chart, so scope this to the
+# trace: its per-lane column geometry is what must be gone.
+if grep -q 'width: Math.round(bw)' "$OUT"; then
+  echo "FAIL dashboard: the column trace is back — the trace is a smooth area chart" >&2
+  fail=1
+else
+  echo "PASS dashboard: the trace is drawn as areas, not columns"
+fi
 want "trace lanes are labelled in words, not colour alone" 'class: "lane__n"'
 want "trace shares one time axis across the lanes" 'one time axis'
 want "trace states the lanes are congruent by construction" 'congruent by construction'

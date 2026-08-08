@@ -234,14 +234,64 @@
       return;
     }
     var g = s("g", {});
+    var defs = s("defs", {});
+    STREAMS.forEach(function (m) {
+      defs.append(s("linearGradient", { id: "grad-" + m.id, x1: "0", y1: "0", x2: "0", y2: "1" },
+        s("stop", { class: "gs gs--top gs--" + m.id, offset: "0" }),
+        s("stop", { class: "gs gs--bot gs--" + m.id, offset: "1" })));
+    });
     var svg = s("svg", { class: "chart", id: "c-trace", role: "img",
       "aria-labelledby": "trace-t", "aria-describedby": "trace-d" },
       s("title", { id: "trace-t" }, "Monthly carbon, electricity and water, three lanes on one time axis"),
-      s("desc", { id: "trace-d" }), g);
+      s("desc", { id: "trace-d" }), defs, g);
     body.append(h("figure", { class: "fig-wrap" }, svg));
     cTrace = { svg: svg, g: g, desc: svg.querySelector("desc") };
   })();
 
+  /* Monotone cubic interpolation, Fritsch-Carlson tangents, emitted as cubic
+     Beziers. The smoothing matters more than it looks: a Catmull-Rom or plain
+     cardinal spline through five monthly points routinely OVERSHOOTS, drawing
+     a maximum higher than any month actually recorded. On a page whose entire
+     claim is that it does not make numbers up, a curve that invents a peak is
+     not a styling choice.
+
+     Fritsch-Carlson limits every tangent to the slopes of the intervals either
+     side of a point, and zeroes it at a local extremum, so the interpolant
+     cannot leave the range spanned by the two points it joins. The curve is
+     therefore smooth AND bounded by the data. The dots drawn on top are the
+     actual monthly totals, so a reader can always see which is measured and
+     which is interpolation. */
+  function monotonePath(pts) {
+    var n = pts.length, i;
+    if (!n) return "";
+    if (n === 1) return "M" + r2(pts[0].x) + "," + r2(pts[0].y);
+    var dx = [], m = [], t = [];
+    for (i = 0; i < n - 1; i++) {
+      dx[i] = pts[i + 1].x - pts[i].x;
+      m[i] = (pts[i + 1].y - pts[i].y) / dx[i];
+    }
+    t[0] = m[0];
+    t[n - 1] = m[n - 2];
+    for (i = 1; i < n - 1; i++) {
+      if (m[i - 1] * m[i] <= 0) {
+        t[i] = 0;                       /* a local extremum: flatten, never overshoot */
+      } else {
+        var w1 = 2 * dx[i] + dx[i - 1], w2 = dx[i] + 2 * dx[i - 1];
+        t[i] = (w1 + w2) / (w1 / m[i - 1] + w2 / m[i]);
+      }
+    }
+    var d = "M" + r2(pts[0].x) + "," + r2(pts[0].y);
+    for (i = 0; i < n - 1; i++) {
+      var h3 = dx[i] / 3;
+      d += "C" + r2(pts[i].x + h3) + "," + r2(pts[i].y + t[i] * h3)
+        + " " + r2(pts[i + 1].x - h3) + "," + r2(pts[i + 1].y - t[i + 1] * h3)
+        + " " + r2(pts[i + 1].x) + "," + r2(pts[i + 1].y);
+    }
+    return d;
+  }
+  function r2(v) { return Math.round(v * 100) / 100; }
+
+  var LANE_H = 96, PLOT_H = 60, LANE_TOP = 22, AX_H = 26, RPAD = 10;
   function drawTrace() {
     if (!cTrace) return;
     var W = width(cTrace.svg.parentNode);
@@ -252,9 +302,7 @@
        third of a 320px viewport, so it gives ground before the plot does. */
     var GUT = Math.round(Math.min(98, Math.max(56, W * 0.22)));
     var plotW = Math.max(W - GUT - RPAD, 60);
-    var step = plotW / months.length;
-    var bw = Math.max(Math.min(step * 0.58, 24), 2);
-    var labelAll = step >= 62;
+    var n = months.length;
     var desc = [];
 
     STREAMS.forEach(function (m, li) {
@@ -263,36 +311,56 @@
       var max = Math.max.apply(null, vals.concat([0])) || 1;
       var peak = vals.indexOf(max);
 
-      /* Lane identity lives in the gutter, in words: the colour is a second
-         channel on top of the label, never the only one. */
+      /* A faint field, not a cage: three hairlines, no verticals, no box. */
+      [0, 0.5, 1].forEach(function (f) {
+        cTrace.g.append(s("line", { class: "grid", x1: GUT, y1: r2(baseY - f * PLOT_H) + 0.5,
+          x2: GUT + plotW, y2: r2(baseY - f * PLOT_H) + 0.5 }));
+      });
+
       cTrace.g.append(s("text", { class: "lane__n", x: "0", y: plotTop + PLOT_H / 2 - 3 }, m.name));
       cTrace.g.append(s("text", { class: "lane__u", x: "0", y: plotTop + PLOT_H / 2 + 12 }, m.laneUnit));
 
-      months.forEach(function (r, i) {
-        var v = vals[i], bh = Math.max(Math.round((v / max) * PLOT_H), v > 0 ? 2 : 0);
-        var x = Math.round(GUT + i * step + (step - bw) / 2), y = baseY - bh;
-        var bar = s("rect", { class: m.cls, x: x, y: y, width: Math.round(bw), height: bh, rx: "2" });
-        bar.append(s("title", {}, r.month + " · " + m.name + " " + num(v, m.dp) + " " + m.laneUnit));
-        cTrace.g.append(bar);
-        if (labelAll || i === peak) {
-          cTrace.g.append(s("text", { class: "val", x: x + bw / 2, y: y - 6, "text-anchor": "middle" },
-            num(v, m.dp)));
-        }
+      var pts = vals.map(function (v, i) {
+        return { x: GUT + (n === 1 ? plotW / 2 : (i * plotW) / (n - 1)),
+                 y: baseY - (v / max) * PLOT_H };
       });
+      var line = monotonePath(pts);
+      if (line && n > 1) {
+        cTrace.g.append(s("path", { class: "area", d: line
+          + "L" + r2(pts[n - 1].x) + "," + r2(baseY)
+          + "L" + r2(pts[0].x) + "," + r2(baseY) + "Z",
+          fill: "url(#grad-" + m.id + ")" }));
+      }
+      if (line) cTrace.g.append(s("path", { class: "ln ln--" + m.id, d: line }));
 
-      cTrace.g.append(s("line", { class: "base", x1: GUT - 0.5, y1: baseY + 0.5, x2: GUT + plotW, y2: baseY + 0.5 }));
+      /* The dots are the data; the curve between them is interpolation. */
+      pts.forEach(function (p, i) {
+        var c = s("circle", { class: "dot dot--" + m.id, cx: r2(p.x), cy: r2(p.y), r: "3" });
+        c.append(s("title", {}, months[i].month + " · " + m.name + " "
+          + num(vals[i], m.dp) + " " + m.laneUnit));
+        cTrace.g.append(c);
+      });
+      if (n) {
+        cTrace.g.append(s("text", { class: "val", x: r2(pts[peak].x),
+          y: r2(pts[peak].y) - 9, "text-anchor": peak === 0 ? "start" : peak === n - 1 ? "end" : "middle" },
+          num(max, m.dp)));
+      }
+      cTrace.g.append(s("line", { class: "base", x1: GUT - 0.5, y1: baseY + 0.5,
+        x2: GUT + plotW, y2: baseY + 0.5 }));
       desc.push(m.name + " in " + m.laneUnit + ": " + months.map(function (r, i) {
         return r.month + " " + num(vals[i], m.dp); }).join(", "));
     });
 
     /* One time axis under the stack, shared by all three lanes. */
-    var axY = STREAMS.length * LANE_H + 14;
+    var axY = STREAMS.length * LANE_H + 16;
+    var step = n > 1 ? plotW / (n - 1) : plotW;
     months.forEach(function (r, i) {
       var label = step >= 58 ? String(r.month) : step >= 26 ? String(r.month).slice(-2) : "";
-      if (!label && i !== 0 && i !== months.length - 1) return;
+      if (!label && i !== 0 && i !== n - 1) return;
       if (!label) label = String(r.month).slice(-2);
-      cTrace.g.append(s("text", { class: "ax", x: Math.round(GUT + i * step + step / 2), y: axY,
-        "text-anchor": "middle" }, label));
+      var x = GUT + (n === 1 ? plotW / 2 : (i * plotW) / (n - 1));
+      cTrace.g.append(s("text", { class: "ax", x: r2(x), y: axY,
+        "text-anchor": i === 0 ? "start" : i === n - 1 ? "end" : "middle" }, label));
     });
     cTrace.desc.textContent = desc.join(". ") + ".";
   }
@@ -821,11 +889,17 @@
           h("img", { src: String(img.src), alt: String(img.alt || ""),
             width: "800", height: "300", decoding: "sync" })));
       } else {
-        /* No public-domain federal photograph of this subject exists. That is
-           a finding, not an omission, so the card says so at the same size a
-           photograph would have taken rather than leaving a hole. */
-        card.append(h("div", { class: "org__banner org__banner--none", "aria-hidden": "true" },
-          h("span", {}, String(o.area || ""))));
+        /* No public-domain federal photograph of this subject exists. Reserving
+           photo-sized space for one produced a huge empty plate with a label
+           adrift in it — worse than no picture. These cards take a mint top
+           rule instead, so they still open with an edge, and nothing is held
+           open for an image that is never coming. The colophon already records
+           why they carry none.
+
+           They are never seen beside a photographed card in any case: the two
+           are the only members of their own tiers, which is the research's own
+           ranking, not a layout accident. */
+        card.setAttribute("class", "card org org--plain");
       }
       var body = h("div", { class: "org__b" });
       body.append(h("span", { class: "org__area" }, String(o.area || "")));

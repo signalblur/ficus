@@ -542,6 +542,31 @@ a:hover { text-decoration-thickness: 2px; }
 /* Genuinely no data: a dashed hairline track. Never the same mark as an
    unsettled span, which is a solid open outline. */
 .track-none { fill: none; stroke: var(--axis); stroke-width: 1; stroke-dasharray: 4 3; }
+/* --- the trace: smooth areas over a faint field -----------------------------
+   Each lane is a monotone-cubic curve with a gradient fill fading to nothing at
+   the baseline, over three hairlines. Hue is NOT the only channel separating
+   the series: the lanes are spatially separated small multiples, each is
+   labelled in words in the gutter, and the three inks step in lightness
+   (OKLCH L 0.451 carbon / 0.518 electricity / 0.586 water) so they stay
+   distinct in a greyscale print. */
+.grid { stroke: var(--rule); stroke-width: 1; }
+.area { stroke: none; }
+.ln { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ln--carbon { stroke: var(--viz-carbon); }
+.ln--energy { stroke: var(--viz-energy); }
+.ln--water  { stroke: var(--viz-water); }
+/* A surface-coloured ring round every sample, so a dot stays readable where the
+   curve passes under it. */
+.dot { stroke: var(--surface); stroke-width: 1.5; }
+.dot--carbon { fill: var(--viz-carbon); }
+.dot--energy { fill: var(--viz-energy); }
+.dot--water  { fill: var(--viz-water); }
+.gs--top { stop-opacity: 0.28; }
+.gs--bot { stop-opacity: 0; }
+.gs--carbon { stop-color: var(--viz-carbon); }
+.gs--energy { stop-color: var(--viz-energy); }
+.gs--water  { stop-color: var(--viz-water); }
+
 .m-carbon  { fill: var(--viz-carbon); }
 .m-energy  { fill: var(--viz-energy); }
 .m-water   { fill: var(--viz-water); }
@@ -862,29 +887,15 @@ td a { color: var(--accent); }
   display: block;
   width: 100%;
   aspect-ratio: 8 / 3;
+  max-height: 17rem;
   margin: 0;
   border-bottom: 1px solid var(--rule);
 }
 .org__banner img { display: block; width: 100%; height: 100%; object-fit: cover; }
-/* Two subjects have no public-domain federal photograph in existence, so those
-   cards get a deliberate typographic plate at exactly the same size instead of
-   a hole: the area label set large on the neutral plane, with the mint rule
-   that marks the tier. A missing picture should look like a decision. */
-.org__banner--none {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem 1.5rem;
-  background: var(--plane);
-  border-bottom: 2px solid var(--rule-key);
-  text-align: center;
-}
-.org__banner--none span {
-  color: var(--ink-head);
-  font: 700 clamp(0.875rem, 2.2vw, 1.25rem)/1.35 var(--mono);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
+/* Two subjects have no public-domain federal photograph in existence. Holding
+   photo-sized space open for one produced an enormous empty plate, so those
+   cards simply have no banner and take the tier rule as their top edge. */
+.org--plain { border-top: 3px solid var(--rule-key); }
 .org__area {
   display: block;
   color: var(--ink-3);
