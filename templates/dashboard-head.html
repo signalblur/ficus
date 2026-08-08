@@ -580,6 +580,49 @@ a:hover { text-decoration-thickness: 2px; }
 /* Genuinely no data: a dashed hairline track. Never the same mark as an
    unsettled span, which is a solid open outline. */
 .track-none { fill: none; stroke: var(--axis); stroke-width: 1; stroke-dasharray: 4 3; }
+/* --- the granularity control ------------------------------------------------
+   A native radio group in a fieldset. The APG radio-group pattern is what the
+   platform already implements for these: Tab moves focus into and out of the
+   group and lands on the checked button, the arrow keys move focus and check as
+   they go, and Space checks the focused button. Nothing here re-implements
+   that, so there is no ARIA to drift and no roving tabindex to get wrong.
+   The radios are visually replaced by their labels but stay in the
+   accessibility tree and keep focus, so the ring lands on the visible control. */
+.gran { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin: 0 0 0.9rem; padding: 0; border: 0; }
+.gran__l {
+  padding: 0 0.6rem 0 0;
+  color: var(--ink-head);
+  font: 700 0.5625rem/1.6 var(--mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.gran__i {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.gran__b {
+  padding: 0.28rem 0.7rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
+  color: var(--ink-2);
+  cursor: pointer;
+  font: 600 0.6875rem/1.5 var(--mono);
+  letter-spacing: 0.06em;
+}
+.gran__b:hover { border-color: var(--rule-key); }
+.gran__i:checked + .gran__b {
+  border: 2px solid var(--rule-key);
+  padding: 0.22rem 0.64rem;
+  color: var(--ink-1);
+  font-weight: 700;
+}
+.gran__i:focus-visible + .gran__b { outline: 3px solid var(--ink-1); outline-offset: 2px; }
+.gran__now { margin: 0 0 1rem; color: var(--ink-2); font-size: 0.6875rem; line-height: 1.55; }
+
 /* --- the trace: smooth areas over a faint field -----------------------------
    Each lane is a monotone-cubic curve with a gradient fill fading to nothing at
    the baseline, over three hairlines. Hue is NOT the only channel separating
@@ -1155,7 +1198,9 @@ td a { color: var(--accent); }
         <p class="block__sub">The three streams on one shared time axis, so a period reads across all three at once.</p>
       </div>
       <div class="card"><div class="card__b">
+        <div id="gran-host"></div>
         <div id="trace-body"></div>
+        <div id="trace-table"></div>
         <p class="note" style="margin-top:1.15rem"><strong>The three lanes are congruent by construction.</strong>
           Energy is the physical quantity; carbon and water are derived from it by the fixed published factors in
           the derivation below, so the shapes have to match. Drawing them together shows that rather than hiding

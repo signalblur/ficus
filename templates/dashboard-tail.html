@@ -42,6 +42,25 @@
   var C = DATA.constants || {}, COST = DATA.cost || {}, TR = DATA.trend || {};
   var F = DATA.formulas || {};
   var months = DATA.monthly || [], models = DATA.by_model || [];
+  /* The chart switches granularity; the reading trios and the period chip stay
+     monthly, because "latest month" is a claim about months. */
+  var SERIES = DATA.series || {};
+  var GRANS = [["day", "Daily"], ["week", "Weekly"], ["month", "Monthly"], ["year", "Yearly"]];
+  var granOK = GRANS.filter(function (g) { return (SERIES[g[0]] || {}).ok; });
+  var curG = (SERIES.month || {}).ok ? "month" : (granOK.length ? granOK[granOK.length - 1][0] : "");
+  function chartRows() { return ((SERIES[curG] || {}).rows) || []; }
+  function granLabel(g) {
+    for (var i = 0; i < GRANS.length; i++) if (GRANS[i][0] === g) return GRANS[i][1];
+    return g;
+  }
+  /* Axis labels: the bucket key is already a sortable date string, so the only
+     job here is dropping the parts that repeat across every tick. */
+  function fmtBucket(b, wide) {
+    b = String(b);
+    if (curG === "year") return b;
+    if (curG === "month") return wide ? b : b.slice(5);
+    return wide ? b.slice(5) : b.slice(8);
+  }
   var buys = DATA.offsets || [], gifts = DATA.donations || [];
   var GIVE = DATA.giving || { tiers: [], orgs: [] };
   var emitted = (Number(T.co2_g) || 0) / 1000;
@@ -229,7 +248,7 @@
   var cTrace = null;
   (function buildTrace() {
     var body = doc.getElementById("trace-body");
-    if (!months.length) {
+    if (!chartRows().length) {
       body.append(h("p", { class: "empty" }, "No sessions recorded yet, so there is nothing to plot."));
       return;
     }
@@ -302,7 +321,8 @@
        third of a 320px viewport, so it gives ground before the plot does. */
     var GUT = Math.round(Math.min(98, Math.max(56, W * 0.22)));
     var plotW = Math.max(W - GUT - RPAD, 60);
-    var n = months.length;
+    var rows = chartRows();
+    var n = rows.length;
     var desc = [];
     var xAt = function (i) { return GUT + (n === 1 ? plotW / 2 : (i * plotW) / (n - 1)); };
 
@@ -316,7 +336,7 @@
     var vTop = LANE_TOP;
     var vBot = STREAMS.length * LANE_H + 4;
     if (n && (n === 1 || plotW / (n - 1) >= 12)) {
-      months.forEach(function (r, i) {
+      rows.forEach(function (r, i) {
         var vx = r2(xAt(i)) + 0.5;
         cTrace.g.append(s("line", { class: "grid grid--v", x1: vx, y1: vTop, x2: vx, y2: vBot }));
       });
@@ -324,7 +344,7 @@
 
     STREAMS.forEach(function (m, li) {
       var top = li * LANE_H, plotTop = top + LANE_TOP, baseY = plotTop + PLOT_H;
-      var vals = months.map(function (r) { return (Number(r[m.key]) || 0) / m.div; });
+      var vals = rows.map(function (r) { return (Number(r[m.key]) || 0) / m.div; });
       var max = Math.max.apply(null, vals.concat([0])) || 1;
       var peak = vals.indexOf(max);
 
@@ -352,7 +372,7 @@
       /* The dots are the data; the curve between them is interpolation. */
       pts.forEach(function (p, i) {
         var c = s("circle", { class: "dot dot--" + m.id, cx: r2(p.x), cy: r2(p.y), r: "3" });
-        c.append(s("title", {}, months[i].month + " · " + m.name + " "
+        c.append(s("title", {}, rows[i].b + " · " + m.name + " "
           + num(vals[i], m.dp) + " " + m.laneUnit));
         cTrace.g.append(c);
       });
@@ -363,17 +383,17 @@
       }
       cTrace.g.append(s("line", { class: "base", x1: GUT - 0.5, y1: baseY + 0.5,
         x2: GUT + plotW, y2: baseY + 0.5 }));
-      desc.push(m.name + " in " + m.laneUnit + ": " + months.map(function (r, i) {
-        return r.month + " " + num(vals[i], m.dp); }).join(", "));
+      desc.push(m.name + " in " + m.laneUnit + ": " + rows.map(function (r, i) {
+        return r.b + " " + num(vals[i], m.dp); }).join(", "));
     });
 
     /* One time axis under the stack, shared by all three lanes. */
     var axY = STREAMS.length * LANE_H + 16;
     var step = n > 1 ? plotW / (n - 1) : plotW;
-    months.forEach(function (r, i) {
-      var label = step >= 58 ? String(r.month) : step >= 26 ? String(r.month).slice(-2) : "";
+    rows.forEach(function (r, i) {
+      var label = step >= 58 ? fmtBucket(r.b, true) : step >= 26 ? fmtBucket(r.b, false) : "";
       if (!label && i !== 0 && i !== n - 1) return;
-      if (!label) label = String(r.month).slice(-2);
+      if (!label) label = fmtBucket(r.b, false);
       cTrace.g.append(s("text", { class: "ax", x: r2(xAt(i)), y: axY,
         "text-anchor": i === 0 ? "start" : i === n - 1 ? "end" : "middle" }, label));
     });
@@ -542,19 +562,65 @@
   }
 
   /* --- the numbers behind each chart, and the fresh-install empty state ---- */
-  (function traceTable() {
-    var body = doc.getElementById("trace-body");
-    if (!months.length) return;
-    body.append(h("details", {}, h("summary", {}, "Show the monthly figures"),
-      table("Operational CO2e, energy, water and session count by month.",
-        [["Month"], [h("span", { class: "cs" }, "kg CO2e"), 1], ["kWh", 1], ["L", 1], ["Sessions", 1]],
-        months.map(function (r) {
-          return h("tr", {}, h("th", { scope: "row" }, String(r.month)),
+  /* The figures under the chart follow the chart, so the two can never disagree
+     about which period is being read. */
+  function traceTable() {
+    var host = doc.getElementById("trace-table");
+    if (!host) return;
+    host.textContent = "";
+    var rows = chartRows();
+    if (!rows.length) return;
+    var per = granLabel(curG).toLowerCase().replace(/ly$/, "");
+    host.append(h("details", {}, h("summary", {}, "Show the " + granLabel(curG).toLowerCase() + " figures"),
+      table("Operational CO2e, energy, water and session count per " + per + ". "
+        + "A period with no sessions is a zero, not a gap.",
+        [["Period"], [h("span", { class: "cs" }, "kg CO2e"), 1], ["kWh", 1], ["L", 1], ["Sessions", 1]],
+        rows.map(function (r) {
+          return h("tr", {}, h("th", { scope: "row" }, String(r.b)),
             h("td", { class: "n" }, num((Number(r.co2_g) || 0) / 1000, 2)),
             h("td", { class: "n" }, num((Number(r.energy_wh) || 0) / 1000, 2)),
             h("td", { class: "n" }, num((Number(r.water_ml) || 0) / 1000, 1)),
             h("td", { class: "n" }, num(r.sessions, 0)));
         }))));
+  }
+
+  /* The control is a native radio group in a fieldset. Per the APG radio-group
+     pattern, Tab moves focus into and out of the group and lands on the checked
+     button, the arrow keys move and check, and Space checks the focused button
+     — all of which the platform gives for free here, with no ARIA to maintain
+     and no roving tabindex to get wrong. */
+  (function buildGran() {
+    var host = doc.getElementById("gran-host");
+    if (!host || granOK.length < 2) {
+      if (host && curG) host.append(h("p", { class: "gran__now" }, "Bucketed by " + granLabel(curG).toLowerCase().replace(/ly$/, "") + "."));
+      return;
+    }
+    var fs = h("fieldset", { class: "gran" }, h("legend", { class: "gran__l" }, "Group by"));
+    granOK.forEach(function (g) {
+      var id = "gran-" + g[0];
+      var input = h("input", { type: "radio", name: "gran", id: id, value: g[0], class: "gran__i" });
+      if (g[0] === curG) input.setAttribute("checked", "");
+      input.addEventListener("change", function () {
+        if (!input.checked) return;
+        curG = g[0];
+        setNow();
+        render();
+        traceTable();
+      });
+      fs.append(input, h("label", { class: "gran__b", for: id }, g[1]));
+    });
+    host.append(fs);
+    var now = h("p", { class: "gran__now" });
+    host.append(now);
+    function setNow() {
+      now.textContent = "Bucketed by " + granLabel(curG).toLowerCase().replace(/ly$/, "") + "."
+        + (SERIES.year && !SERIES.year.ok
+          ? " Yearly needs at least three years on record."
+          : "")
+        + " Hourly is not offered: the ledger stores one row per session with a single start"
+        + " time, so an hourly bucket would charge a long session entirely to the hour it began.";
+    }
+    setNow();
   })();
   (function modelTable() {
     var body = doc.getElementById("model-body");
@@ -1050,6 +1116,7 @@
   /* --- draw, and redraw at the measured width on resize -------------------- */
   var pending = 0;
   function render() { drawMeasure(); drawTrace(); drawModel(); }
+  traceTable();
   render();
   addEventListener("resize", function () {
     cancelAnimationFrame(pending);

@@ -413,6 +413,29 @@ else
   fail=1
 fi
 
+# --- time granularity --------------------------------------------------------
+# One pre-computed series per granularity, switched client-side. Nothing is
+# fetched and no physics is recomputed in the browser.
+want "the page carries a series per granularity" '"series":{'
+want "daily buckets" '"day":{'
+want "weekly buckets" '"week":{'
+want "monthly buckets" '"month":{'
+want "each series declares whether the data supports it" '"ok":'
+# The fixture spans 2026-06 to 2026-07, so month has 2 buckets — under the
+# 3-bucket floor — and year has 1. Both are correctly withheld, and day (50)
+# and week (7) are offered. A granularity the data cannot carry is not shown.
+want "a single-bucket year is withheld" '"year":{"rows":\[{"b":"2026"'
+# Empty periods are ZEROS, not gaps: the fixture has no sessions in most days
+# of that span, and those days must still be in the series.
+want "empty periods ride in as zeros" '"co2_g":0,"energy_wh":0'
+want "the page says empty periods are zeros" 'zero, not a gap'
+# The control is a native radio group: the APG pattern's keyboard contract
+# (Tab in and out, arrows move and check, Space checks) comes from the platform.
+want "the control is a native radio group" 'type: "radio"'
+want "grouped radios share a name" 'name: "gran"'
+want "the printed record states which bucketing was captured" 'Bucketed by '
+want "hourly is withheld with its reason" 'charge a long session entirely to the hour'
+
 # --- station-record idiom ----------------------------------------------------
 # The page is a station record: three streams, each with the same trio of
 # readings, then one shared time axis carrying all three traces. These lock that

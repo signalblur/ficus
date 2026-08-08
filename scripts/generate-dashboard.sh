@@ -92,6 +92,41 @@ MONTHLY="$(Q "SELECT substr(started_at,1,7) AS month,
   FROM sessions WHERE COALESCE(excluded,0)=0 AND started_at != ''
   GROUP BY month ORDER BY month;" | or_empty)"
 
+# --- time buckets ------------------------------------------------------------
+# One pre-computed series per granularity, so the page can switch without a
+# server and without recomputing physics in the browser. Every bucket in the
+# span is emitted, including the empty ones: a period with no sessions really
+# did emit nothing, so it is a ZERO and not a gap. Dropping empty periods would
+# compress the x-axis and change the shape of the curve into something that
+# never happened.
+#
+# HOURLY IS NOT OFFERED, and the reason is a property of the ledger rather than
+# a budget: sessions are stored one row per session with a single start
+# timestamp, so an hourly bucket would charge a five-hour session entirely to
+# the hour it began. That is a real distortion at hourly resolution and a
+# negligible one at daily and coarser.
+bucket_series() { # bucket_series START_MODIFIERS STEP LABEL_FORMAT
+  Q "WITH RECURSIVE
+      bounds AS (SELECT date(MIN(started_at)${1}) AS lo, date(MAX(started_at)${1}) AS hi
+                 FROM sessions WHERE COALESCE(excluded,0)=0 AND started_at != ''),
+      span(d) AS (SELECT lo FROM bounds
+                  UNION ALL SELECT date(d, '${2}') FROM span, bounds WHERE date(d, '${2}') <= hi),
+      agg AS (SELECT date(started_at${1}) AS b,
+                ROUND(SUM(co2_grams),1) AS c,
+                ROUND(COALESCE(SUM(energy_wh),0),1) AS e,
+                ROUND(COALESCE(SUM(water_ml),0),1) AS w,
+                COUNT(*) AS n
+              FROM sessions WHERE COALESCE(excluded,0)=0 AND started_at != '' GROUP BY b)
+    SELECT strftime('${3}', span.d) AS b,
+           COALESCE(agg.c,0) AS co2_g, COALESCE(agg.e,0) AS energy_wh,
+           COALESCE(agg.w,0) AS water_ml, COALESCE(agg.n,0) AS sessions
+    FROM span LEFT JOIN agg ON agg.b = span.d ORDER BY span.d;" | or_empty
+}
+S_DAY="$(bucket_series ", 'start of day'" "+1 day" "%Y-%m-%d")"
+S_WEEK="$(bucket_series ", 'weekday 0', '-6 days'" "+7 days" "%Y-%m-%d")"
+S_MONTH="$(bucket_series ", 'start of month'" "+1 month" "%Y-%m")"
+S_YEAR="$(bucket_series ", 'start of year'" "+1 year" "%Y")"
+
 BY_MODEL="$(Q "SELECT fam AS family, ROUND(SUM(co2_grams),1) AS co2_g,
     ROUND(COALESCE(SUM(energy_wh),0),1) AS energy_wh, COUNT(*) AS sessions
   FROM (SELECT CASE
@@ -169,6 +204,8 @@ DATA="$(jq -cn --arg ts "$TS" \
   --argjson by_model "$BY_MODEL" --argjson offset_state "$OFFSET_STATE" \
   --argjson offsets "$OFFSETS" --argjson donations "$DONATIONS" \
   --argjson contrib "$CONTRIB" \
+  --argjson s_day "$S_DAY" --argjson s_week "$S_WEEK" \
+  --argjson s_month "$S_MONTH" --argjson s_year "$S_YEAR" \
   --slurpfile equiv "$EQUIV" --slurpfile factors "$FACTORS" \
   --slurpfile oc "$OFFSET_CONSTANTS" --slurpfile giving "$GIVING" '
   def r2: . * 100 | round / 100;
@@ -204,6 +241,13 @@ DATA="$(jq -cn --arg ts "$TS" \
       energy: (trend("energy_wh")| {latest_wh: .latest, prev_wh: .prev, pct: .pct}),
       water:  (trend("water_ml") | {latest_ml: .latest, prev_ml: .prev, pct: .pct})
     },
+    # A granularity is offered only when the data can honestly carry it: fewer
+    # than 3 buckets is not a series (a single yearly point is a dot, not a
+    # trend), and more than 400 is a hairline comb nobody can read. The page
+    # states the reason for anything it withholds rather than hiding the option.
+    series: ({day: $s_day, week: $s_week, month: $s_month, year: $s_year}
+      | with_entries(.value |= {rows: ., n: (. | length)})
+      | with_entries(.value += {ok: (.value.n >= 3 and .value.n <= 400)})),
     by_model: $by_model,
     offset_state: (($offset_state[0] // {removal_verified_kg:0,prevention_verified_kg:0,unverified_kg:0,offset_spent_usd:0})
       + {balance_kg: (($kg - (($offset_state[0].removal_verified_kg) // 0)) | r2),
