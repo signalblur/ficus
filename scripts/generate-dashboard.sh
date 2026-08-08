@@ -243,6 +243,21 @@ DATA="$(jq -cn --arg ts "$TS" \
       embodied_gco2e_per_kwh: $P.embodied_gco2e_per_kwh.value,
       cache_read_factor: ($factors[0].cache_read_factor // 0.08)
     },
+    # The recorded provenance for each physics constant, carried alongside the
+    # values so a per-metric explainer can print WHERE a number came from next
+    # to the number itself, rather than sending the reader to a separate file.
+    # Provenance strings are prose, and one of them embeds a methodology URL.
+    # No raw URL may reach the page as free text — that is the rule that keeps
+    # the offline invariant testable — so bare URLs are stripped here and the
+    # citation reads by name. The full string stays in data/factors.json.
+    constant_sources: ({
+      grid_cif_g_per_wh:      ($P.grid_cif_g_per_wh._source // ""),
+      pue:                    ($P.pue._source // ""),
+      wue_onsite_l_per_kwh:   ($P.wue_onsite_l_per_kwh._source // ""),
+      wue_offsite_l_per_kwh:  ($P.wue_offsite_l_per_kwh._source // ""),
+      embodied_gco2e_per_kwh: ($P.embodied_gco2e_per_kwh._source // ""),
+      cache_read_factor:      ($factors[0]._cache_read_factor // "")
+    } | with_entries(.value |= (gsub("\\s*https?://[^ ,)]*";"") | gsub("\\s+";" ")))),
     # Formulas are composed here, from the same constants the ledger computes
     # with, so the methodology block can never quote a factor the ledger no
     # longer uses. The template prints these verbatim.

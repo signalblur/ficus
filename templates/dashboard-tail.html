@@ -40,6 +40,7 @@
 
   var T = DATA.totals || {}, OS = DATA.offset_state || {}, EQ = DATA.equivalences || {};
   var C = DATA.constants || {}, COST = DATA.cost || {}, TR = DATA.trend || {};
+  var F = DATA.formulas || {};
   var months = DATA.monthly || [], models = DATA.by_model || [];
   var buys = DATA.offsets || [], gifts = DATA.donations || [];
   var GIVE = DATA.giving || { tiers: [], orgs: [] };
@@ -84,6 +85,78 @@
       eq: EQ.showers, eqf: EQ.water,
       mark: function () { return glyph([["M12 3c3.7 4.4 6 7.5 6 10a6 6 0 0 1-12 0c0-2.5 2.3-5.6 6-10z"]]); } }
   ];
+  /* Each metric explains ITS OWN maths, under its own card. A reader asking
+     where 0.287 comes from should find the answer under the electricity
+     reading, not three screens away in a combined derivation block — so the
+     per-metric physics lives here and NOT in the derivation section, which
+     keeps the ledger semantics and the caveats instead. */
+  var CS = DATA.constant_sources || {};
+  function calcRows(id) {
+    if (id === "carbon") {
+      return {
+        lead: "Estimated from deduplicated token counts by per-model factors in gCO2e per million "
+          + "tokens. Nothing here is measured.",
+        formula: F.co2,
+        consts: [["cache read factor", C.cache_read_factor, CS.cache_read_factor]],
+        also: ["Embodied CO2e — the amortised hardware share — is derived from the same energy figure "
+          + "and reported separately, never folded into the operational number:", F.embodied,
+          ["embodied gCO2e/kWh", C.embodied_gco2e_per_kwh, CS.embodied_gco2e_per_kwh]],
+        note: "Sonnet is fitted to three published per-query energies; Opus, Haiku and Fable are "
+          + "extrapolated from it, so Fable carries a double extrapolation."
+      };
+    }
+    if (id === "energy") {
+      return {
+        lead: "Not a second model. The CO2e factors are facility energy multiplied by the grid "
+          + "carbon-intensity factor, so dividing by that same factor recovers facility energy exactly.",
+        formula: F.energy,
+        consts: [["grid carbon intensity g/Wh", C.grid_cif_g_per_wh, CS.grid_cif_g_per_wh]],
+        also: null,
+        note: "That figure is the AWS location-based regional intensity the factors were built on; "
+          + "the US average is higher, so this is the low-side assumption."
+      };
+    }
+    return {
+      lead: "Two terms, kept PUE-consistent. On-site cooling water applies to IT energy — facility "
+        + "energy divided by PUE — and off-site generation water applies to the full facility energy.",
+      formula: F.water,
+      consts: [["PUE", C.pue, CS.pue],
+        ["on-site WUE L/kWh", C.wue_onsite_l_per_kwh, CS.wue_onsite_l_per_kwh],
+        ["off-site WUE L/kWh", C.wue_offsite_l_per_kwh, CS.wue_offsite_l_per_kwh]],
+      also: null,
+      note: "L/kWh equals mL/Wh, which is why the stored figure is in millilitres."
+    };
+  }
+  function calcBlock(id) {
+    var r = calcRows(id);
+    /* A native disclosure: per WHATWG HTML the details element "represents a
+       disclosure widget from which the user can obtain additional information
+       or controls", so the keyboard contract, the expanded/collapsed state and
+       the accessible name all come from the platform rather than from ARIA
+       this page would have to maintain. Closed by default — it is the answer
+       to a question, not part of the reading. */
+    var d = h("details", { class: "calc" }, h("summary", {}, "How this is calculated"));
+    var b = h("div", { class: "calc__b" });
+    b.append(h("p", { class: "calc__lead" }, r.lead));
+    b.append(h("code", { class: "calc__f" }, String(r.formula || "")));
+    var dl = h("dl", { class: "calc__c" });
+    r.consts.forEach(function (c) {
+      dl.append(h("dt", {}, c[0] + " = ", h("b", {}, String(c[1]))));
+      dl.append(h("dd", {}, String(c[2] || "No source recorded.")));
+    });
+    b.append(dl);
+    if (r.also) {
+      b.append(h("p", { class: "calc__lead" }, r.also[0]));
+      b.append(h("code", { class: "calc__f" }, String(r.also[1] || "")));
+      b.append(h("dl", { class: "calc__c" },
+        h("dt", {}, r.also[2][0] + " = ", h("b", {}, String(r.also[2][1]))),
+        h("dd", {}, String(r.also[2][2] || "No source recorded."))));
+    }
+    b.append(h("p", { class: "calc__note" }, r.note));
+    d.append(b);
+    return d;
+  }
+
   function glyph(paths) {
     var g = s("svg", { class: "stream__mark", viewBox: "0 0 24 24", "aria-hidden": "true", focusable: "false" });
     paths.forEach(function (p) {
@@ -143,6 +216,7 @@
       chip));
 
     card.append(trio);
+    card.append(calcBlock(m.id));
     host.append(card);
   });
 
@@ -663,27 +737,11 @@
   });
 
   /* --- derivation: static prose, live constants ---------------------------- */
-  var meth = doc.getElementById("meth"), F = DATA.formulas || {};
-  [["Operational CO2e",
-    "Estimated from deduplicated token counts by per-model factors in gCO2e per million tokens (Jegham et al. 2025, "
-    + "an arXiv preprint). Cache-read tokens count at " + C.cache_read_factor + " of an input token — an engineering "
-    + "estimate of the decode-phase KV re-read, not a billing ratio. Sonnet is fitted to three published per-query "
-    + "energies; Opus, Haiku and Fable are extrapolated from it, so Fable carries a double extrapolation.", F.co2],
-   ["Energy",
-    "Not a second model. The CO2e factors are facility energy multiplied by the grid carbon-intensity factor, so "
-    + "dividing by that same factor recovers facility energy exactly. The " + C.grid_cif_g_per_wh
-    + " g/Wh figure is the AWS location-based regional intensity the factors were built on; the US average is higher.",
-    F.energy],
-   ["Water",
-    "Two terms, kept PUE-consistent. On-site cooling water applies to IT energy (facility energy divided by PUE "
-    + C.pue + ") at " + C.wue_onsite_l_per_kwh + " L/kWh; off-site generation water applies to the full facility "
-    + "energy at " + C.wue_offsite_l_per_kwh + " L/kWh. L/kWh equals mL/Wh.", F.water],
-   ["Embodied CO2e",
-    "Manufacturing carbon for the hardware, allocated through energy because the ledger stores tokens rather than "
-    + "GPU-seconds. An 8×H100 server over a three-year life at full TDP works out to " + C.embodied_gco2e_per_kwh
-    + " gCO2e/kWh. Full utilisation is the low-side assumption: real utilisation is lower, which raises the figure.",
-    F.embodied],
-   ["Carbon balance",
+  /* The per-metric physics lives under each metric hero now. What stays here
+     is what is NOT per-metric: how the balance is defined, how the dollar
+     ledger works, and what the whole thing is worth as evidence. */
+  var meth = doc.getElementById("meth");
+  [["Carbon balance",
     "Emitted minus VERIFIED REMOVAL ONLY. Prevention credits stop a future emission and unverified purchases have no "
     + "retirement proof on file; both are recorded below the line and neither settles a removal debt. This is the "
     + "GHG Protocol / SBTi distinction, not a house rule.", F.balance],

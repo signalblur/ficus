@@ -360,6 +360,25 @@ want "water formula stated" '0.18/1.14'
 want "embodied factor stated" '44.1'
 want "removal-only balance rule restated" 'verified removal'
 
+# --- per-metric calculation explainers ---------------------------------------
+# Each metric hero carries its own disclosure explaining ITS maths: the formula,
+# the constants with their values, and where each constant came from. A reader
+# asking "where does 0.287 come from" should find the answer under the
+# electricity card, not three screens away in a combined derivation block.
+want "each metric hero carries a calculation disclosure" 'How this is calculated'
+want "the disclosure is a native details element" 'class: "calc"'
+want "constants ride in with their recorded sources" '"constant_sources"'
+want "the grid-intensity source is quoted" 'arXiv:2505.09598'
+# The same fact must not live in two diverging places: the per-metric physics
+# moved OUT of the combined derivation block when it moved under the heroes.
+dupes=$(grep -c 'Not a second model' "$OUT" || true)
+if [ "$dupes" = "1" ]; then
+  echo "PASS dashboard: the energy derivation is stated once, not duplicated"
+else
+  echo "FAIL dashboard: 'Not a second model' appears ${dupes} times — the derivation is duplicated" >&2
+  fail=1
+fi
+
 # --- station-record idiom ----------------------------------------------------
 # The page is a station record: three streams, each with the same trio of
 # readings, then one shared time axis carrying all three traces. These lock that

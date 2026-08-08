@@ -490,6 +490,46 @@ a:hover { text-decoration-thickness: 2px; }
 }
 .delta__d { font-size: 0.8em; }
 
+/* --- the per-metric calculation disclosure ---------------------------------
+   Closed by default: it answers a question rather than forming part of the
+   reading. The summary is the only affordance, so it gets a marker and a
+   pointer, and the panel is inset on the metric colour so an open disclosure
+   still reads as belonging to its own card. */
+.calc { margin: 0; border-top: 1px solid var(--rule); }
+.calc > summary {
+  padding: 0.7rem 1.1rem;
+  color: var(--ink-head);
+  cursor: pointer;
+  font: 700 0.625rem/1.5 var(--mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.calc[open] > summary { border-bottom: 1px solid var(--rule); }
+.calc__b { padding: 0.9rem 1.1rem 1.1rem; border-left: 3px solid var(--stream, var(--rule-key)); }
+.calc__lead { margin: 0 0 0.6rem; color: var(--ink-2); font-size: 0.8125rem; line-height: 1.55; }
+.calc__f {
+  display: block;
+  margin: 0 0 0.75rem;
+  padding: 0.55rem 0.7rem;
+  background: var(--plane);
+  border-radius: var(--r-sm);
+  overflow-x: auto;
+  color: var(--ink-1);
+  font: 600 0.6875rem/1.65 var(--mono);
+  white-space: pre;
+}
+.calc__c { margin: 0 0 0.75rem; }
+.calc__c dt {
+  margin: 0.5rem 0 0;
+  color: var(--ink-head);
+  font: 600 0.6875rem/1.5 var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+.calc__c dt:first-child { margin-top: 0; }
+.calc__c dt b { color: var(--ink-1); }
+.calc__c dd { margin: 0.15rem 0 0; color: var(--ink-2); font-size: 0.6875rem; line-height: 1.55; }
+.calc__note { margin: 0; color: var(--ink-2); font-size: 0.75rem; line-height: 1.55; }
+
 /* --- SIGNATURE 1: the trace ------------------------------------------------- */
 .fig-wrap { margin: 0; }
 .chart { display: block; width: 100%; height: auto; overflow: visible; }
