@@ -4,175 +4,190 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>Ficus — carbon dashboard</title>
+<title>Ficus — carbon station</title>
 <style>
 /* ===========================================================================
-   FICUS — carbon dashboard
+   FICUS — carbon station
    ---------------------------------------------------------------------------
-   Direction: INSTRUMENT PANEL. This was a statement of account — a masthead, a
-   tear-off stub, ruled tables pretending to be paper. It is now a console: a
-   card grid on a quiet plane, a zoned sticky header, stat cards, and charts
-   that are first-class panels rather than annexes to a table.
+   DIRECTION: THE STATION RECORD.
 
-   What keeps it from being any admin template is that the subject is a METER.
-   This page reads a quantity, so it is dressed as an instrument rather than an
-   analytics product: the brand mark is a needle at three-quarter deflection,
-   every figure is set in mono with tabular numerals, and the hero is a
-   settlement meter with a real tick scale (see SIGNATURE below). Restraint is
-   the other half of it — one weak shadow, one radius, two mints, no gradients,
-   nothing that pulses or animates.
+   Earlier passes made this a statement of account, then an instrument console.
+   Both dressed the page as a container. This one takes its shape from what the
+   ledger actually measures: one act, recorded as three physical streams —
+   carbon, electricity, water — at one monitoring station, over time.
 
-   Mint stays what the previous pass made it: line-work, never a field. It draws
-   the header rule, the card edges, the hero's top rule, the table heads, the
-   callout bars and the stat-card edges. Every surface is white or a near-white
-   neutral; nothing is tinted green. A mint that is the paper is a mood; a mint
-   that is the ruling is a system, and it is what lets a green scheme suit a
-   carbon instrument without reading as an eco badge.
+   So the page is a station record. Three streams, each with the same trio of
+   readings, then one shared time axis with all three traces on it, then the
+   settlement, then the books, then the giving briefing, then the derivation.
+   The structure IS the argument: the same three readings, in the same order,
+   for every stream, so the eye learns the pattern once and reads the rest.
+
+   SIGNATURE — THE TRACE (see the .lane__n rules and drawTrace()). Three lanes
+   stacked on one monthly axis, thin columns, each lane in its own colour and
+   labelled with its own unit. It is the only element here that could not be
+   lifted from an admin template, and it is honest about something a prettier
+   chart would hide: the three traces are CONGRUENT BY CONSTRUCTION. Energy is
+   the physical quantity; carbon and water are derived from it by fixed
+   published factors, so the shapes must match. Drawing them aligned makes that
+   identity visible instead of implying three independent signals. The caption
+   under the figure says so in words.
+
+   SECOND SIGNATURE — THE SPLIT READOUT. Every machine figure on this page sets
+   its integer part large and its fraction small, the way a meter face does.
+   No webfont is permitted here, so the numbers have to BE the typography: this
+   is the one device that makes a system-font page unmistakable. Both parts are
+   plain text in one element, so a screen reader still reads "41.60".
 
    Two voices, one rule:
-     MONO  — everything the machine produced: the brand, card titles, every
-             number, every identifier, every hash, badges, axis ticks.
-     SANS  — everything a human wrote: notes, explanations, methodology prose.
+     MONO  — everything the machine produced: readings, identifiers, hashes,
+             axis ticks, eyebrows, badges.
+     SANS  — everything a human wrote: titles, notes, methodology, the giving
+             briefing.
    No webfont anywhere: the page must render with the network off, so both
-   stacks are system fonts (tests forbid webfont declarations and every loaded
-   reference, so this comment must not spell the at-rule out either).
+   stacks are system fonts (tests forbid font-loading at-rules and every loaded
+   reference, so this comment must not spell that at-rule out either).
+
+   Mint stays what earlier passes made it: LINE-WORK, NEVER A FIELD. It rules
+   the header, the section heads, the settled span of the measure, the callout
+   bars. Every surface on this page is white or a near-white neutral; nothing
+   is tinted green. A mint that is the paper is a mood; a mint that is the
+   ruling is a system.
 
    ---------------------------------------------------------------------------
    CONTRAST — WCAG 2.x relative-luminance model, (L1+0.05)/(L2+0.05).
-   This is the currently normative model (WCAG 2.2 is the W3C Recommendation);
-   APCA/Lc values are a WCAG 3.0 draft proposal and are deliberately not used
-   here. Requirements applied:
+   This is the currently normative model: WCAG 2.2 is the W3C Recommendation.
+   APCA/Lc values belong to the WCAG 3.0 draft, which has no normative force,
+   and are deliberately not used here. Requirements applied, quoted:
+
      SC 1.4.3 Contrast (Minimum), Level AA — "The visual presentation of text
-       and images of text has a contrast ratio of at least 4.5:1", large-scale
-       text 3:1. Large-scale = 18pt, or 14pt bold.
-     SC 1.4.11 Non-text Contrast, Level AA — "at least 3:1 against adjacent
-       color(s)" for user-interface components and for "Parts of graphics
-       required to understand the content". Thresholds are not rounded: 2.999:1
-       does not meet 3:1.
+       and images of text has a contrast ratio of at least 4.5:1", except
+       "Large-scale text and images of large-scale text have a contrast ratio
+       of at least 3:1". Large-scale is 18pt, or 14pt bold.
 
-   ONE MODE, AND IT IS LIGHT. This page has no dark variant and no theme toggle.
-   There is no colour-scheme-preference media block anywhere in this stylesheet
-   — the test greps the rendered page for that feature name and fails if it
-   reappears, so, exactly as with the webfont at-rule above, this comment must
-   not spell it out. Every reader gets the white sheet regardless of their OS
-   setting. That is a deliberate product decision, not an oversight: this is a
-   printable tax document, and a statement of account that changes colour
-   depending on who opens it is a statement you cannot check against the copy
-   you filed. The page declares itself light in two places so the browser does
-   not auto-darken what it draws itself:
+     SC 1.4.11 Non-text Contrast, Level AA — "The visual presentation of the
+       following have a contrast ratio of at least 3:1 against adjacent
+       color(s): User Interface Components ... Graphical Objects - Parts of
+       graphics required to understand the content, except when a particular
+       presentation of graphics is essential to the information being
+       conveyed." Its own note: "The 3:1 contrast ratios referenced in this
+       success criterion is intended to be treated as threshold values ... the
+       computed values should not be rounded (e.g. 2.999:1 would not meet the
+       3:1 threshold)."
 
-     :root { color-scheme: light }         the CSS declaration
+   That same Understanding document warns that anti-aliasing renders
+   "particularly thin lines and shapes of non-text elements ... with a much
+   fainter color than the actual color defined in the underlying CSS", and
+   advises authors "to avoid particularly thin lines and shapes, or to use a
+   combination of colors that exceeds the normative requirements". Every
+   meaning-bearing rule here is 2-3px and every colour that draws one clears
+   3:1 with margin, which is that second option taken deliberately.
+
+   ONE MODE, AND IT IS LIGHT. No dark variant, no toggle, and no colour-scheme
+   preference block anywhere in this stylesheet — a test greps the rendered
+   page for that feature name and fails if it reappears, so, as with the
+   font-loading at-rule above, this comment must not spell it out. This is a
+   printable tax document: a record that changes colour depending on who opens
+   it is a record you cannot check against the copy you filed. The page
+   declares itself light twice, so the browser does not auto-darken what it
+   draws itself:
+
+     :root { color-scheme: light }                the CSS declaration
      <meta name="color-scheme" content="light">   in the document head
 
-   Per WHATWG HTML, the meta form exists "to aid user agents in rendering the
+   Per WHATWG HTML the meta form exists "to aid user agents in rendering the
    page background with the desired color scheme immediately (rather than
    waiting for all CSS in the page to load)", its value "must be a string that
    matches the syntax for the CSS 'color-scheme' property value", and there
    "must not be more than one meta element with its name attribute value set to
-   an ASCII case-insensitive match for color-scheme per document". Both are
-   needed: the meta covers the first paint, the CSS declaration covers UA-drawn
-   furniture (scrollbars, form controls) for the rest of the document's life.
+   an ASCII case-insensitive match for color-scheme per document". The meta
+   covers the first paint; the declaration covers UA-drawn furniture for the
+   rest of the document's life.
 
-   THE NEUTRAL TIER is a named dark-grey ramp, not a by-product of the body
-   ink: greys 950/800/700/600 carry body text, headings and labels, secondary
-   and tertiary prose; 500 carries chart axis material. Every grey that touches
-   text clears 4.5:1 on BOTH surfaces (sheet and plane), so a label never has to
-   know which surface it landed on. With the mint band gone there are only two
-   surfaces left to clear, which is why every number below went UP.
+   THE NEUTRAL TIER is a named dark-grey ramp. Every grey that touches text
+   clears 4.5:1 on BOTH surfaces, so a label never has to know which surface it
+   landed on. Measured ratios — vs sheet #ffffff / vs plane #f1f3f2:
 
-   Measured ratios — vs sheet #ffffff / vs plane #f1f3f2:
-     grey-950  18.31 / 16.42     body ink
-     grey-800  12.34 / 11.07     headings, labels, table heads
-     grey-700   8.71 /  7.81     secondary prose
-     grey-600   5.60 /  5.02     tertiary, captions, axis TICK TEXT
+     grey-950  18.31 / 16.43     body ink, headline figures
+     grey-800  12.34 / 11.07     titles, labels, table heads
+     grey-700   8.71 /  7.82     secondary prose
+     grey-600   5.61 /  5.03     tertiary, captions, axis TICK TEXT
      grey-500   3.59 /  3.22     NON-TEXT ONLY (axis lines, baselines)
-     accent     6.58 /  5.90     critical  7.32 / 6.57
+     accent     6.58 /  5.91     critical  7.32 / 6.57
 
-   THE TWO MINTS. The old --mint (#43c78c) measured 2.10:1 on white and so could
-   never be more than a tint — which is exactly why the old design had to make it
-   the paper. Turning mint into the rule-work means it now has to carry meaning,
-   so it has to clear the bar instead of dodging it:
+   THE TWO MINTS.
+     --mint      #0f9563   3.82 sheet / 3.43 plane   MEANING-BEARING line-work
+     --mint-soft #9cd8c2   1.61 sheet / 1.45 plane   DECORATIVE hairlines only
 
-     --mint      #0f9563   3.81 sheet / 3.42 plane   MEANING-BEARING line-work
-     --mint-soft #9cd8c2   1.61 sheet / 1.44 plane   DECORATIVE hairlines only
+   --mint draws every rule a reader needs in order to parse the record: the
+   header rule, the section-head rule, the settled span of the measure, the
+   bar on a callout, the edge of a lead badge. Those are "Parts of graphics
+   required to understand the content" under SC 1.4.11, so 3:1 is a
+   requirement and 3.82 is the margin over it. --mint-soft carries no meaning —
+   card borders, row rules, dividers, where the structure is already in the
+   markup and nothing is lost if the line disappears.
 
-   --mint is every rule that a reader needs in order to parse the panel: the
-   header rule that separates the console bar from the grid, the hero card's top
-   rule, the left edge that marks a stat card as a primary instrument, the
-   underline under a table head, and the bar on a callout. Those are the marks
-   that say which panel outranks which, so they are "Parts of graphics
-   required to understand the content"
-   under SC 1.4.11, so 3:1 is a requirement and 3.81 is the margin over it. The
-   margin is deliberate: Understanding 1.4.11 warns that anti-aliasing renders
-   "particularly thin lines and shapes" fainter than their declared color and
-   advises either avoiding thin lines or using "a combination of colors that
-   exceeds the normative requirements". Every mint rule here is 1–4px, so it
-   takes the second option.
-
-   --mint-soft carries no meaning. It draws the card borders, the table row
-   rules and the divider under a card header, where the structure is already in
-   the markup (real sections, real th/td) and the reader loses nothing if the
-   line disappears — a card is still a card at 1.61:1. It is pegged
-   to 1.61:1 — the exact weight of the grey hairline it replaced (--grey-300,
-   1.61:1 on the old sheet) — so the rule-work changed hue without changing
-   visual weight.
-
-   The focus ring does NOT go mint. It stays --ink-1, 18.31:1 on the sheet,
-   because a focus indicator is the one mark on the page that should be as loud
-   as the page can make it; brand is not worth a ratio there.
+   The focus ring does NOT go mint. It stays --ink-1 at 18.31:1: a focus
+   indicator should be as loud as the page can make it, and brand is not worth
+   a ratio there.
 
    ---------------------------------------------------------------------------
-   CHART PALETTE — two colours, because there are two quantities.
+   CHART PALETTE — FOUR SLOTS, because the page draws four things: the three
+   streams, and the settled span of the measure.
 
-   Every chart on this page measures the same two things: carbon EMITTED and
-   carbon SETTLED. So the palette is those two and nothing else. The previous
-   six slots were positional names for colours that mostly did not exist on the
-   page — only two were ever drawn, and one was called "spare". A categorical
-   ramp you do not use is not a palette, it is a licence to add a rainbow later.
+     --viz-carbon  #4a44a8   7.83 sheet / 7.02 plane   indigo
+     --viz-energy  #a03d80   6.05 sheet / 5.42 plane   mulberry
+     --viz-water   #1b83c4   4.13 sheet / 3.70 plane   steel blue
+     --viz-settled #0f9563   3.82 sheet / 3.43 plane   the brand mint
 
-     --viz-emitted  #414a8c   8.13:1 on the sheet   indigo-slate
-     --viz-settled  #0f9563   3.82:1 on the sheet   the brand mint
-
-   No orange and no red anywhere in the charts, by construction: the search that
-   produced these was restricted to the cool half of the wheel (HSL hue
-   140–320). Settled is the brand mint, so "green means settled" — and emitted
-   is a muted indigo rather than a warning colour, because emitting carbon is
-   the normal state of doing the work, not an error condition.
+   No orange and no red in any chart, by construction: every slot was searched
+   inside the cool half of the wheel only (sRGB HSL hue 150-330; measured
+   242/318/205/157). Emitting carbon is the normal state of doing the work, not
+   an error condition, so it is never dressed as one. Red survives on this page
+   in exactly one job — the ESTIMATE banner and the UNVERIFIED badge — and
+   never inside a figure.
 
    Validated, not eyeballed, through the dataviz validator (OKLab dE x100,
-   Machado-Oliveira-Fernandes 2009 CVD simulation at severity 1.0) on ALL pairs
-   rather than only adjacent ones — with a legend on screen a reader may compare
-   any two marks, and an adjacent-only objective is gameable by interleaving two
-   tight clusters. Measured:
-     CVD dE  22.4 deutan · 24.6 protan · 18.1 tritan   (target 8, floor 6)
-     normal-vision dE 25.5                             (hard gate 15)
-     both slots clear 3:1 vs the #ffffff sheet; both sit inside the light
-     lightness band and above the 0.10 chroma floor.
+   Machado-Oliveira-Fernandes 2009 CVD simulation at severity 1.0) on ALL PAIRS
+   rather than adjacent ones, because the lane keys let a reader compare any
+   two marks on the page. Measured on the four together:
+     worst all-pairs CVD dE 8.3 (protan, energy vs carbon)   target 8, floor 6
+     worst all-pairs normal-vision dE 16.6 (carbon vs water) hard gate 15
+     all four clear 3:1 on the sheet AND on the plane; all sit inside the
+     light lightness band and above the 0.10 chroma floor.
+   Tritan separation is the weak axis of this set (dE ~3). Tritanopia is rare,
+   and nothing here rests on hue: every lane is spatially separated, directly
+   labelled, given a distinct lightness step, and repeated as a number in the
+   table underneath.
 
-   THREE CHANNELS, not one. Settled vs unsettled never rests on hue alone
-   (SC 1.4.1 Use of Color):
-     hue      indigo-slate vs mint
-     value    OKLCH L 0.435 vs 0.593 — emitted is the darker mark by 0.157,
-              so the distinction survives a greyscale print
-     texture  the unsettled segment is hatched at 45 degrees
-   and on top of those, every mark is directly labelled and the same figures
-   appear in the tables underneath.
+   THREE CHANNELS, NOT ONE. The streams differ by hue, by OKLCH lightness
+   (0.451 carbon / 0.518 energy / 0.586 water — so the lanes still separate in
+   a greyscale print), and by position and label. Settled versus unsettled on
+   the measure differs by FILL, not hue:
+
+     settled     a solid mint span
+     unsettled   an open track — no fill, a 2px carbon-indigo outline
+
+   That replaces the 45-degree hatch the previous pass used. Filled-versus-open
+   is the strongest non-colour channel available: it survives a greyscale
+   print, every form of colour-vision deficiency, and forced-colours mode,
+   where a hatch pattern collapses into mud. It also says the right thing —
+   an unsettled balance is a measure not yet filled. A genuinely empty station
+   (nothing emitted at all) keeps a DASHED hairline track, so "no data" and
+   "not yet settled" never look the same.
    =========================================================================== */
 
 :root {
   color-scheme: light;
 
-  /* paper — a white sheet on a near-white neutral desk. Neither is tinted. */
-  --plane:     #f1f3f2;   /* the desk under the printout */
-  --surface:   #ffffff;   /* the sheet */
+  /* paper — a white sheet on a near-white neutral plane. Neither is tinted. */
+  --plane:     #f1f3f2;
+  --surface:   #ffffff;
 
   /* the ruling — see THE TWO MINTS */
-  --mint:      #0f9563;   /* 3.81:1 on the sheet — meaning-bearing line-work */
-  --mint-soft: #9cd8c2;   /* 1.61:1 on the sheet — decorative hairlines only */
+  --mint:      #0f9563;
+  --mint-soft: #9cd8c2;
 
-  /* neutral tier — a deliberate dark-grey ramp, the third primary alongside
-     the white paper and the mint. Roles below alias onto it; nothing in
-     the page reaches past the aliases for a raw grey. */
+  /* neutral tier */
   --grey-950:  #101614;
   --grey-800:  #2c3733;
   --grey-700:  #414e49;
@@ -180,26 +195,31 @@
   --grey-500:  #7d8a85;
 
   /* ink roles */
-  --ink-1:     var(--grey-950);   /* body and headline ink */
-  --ink-head:  var(--grey-800);   /* section labels, table heads, eyebrows */
-  --ink-2:     var(--grey-700);   /* secondary prose */
-  --ink-3:     var(--grey-600);   /* captions, axis tick text */
-  --axis:      var(--grey-500);   /* axis lines and baselines — non-text */
+  --ink-1:     var(--grey-950);
+  --ink-head:  var(--grey-800);
+  --ink-2:     var(--grey-700);
+  --ink-3:     var(--grey-600);
+  --axis:      var(--grey-500);
 
-  /* rule roles. The old grey hairline tier (--grey-300) is gone: rules are the
-     mint now, and which mint depends on whether the rule carries meaning. */
-  --rule:      var(--mint-soft);  /* decorative: block dividers, row rules */
-  --rule-key:  var(--mint);       /* meaning-bearing: header rule, hero top rule,
-                                     stat-card edges, table heads, callout bars */
+  /* rule roles */
+  --rule:      var(--mint-soft);
+  --rule-key:  var(--mint);
   --accent:    #0b6b3f;
   --critical:  #a3271f;
 
-  /* chart slots — two quantities, two colours. See CHART PALETTE above. */
-  --viz-emitted: #414a8c;
+  /* chart slots — three streams plus the settled span. See CHART PALETTE. */
+  --viz-carbon:  #4a44a8;
+  --viz-energy:  #a03d80;
+  --viz-water:   #1b83c4;
   --viz-settled: #0f9563;
 
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", Consolas, "Liberation Mono", monospace;
+
+  --shadow: 0 1px 2px rgb(16 22 20 / 5%);
+  --r-lg: 12px;
+  --r-md: 8px;
+  --r-sm: 4px;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -213,9 +233,8 @@ body {
 }
 
 /* Focus indicator: ink-1 measures 18.31:1 on the sheet, far above the 3:1 that
-   SC 1.4.11 requires of a focus indicator against the adjacent background
-   (Understanding 1.4.11, Relationship with Focus Visible).
-   Never removed — F78 is the documented failure for styling it away. */
+   SC 1.4.11 asks of a focus indicator against the adjacent background. Never
+   removed — F78 is the documented failure for styling it away. */
 :focus-visible {
   outline: 3px solid var(--ink-1);
   outline-offset: 2px;
@@ -238,86 +257,70 @@ body {
 a { color: var(--accent); text-underline-offset: 0.18em; }
 a:hover { text-decoration-thickness: 2px; }
 
-/* --- page header: a zoned console bar, not a document masthead -------------
-   Sticky, because on a dashboard the identity of what you are looking at and
-   the period it covers should not scroll away from the numbers. */
-.topbar {
+/* --- station header --------------------------------------------------------
+   Sticky: on a record this long, what you are reading and the period it covers
+   should not scroll away from the numbers. */
+.bar {
   position: sticky;
   top: 0;
   z-index: 10;
   background: var(--surface);
   border-bottom: 2px solid var(--rule-key);
 }
-.topbar__in {
+.bar__in {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem 1.5rem;
-  max-width: 82rem;
+  max-width: 78rem;
   margin: 0 auto;
   padding: 0.85rem 1.5rem;
 }
-/* A sticky header will happily park itself on top of whatever you just jumped
-   or tabbed to, which turns the skip link into a link that appears to do
-   nothing. scroll-margin-top reserves the header's height at every scroll
-   target, so the thing you asked for lands below it. */
-#stmt, .card, .card__t { scroll-margin-top: 5.5rem; }
-/* At 400% zoom (SC 1.4.10 Reflow) a stuck header is just lost height, so past
-   the point where it would cost a meaningful share of the viewport it unsticks
-   and scrolls away like everything else. */
+/* A sticky header parks itself over whatever you just jumped or tabbed to,
+   which turns the skip link into a link that appears to do nothing.
+   scroll-margin-top reserves its height at every scroll target. */
+#report, .block, .card { scroll-margin-top: 5.5rem; }
+/* At 400% zoom (SC 1.4.10 Reflow) a stuck header is lost height, so past the
+   point where it costs a meaningful share of the viewport it scrolls away. */
 @media (max-height: 26rem) {
-  .topbar { position: static; }
+  .bar { position: static; }
 }
 
-.brand { display: flex; align-items: center; gap: 0.6rem; margin: 0; }
-/* The mark is a meter needle at three-quarter deflection: this instrument
-   reads a quantity, and the mark says so before a word is read. */
-.brand__mark { display: block; width: 1.4rem; height: 1.4rem; flex: none; }
-.brand__t {
-  margin: 0;
-  font: 700 1rem/1 var(--mono);
-  letter-spacing: 0.02em;
-}
+.brand { display: flex; align-items: center; gap: 0.65rem; margin: 0; }
+/* Three streams leaving one source: the mark is the page's thesis, drawn. */
+.brand__mark { display: block; width: 1.5rem; height: 1.5rem; flex: none; }
+.brand__t { margin: 0; font: 700 1.0625rem/1 var(--mono); letter-spacing: -0.01em; }
 .brand__sub {
-  margin: 0;
+  margin: 0.15rem 0 0;
   color: var(--ink-3);
-  font: 600 0.6875rem/1.3 var(--mono);
-  letter-spacing: 0.12em;
+  font: 600 0.625rem/1.3 var(--mono);
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
-.chips { display: flex; flex-wrap: wrap; gap: 0.4rem 1.25rem; margin: 0 0 0 auto; }
-.chips > div { display: flex; align-items: baseline; gap: 0.4rem; }
-.chips dt {
+.meta { display: flex; flex-wrap: wrap; gap: 0.4rem 1.5rem; margin: 0 0 0 auto; }
+.meta > div { display: flex; align-items: baseline; gap: 0.4rem; }
+.meta dt {
   color: var(--ink-3);
-  font: 600 0.625rem/1.4 var(--mono);
-  letter-spacing: 0.12em;
+  font: 600 0.5625rem/1.4 var(--mono);
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
-.chips dd {
-  margin: 0;
-  font: 600 0.75rem/1.4 var(--mono);
-  font-variant-numeric: tabular-nums;
-}
+.meta dd { margin: 0; font: 600 0.75rem/1.4 var(--mono); font-variant-numeric: tabular-nums; }
 
-/* --- the grid ------------------------------------------------------------- */
-.wrap { max-width: 82rem; margin: 0 auto; padding: 1.25rem 1.5rem 3rem; }
-.grid {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 1.125rem;
-}
+/* --- page shell ------------------------------------------------------------ */
+.page { max-width: 78rem; margin: 0 auto; padding: 1.5rem 1.5rem 3.5rem; }
 
-/* --- the estimate notice: a banner, not a bill's small print --------------- */
+/* --- the estimate banner --------------------------------------------------- */
 .flag {
   display: flex;
   gap: 0.7rem;
   align-items: flex-start;
-  margin: 0 0 1.125rem;
+  margin: 0 0 2rem;
   padding: 0.7rem 0.9rem;
   background: var(--surface);
   border: 1px solid var(--rule);
   border-left: 4px solid var(--critical);
-  border-radius: 10px;
+  border-radius: var(--r-md);
   color: var(--ink-2);
   font-size: 0.8125rem;
   line-height: 1.55;
@@ -326,50 +329,41 @@ a:hover { text-decoration-thickness: 2px; }
   flex: none;
   padding: 0.12rem 0.45rem;
   border: 1px solid currentColor;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
   color: var(--critical);
   font: 700 0.625rem/1.5 var(--mono);
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
-/* --- cards ----------------------------------------------------------------
-   A panel on the plane: white, hairline-mint edge, 10px radius, and one
-   near-invisible shadow. The shadow is the only depth cue on the page and it
-   is deliberately weak — a dashboard that floats everything reads as a toy. */
-.card {
-  grid-column: span 12;
-  min-width: 0;
-  background: var(--surface);
-  border: 1px solid var(--rule);
-  border-radius: 10px;
-  box-shadow: 0 1px 2px rgb(16 22 20 / 4%);
+/* --- section rhythm --------------------------------------------------------
+   Every block opens the same way: an eyebrow naming the FRAME the block is
+   read in (lifetime, by month, as of today, tax year, before you give, how
+   these are made), then a title, then one line of orientation. The eyebrow is
+   information, not ornament — it tells you what period or basis the numbers
+   underneath are on, which on a ledger is the first thing you need. */
+.block { margin: 0 0 2.75rem; }
+.block:last-child { margin-bottom: 0; }
+.block__hd {
+  margin: 0 0 1.125rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 2px solid var(--rule-key);
 }
-.card__h {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.3rem 0.9rem;
-  padding: 0.9rem 1.25rem;
-  border-bottom: 1px solid var(--rule);
-}
-.card__t {
-  margin: 0;
-  font: 700 0.75rem/1.4 var(--mono);
-  letter-spacing: 0.16em;
+.block__eyebrow {
+  display: block;
+  margin: 0 0 0.35rem;
+  color: var(--ink-3);
+  font: 700 0.625rem/1.4 var(--mono);
+  letter-spacing: 0.18em;
   text-transform: uppercase;
 }
-.card__sub { margin: 0; color: var(--ink-3); font-size: 0.75rem; }
-.card__b { padding: 1.25rem; }
-.card__b > .note:first-child { margin-top: 0; }
-
-/* The hero states the page's thesis, so it gets the key rule across its top
-   and the only oversized figure on the page. */
-.card--hero { border-top: 3px solid var(--rule-key); }
-
-@media (min-width: 60rem) {
-  .card--half { grid-column: span 6; }
+.block__t {
+  margin: 0;
+  color: var(--ink-1);
+  font: 600 clamp(1.25rem, 2.4vw, 1.5rem)/1.2 var(--sans);
+  letter-spacing: -0.015em;
 }
+.block__sub { margin: 0.3rem 0 0; max-width: 46rem; color: var(--ink-2); font-size: 0.8125rem; }
 
 .note { margin: 0 0 1.1rem; max-width: 48rem; color: var(--ink-2); font-size: 0.8125rem; }
 .note strong { color: var(--ink-1); font-weight: 600; }
@@ -379,7 +373,7 @@ a:hover { text-decoration-thickness: 2px; }
 .cs { text-transform: none; }
 
 .sub__h {
-  margin: 1.6rem 0 0.7rem;
+  margin: 1.75rem 0 0.7rem;
   color: var(--ink-head);
   font: 700 0.6875rem/1.4 var(--mono);
   letter-spacing: 0.16em;
@@ -387,110 +381,169 @@ a:hover { text-decoration-thickness: 2px; }
 }
 .sub__h:first-child { margin-top: 0; }
 
-/* --- stat cards -----------------------------------------------------------
-   The three meter readings, the two activity figures and the three dollar
-   figures are all the same object: a label, a machine figure, a gloss. One
-   treatment, three placements. */
-.reads, .tiles, .pair {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
-  gap: 1.125rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.read, .tile, .pair > div {
+/* --- cards ----------------------------------------------------------------- */
+.card {
   min-width: 0;
-  padding: 0.95rem 1.05rem;
   background: var(--surface);
   border: 1px solid var(--rule);
-  border-radius: 8px;
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
 }
-/* Readings are the page's primary instruments, so they carry the key rule as
-   a left edge; the subordinate figures keep the hairline. */
-.read { border-left: 3px solid var(--rule-key); }
-.read__k, .tile__k, .pair dt {
-  margin: 0;
-  color: var(--ink-head);
-  font: 600 0.625rem/1.4 var(--mono);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-.read__v {
-  margin: 0.45rem 0 0;
-  font: 700 clamp(1.6rem, 4.4vw, 2.1rem)/1 var(--mono);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.035em;
-}
-.read__u { font-size: 0.8125rem; font-weight: 600; color: var(--ink-2); letter-spacing: 0; }
-.read__eq {
-  margin: 0.65rem 0 0;
-  padding-top: 0.6rem;
-  border-top: 1px solid var(--rule);
-  font-size: 0.8125rem;
-  line-height: 1.5;
-}
-.read__eq b { font: 700 0.875rem/1.4 var(--mono); font-variant-numeric: tabular-nums; }
-.read__src { display: block; margin-top: 0.3rem; color: var(--ink-3); font-size: 0.6875rem; line-height: 1.45; }
-.read__src a { color: var(--accent); }
-
-.tile__v, .pair dd {
-  margin: 0.4rem 0 0;
-  font: 700 1.5rem/1.15 var(--mono);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.03em;
-}
-.tile__u, .pair dd small {
-  display: block;
-  margin-top: 0.25rem;
-  color: var(--ink-2);
-  font: 400 0.75rem/1.4 var(--sans);
-  letter-spacing: 0;
-}
-.owed--neg { color: var(--accent); }
-
-/* --- SIGNATURE: the settlement meter --------------------------------------
-   The one element here that could not be lifted from an admin template. This
-   page is an instrument, so the headline reading is drawn as a gauge: a ruled
-   track with a tick scale above it, the settled span filled in mint, the
-   unsettled remainder hatched, and a marker dropped at the boundary between
-   them. It answers the page's only real question — how much of what you
-   emitted is actually settled — in one glance, and the tick scale is what
-   keeps it a meter rather than a progress bar. */
-.meter { margin: 0 0 0.25rem; }
-.meter__v {
-  font: 700 clamp(2.4rem, 8vw, 3.75rem)/1 var(--mono);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.04em;
-}
-.meter__u { margin-left: 0.5rem; color: var(--ink-2); font: 600 0.875rem/1 var(--mono); letter-spacing: 0.06em; }
-.meter__eq {
-  margin: 0.5rem 0 1.15rem;
-  color: var(--ink-2);
-  font: 400 0.8125rem/1.5 var(--mono);
-  font-variant-numeric: tabular-nums;
-}
-.tick { stroke: var(--axis); stroke-width: 1; }
-.tick--major { stroke: var(--ink-3); }
-.bound line { stroke: var(--ink-1); stroke-width: 2; }
-.bound text { fill: var(--ink-1); font-size: 11px; font-weight: 700; }
-
-/* --- below the line -------------------------------------------------------- */
-.memo { margin-top: 1.35rem; padding-top: 1.15rem; border-top: 1px solid var(--rule); }
-.memo__h {
-  margin: 0 0 0.7rem;
+.card__b { padding: 1.25rem; }
+.card__t {
+  margin: 0 0 0.9rem;
   color: var(--ink-head);
   font: 700 0.6875rem/1.4 var(--mono);
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
-.memo__list { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.65rem; }
+.row { display: grid; gap: 1.125rem; }
+@media (min-width: 62rem) {
+  .row--2 { grid-template-columns: 1fr 1fr; }
+  .row--wide { grid-template-columns: 1.6fr 1fr; }
+}
+
+/* --- SIGNATURE 2: the split readout ----------------------------------------
+   Integer large, fraction small, the way a meter face reads. Both halves are
+   text nodes inside one element, so assistive technology still gets "41.60"
+   and a text search still finds it. */
+.fig {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.035em;
+  color: var(--ink-1);
+}
+.fig__f { font-size: 0.62em; letter-spacing: -0.02em; }
+.fig__u {
+  margin-left: 0.35em;
+  color: var(--ink-2);
+  font-size: 0.4em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+/* --- the three streams ------------------------------------------------------
+   One card per stream, each carrying the SAME trio in the SAME order:
+   lifetime, in familiar terms, latest month. The repetition is the point — the
+   eye learns the shape once on carbon and reads electricity and water for
+   free. Each card is keyed to its lane in the trace by a 3px top rule in the
+   stream's own colour, which is meaning-bearing under SC 1.4.11 and clears 3:1
+   on both surfaces. */
+.streams { display: grid; gap: 1.125rem; grid-template-columns: 1fr; }
+@media (min-width: 58rem) {
+  .streams { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+.stream { min-width: 0; margin: 0; border-top: 3px solid var(--stream, var(--rule-key)); }
+.stream--carbon { --stream: var(--viz-carbon); }
+.stream--energy { --stream: var(--viz-energy); }
+.stream--water  { --stream: var(--viz-water); }
+.stream__hd {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.9rem 1.1rem;
+  border-bottom: 1px solid var(--rule);
+}
+.stream__mark { display: block; width: 1.25rem; height: 1.25rem; flex: none; color: var(--stream); }
+.stream__n { margin: 0; font: 600 1rem/1.2 var(--sans); letter-spacing: -0.01em; }
+.trio { margin: 0; padding: 0; list-style: none; }
+.trio > li { padding: 0.95rem 1.1rem; }
+.trio > li + li { border-top: 1px solid var(--rule); }
+/* The lead reading gets the mint edge: on a page of numbers, the one that is
+   the lifetime total should not have to be found. */
+.trio > li:first-child { border-left: 3px solid var(--rule-key); }
+.badge__k {
+  margin: 0;
+  color: var(--ink-head);
+  font: 600 0.5625rem/1.4 var(--mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.badge__v { margin: 0.4rem 0 0; }
+.trio > li:first-child .badge__v .fig { font-size: clamp(1.75rem, 4.6vw, 2.25rem); }
+.badge__v .fig { font-size: 1.375rem; }
+.badge__why { margin: 0.3rem 0 0; color: var(--ink-2); font-size: 0.8125rem; line-height: 1.45; }
+.badge__src { margin: 0.4rem 0 0; color: var(--ink-3); font-size: 0.6875rem; line-height: 1.45; }
+.badge__src a { color: var(--accent); }
+/* The unit rides at a fixed fraction of whatever figure it sits beside, so the
+   readout keeps one relationship at every size on the page. */
+.badge__v .fig__u { font-size: 0.5em; }
+.trio > li:first-child .badge__v .fig__u { font-size: 0.38em; }
+.pairs dd .fig__u { font-size: 0.5em; }
+.measure__v .fig__u { font-size: 0.22em; }
+
+/* The delta chip. Direction is carried by an arrow glyph and by the sign on
+   the number, never by colour: a month that emitted more is not an error and a
+   month that emitted less is not a success, so neither gets a hue. */
+.delta {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  margin-top: 0.45rem;
+  padding: 0.14rem 0.45rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
+  color: var(--ink-2);
+  font: 600 0.6875rem/1.5 var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+.delta__d { font-size: 0.8em; }
+
+/* --- SIGNATURE 1: the trace ------------------------------------------------- */
+.fig-wrap { margin: 0; }
+.chart { display: block; width: 100%; height: auto; overflow: visible; }
+.chart text { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.ax { fill: var(--ink-3); font-size: 11px; }
+.val { fill: var(--ink-2); font-size: 11px; font-weight: 700; }
+.lane__n { fill: var(--ink-1); font-size: 12px; font-weight: 600; }
+.lane__u { fill: var(--ink-3); font-size: 10px; }
+.base { stroke: var(--axis); stroke-width: 1; }
+/* Genuinely no data: a dashed hairline track. Never the same mark as an
+   unsettled span, which is a solid open outline. */
+.track-none { fill: none; stroke: var(--axis); stroke-width: 1; stroke-dasharray: 4 3; }
+.m-carbon  { fill: var(--viz-carbon); }
+.m-energy  { fill: var(--viz-energy); }
+.m-water   { fill: var(--viz-water); }
+.m-settled { fill: var(--viz-settled); }
+/* The unsettled span: an OPEN track. Filled-versus-open is the channel that
+   survives greyscale, colour-vision deficiency and forced colours, where a
+   hatch fill collapses. 2px because SC 1.4.11's own note warns anti-aliasing
+   renders thin shapes fainter than their declared colour. */
+.m-open { fill: none; stroke: var(--viz-carbon); stroke-width: 2; }
+.bound line { stroke: var(--ink-1); stroke-width: 2; }
+.bound text { fill: var(--ink-1); font-size: 11px; font-weight: 700; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1.75rem; margin-top: 0.9rem; }
+.legend__i { display: flex; gap: 0.5rem; align-items: center; font-size: 0.8125rem; color: var(--ink-2); }
+/* Legend swatches are drawn as SVG, not as CSS backgrounds, for two reasons:
+   the swatch is then literally the same mark as the chart (solid span, open
+   track), and no chart colour ever appears as a background anywhere in this
+   stylesheet — which is what keeps the "mint is line-work, never a field" rule
+   mechanically testable. */
+.legend__sw { display: block; width: 0.9rem; height: 0.9rem; flex: none; }
+.legend__v { font: 700 0.8125rem/1 var(--mono); font-variant-numeric: tabular-nums; color: var(--ink-1); }
+
+/* --- the measure ------------------------------------------------------------
+   The headline balance, read as a filled measure: the settled span solid, the
+   unsettled remainder open, and a caliper rule dropped where they meet. */
+.measure__v { display: block; }
+.measure__v .fig { font-size: clamp(2.5rem, 7.5vw, 3.75rem); }
+.measure__eq {
+  margin: 0.55rem 0 1.25rem;
+  color: var(--ink-2);
+  font: 400 0.8125rem/1.5 var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- below the line -------------------------------------------------------- */
+.memo__list { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.7rem; }
 .memo__item { display: grid; grid-template-columns: 1.125rem 1fr; gap: 0.7rem; align-items: start; }
 .memo__mark { width: 1.125rem; height: 1.125rem; margin-top: 0.2rem; }
 .memo__label { font-size: 0.8125rem; }
-.memo__v { font: 600 0.8125rem/1.6 var(--mono); font-variant-numeric: tabular-nums; }
+.memo__v { font: 700 0.8125rem/1.6 var(--mono); font-variant-numeric: tabular-nums; }
 .memo__why { display: block; color: var(--ink-2); font-size: 0.75rem; }
-/* Below-the-line marks carry shape, not hue: dashed outline for prevention,
+/* Below-the-line marks carry SHAPE, not hue: a dashed outline for prevention,
    a heavy ring for unverified. Both clear 3:1 against the sheet. */
 .mk rect { fill: none; stroke-width: 2; }
 .mk line { stroke-width: 2; }
@@ -499,56 +552,42 @@ a:hover { text-decoration-thickness: 2px; }
 .mk--unv rect { stroke: var(--critical); }
 .mk--unv line { stroke: var(--critical); stroke-linecap: round; }
 
-/* --- the carbon-negative callout ------------------------------------------ */
+/* --- callout --------------------------------------------------------------- */
 .crow {
   display: flex;
   gap: 0.6rem;
   align-items: baseline;
-  margin: 0 0 1.15rem;
+  margin: 0 0 1.25rem;
   padding: 0.75rem 0.9rem;
   background: var(--plane);
   border-left: 4px solid var(--rule-key);
-  border-radius: 6px;
+  border-radius: var(--r-sm);
 }
 .crow__tag {
   flex: none;
+  color: var(--accent);
   font: 700 0.625rem/1.5 var(--mono);
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--accent);
 }
-.crow p { margin: 0; font-size: 0.8125rem; color: var(--ink-2); }
+.crow p { margin: 0; color: var(--ink-2); font-size: 0.8125rem; }
 
-/* --- charts --------------------------------------------------------------- */
-.fig { margin: 0; }
-.chart { display: block; width: 100%; height: auto; overflow: visible; }
-.chart text { font-family: var(--mono); font-variant-numeric: tabular-nums; }
-.ax { fill: var(--ink-3); font-size: 11px; }
-.val { fill: var(--ink-2); font-size: 11px; font-weight: 600; }
-.cat { fill: var(--ink-1); font-size: 12px; }
-.base { stroke: var(--axis); stroke-width: 1; }
-.track-empty { fill: none; stroke: var(--axis); stroke-width: 1; stroke-dasharray: 4 3; }
-.m-debit { fill: var(--viz-emitted); }
-.m-credit { fill: var(--viz-settled); }
-/* 45-degree hatch marks the unsettled segment, so settled/unsettled is never
-   carried by hue alone (SC 1.4.1 Use of Color). Styled in CSS, not presentation
-   attributes, so the tone-on-tone gap tracks the sheet. */
-.hatch-ink { color: var(--viz-emitted); }
-.hatch-ink rect { fill: currentColor; }
-.hatch-ink line { stroke: var(--surface); stroke-width: 2.5; }
-
-.legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1.75rem; margin-top: 0.9rem; }
-.legend__i { display: flex; gap: 0.5rem; align-items: center; font-size: 0.8125rem; }
-.legend__sw { width: 0.875rem; height: 0.875rem; flex: none; border-radius: 3px; }
-.legend__sw--credit { background: var(--viz-settled); }
-.legend__sw--debit {
-  background:
-    repeating-linear-gradient(45deg, var(--surface) 0 2px, transparent 2px 5px),
-    var(--viz-emitted);
+/* --- figure pairs (dollars, reported-separately) ---------------------------- */
+.pairs { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 1rem; margin: 0; }
+.pairs > div { min-width: 0; padding: 0.85rem 0.95rem; border: 1px solid var(--rule); border-radius: var(--r-md); }
+.pairs dt {
+  margin: 0;
+  color: var(--ink-head);
+  font: 600 0.5625rem/1.4 var(--mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
-.legend__v { font: 600 0.8125rem/1 var(--mono); font-variant-numeric: tabular-nums; }
+.pairs dd { margin: 0.4rem 0 0; }
+.pairs dd .fig { font-size: 1.375rem; }
+.pairs dd small { display: block; margin-top: 0.3rem; color: var(--ink-2); font: 400 0.75rem/1.4 var(--sans); }
+.owed--neg .fig { color: var(--accent); }
 
-details { margin-top: 1.1rem; }
+details { margin-top: 1.25rem; }
 summary {
   color: var(--ink-head);
   cursor: pointer;
@@ -557,7 +596,7 @@ summary {
   text-transform: uppercase;
 }
 
-/* --- tables --------------------------------------------------------------- */
+/* --- tables ---------------------------------------------------------------- */
 .tw { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
 caption { margin-bottom: 0.65rem; color: var(--ink-2); font-size: 0.75rem; text-align: left; }
@@ -574,9 +613,9 @@ tbody th { font-weight: 600; letter-spacing: 0; text-transform: none; font-size:
 tbody tr + tr > * { border-top: 1px solid var(--rule); }
 th:first-child, td:first-child { padding-left: 0; }
 .n { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
-/* A SHA-256 is 64 characters and will happily push the receipt column off the
-   card. Cap it and let it wrap: two short lines beat a horizontal scroll on a
-   page whose whole point is being printed and filed. */
+/* A SHA-256 is 64 characters and will push the receipt column off the card.
+   Cap it and let it wrap: two short lines beat a horizontal scroll on a page
+   whose whole point is being printed and filed. */
 .hash { max-width: 15rem; font-family: var(--mono); font-size: 0.625rem; line-height: 1.5; word-break: break-all; }
 .td__note { display: block; color: var(--ink-2); font-size: 0.6875rem; white-space: nowrap; }
 tfoot th, tfoot td { border-top: 2px solid var(--rule-key); font-weight: 700; }
@@ -586,7 +625,7 @@ td a { color: var(--accent); }
   display: inline-block;
   padding: 0.06rem 0.4rem;
   border: 1px solid currentColor;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
   font: 700 0.625rem/1.6 var(--mono);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -595,100 +634,141 @@ td a { color: var(--accent); }
 .badge--ok { color: var(--accent); }
 .badge--no { color: var(--critical); border-width: 2px; }
 
-/* --- giving shortlist ----------------------------------------------------- */
-.give { margin: 0; padding: 0; list-style: none; display: grid; gap: 1.125rem; }
-.gitem {
-  display: grid;
-  grid-template-columns: 11rem 1fr;
-  gap: 0 1.5rem;
-  padding: 1rem 1.05rem;
-  background: var(--surface);
-  border: 1px solid var(--rule);
-  border-radius: 8px;
+/* --- the giving briefing ----------------------------------------------------
+   Grouped by what a gift actually DOES to the balance above, because that is
+   the only grouping a reader of this page needs: one tier settles it, one
+   prevents a future emission and cannot settle it, and five belong to a
+   different budget entirely. Inside a card the order is fixed — what it does,
+   what a tonne costs if anything, the honest verdict, then the research that
+   backs both. */
+.tier { margin: 0 0 2rem; }
+.tier:last-child { margin-bottom: 0; }
+.tier__hd { margin: 0 0 0.9rem; padding-left: 0.85rem; border-left: 3px solid var(--rule-key); }
+.tier__t { margin: 0; color: var(--ink-1); font: 600 1rem/1.3 var(--sans); }
+.tier__d { margin: 0.25rem 0 0; max-width: 44rem; color: var(--ink-2); font-size: 0.8125rem; }
+.orgs { margin: 0; padding: 0; list-style: none; display: grid; gap: 1.125rem; }
+@media (min-width: 62rem) {
+  .orgs--multi { grid-template-columns: 1fr 1fr; }
 }
-.gitem__area {
+.org { min-width: 0; padding: 1.15rem 1.25rem; }
+.org__area {
+  display: block;
+  color: var(--ink-3);
+  font: 700 0.5625rem/1.6 var(--mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.org__n { margin: 0.2rem 0 0; font: 600 1.0625rem/1.25 var(--sans); letter-spacing: -0.01em; }
+.org__n small { display: block; margin-top: 0.1rem; color: var(--ink-3); font: 400 0.75rem/1.4 var(--sans); }
+/* The price signal is the single most decision-relevant fact about an
+   organisation, so it is a distinct object rather than a sentence: a mono
+   figure on a ruled chip, with the caveat underneath it in prose. */
+.org__price {
+  display: inline-block;
+  margin: 0.75rem 0 0;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--rule-key);
+  border-radius: var(--r-sm);
+  color: var(--ink-1);
+  font: 700 0.75rem/1.5 var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+.org__pn { margin: 0.4rem 0 0; color: var(--ink-2); font-size: 0.75rem; line-height: 1.5; }
+.org__does { margin: 0.75rem 0 0; color: var(--ink-2); font-size: 0.8125rem; }
+.org__verdict {
+  margin: 0.85rem 0 0;
+  padding: 0.6rem 0.75rem;
+  background: var(--plane);
+  border-left: 3px solid var(--ink-3);
+  border-radius: var(--r-sm);
+  color: var(--ink-1);
+  font-size: 0.8125rem;
+}
+.org__verdict b {
+  display: block;
+  margin-bottom: 0.15rem;
   color: var(--ink-head);
-  font: 700 0.625rem/1.6 var(--mono);
+  font: 700 0.5625rem/1.6 var(--mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.org__update { margin: 0.85rem 0 0; color: var(--ink-2); font-size: 0.75rem; line-height: 1.55; }
+.org__update b {
+  display: block;
+  margin-bottom: 0.15rem;
+  color: var(--ink-head);
+  font: 700 0.5625rem/1.6 var(--mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.org__links { margin: 0.9rem 0 0; padding: 0.75rem 0 0; border-top: 1px solid var(--rule); list-style: none; display: grid; gap: 0.35rem; }
+.org__links li { font-size: 0.75rem; line-height: 1.5; }
+.org__links b {
+  color: var(--ink-head);
+  font: 700 0.5625rem/1.6 var(--mono);
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
-.gitem__name { margin: 0; font-size: 0.9375rem; font-weight: 600; }
-.gitem__why { margin: 0.3rem 0 0; color: var(--ink-2); font-size: 0.8125rem; }
-.gitem__verdict {
-  display: block;
-  margin-top: 0.45rem;
-  padding: 0.35rem 0.55rem;
-  background: var(--plane);
-  border-left: 3px solid var(--rule-key);
-  border-radius: 4px;
-  color: var(--ink-2);
-  font-size: 0.75rem;
-}
-.gitem__links { margin: 0.55rem 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 0.3rem 1.1rem; }
-.gitem__links li { font-size: 0.75rem; }
-.gitem__links b {
-  color: var(--ink-head);
-  font: 700 0.5625rem/1.6 var(--mono);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
 
-/* --- methodology ---------------------------------------------------------- */
+/* --- methodology ----------------------------------------------------------- */
 .meth { margin: 0; display: grid; gap: 1.5rem; }
-.meth__t { margin: 0; font: 700 0.8125rem/1.4 var(--mono); letter-spacing: 0.02em; }
-.meth__d { margin: 0.35rem 0 0; color: var(--ink-2); font-size: 0.8125rem; max-width: 48rem; }
+@media (min-width: 62rem) { .meth { grid-template-columns: 1fr 1fr; } }
+.meth__t { margin: 0; font: 700 0.8125rem/1.4 var(--mono); letter-spacing: 0.01em; }
+.meth__d { margin: 0.35rem 0 0; color: var(--ink-2); font-size: 0.8125rem; }
 .meth__f {
   display: block;
   margin: 0.5rem 0 0;
   padding: 0.55rem 0.75rem;
   background: var(--plane);
   border-left: 3px solid var(--rule-key);
-  border-radius: 4px;
+  border-radius: var(--r-sm);
   overflow-x: auto;
   font: 600 0.75rem/1.7 var(--mono);
   white-space: pre;
 }
 
-/* --- footer --------------------------------------------------------------- */
+/* --- footer ---------------------------------------------------------------- */
 .foot {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem 1.75rem;
-  max-width: 82rem;
+  max-width: 78rem;
   margin: 0 auto;
-  padding: 1.25rem 1.5rem 2rem;
+  padding: 1.25rem 1.5rem 2.5rem;
   color: var(--ink-2);
   font-size: 0.75rem;
 }
 .foot time { font-family: var(--mono); }
 
-/* --- reflow: SC 1.4.10 wants no two-dimensional scrolling down to a width
-   equivalent to 320 CSS pixels (EN 301 549 9.1.4.10). Cards stack, nothing is
-   hidden. ------------------------------------------------------------------
-
-   Grid and flex items default to min-width:auto, so one wide formula, one long
-   hash or one table sets a min-content floor and drags the whole grid past
-   320px — the page then scrolls in two dimensions and fails the criterion.
-   Zeroing that floor is what lets the scrollable wrappers actually scroll. */
-.reads > *, .pair > *, .tiles > *, .chips > *, .meth > *, .gitem > *,
-.flag > *, .crow > *, .memo__item > *, .grid > *, .topbar__in > * { min-width: 0; }
+/* --- reflow ----------------------------------------------------------------
+   SC 1.4.10 Reflow: "Content can be presented without loss of information or
+   functionality, and without requiring scrolling in two dimensions for:
+   Vertical scrolling content at a width equivalent to 320 CSS pixels" (EN 301
+   549 9.1.4.10 carries the same table). Grid and flex items default to
+   min-width:auto, so one wide formula, one long hash or one table sets a
+   min-content floor and drags the whole layout past 320px. Zeroing that floor
+   is what lets the scrollable wrappers actually scroll. */
+.row > *, .streams > *, .pairs > *, .meta > *, .meth > *, .orgs > *,
+.flag > *, .crow > *, .memo__item > *, .bar__in > *, .trio > * { min-width: 0; }
 .tw, .chart, .meth__f { max-width: 100%; }
-.meter__eq, .read__eq, .gitem a, .gitem__verdict, .foot, .brand__t { overflow-wrap: anywhere; }
+.measure__eq, .badge__why, .org a, .org__verdict, .foot, .brand__t { overflow-wrap: anywhere; }
 
-@media (max-width: 46rem) {
-  .gitem { grid-template-columns: 1fr; gap: 0.4rem; padding: 0.9rem; }
-  .chips { margin-left: 0; width: 100%; }
-}
 @media (max-width: 34rem) {
-  .topbar__in { padding: 0.7rem 0.9rem; }
-  .wrap { padding: 0.9rem 0.9rem 2rem; }
+  .bar__in { padding: 0.7rem 0.9rem; }
+  .page { padding: 0.9rem 0.9rem 2rem; }
   .foot { padding: 1rem 0.9rem 2rem; }
-  .card__h, .card__b { padding-left: 0.9rem; padding-right: 0.9rem; }
-  .reads, .tiles, .pair { grid-template-columns: 1fr; }
+  .card__b, .org { padding-left: 0.9rem; padding-right: 0.9rem; }
+  .trio > li, .stream__hd { padding-left: 0.9rem; padding-right: 0.9rem; }
+  .meta { margin-left: 0; width: 100%; }
+  .pairs { grid-template-columns: 1fr; }
 }
 
 /* Nothing on this page animates by default. The guard stands anyway, so any
-   future transition inherits it (SC 2.3.3 Animation from Interactions). */
+   future transition inherits it. Media Queries 5 defines the reduce keyword as
+   the signal "that user has notified the system that they prefer an interface
+   that removes or replaces the types of motion-based animation that either
+   trigger discomfort for those with vestibular motion sensitivity, or
+   distraction for those with attention deficits." */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     transition: none !important;
@@ -697,46 +777,35 @@ td a { color: var(--accent); }
   }
 }
 
-/* --- print: this is a tax document, so it has to print like one ------------ */
+/* --- print: this is a tax document, so it has to print like one ------------- */
 @media print {
   :root {
-    /* No color-scheme re-declaration here: the page is light everywhere, so
-       :root's declaration already covers print. */
-    /* Print keeps the KEY mint rules — they are the identity, they survive a
-       colour printer, and on a mono printer they still render as a grey line.
-       The decorative hairlines drop to neutral grey instead: a 1.61:1 pale mint
-       is at the edge of what a printer resolves. Inset blocks lose their fill
-       (--plane goes white) and the inks go to true black for toner. */
+    /* Print keeps the KEY mint rules — identity, and they survive a colour
+       printer; on a mono printer they still render as a grey line. Decorative
+       hairlines drop to neutral grey: a 1.61:1 pale mint is at the edge of
+       what a printer resolves. Inset blocks lose their fill and the inks go to
+       true black for toner. */
     --plane: #fff; --surface: #fff;
     --rule: #b7b7b7; --rule-key: #0f9563;
     --ink-1: #000; --ink-2: #222; --ink-3: #444; --accent: #04502f;
   }
   body { font-size: 10pt; }
-  /* On paper the grid is a liability: cards become plain stacked sections with
-     a rule between them, the sticky header stops being sticky, and the whole
-     thing goes full-bleed. */
-  .wrap, .topbar__in, .foot { max-width: none; padding: 0; }
-  .topbar { position: static; border-bottom-width: 2px; }
-  .grid { display: block; }
-  .card {
-    border: 0;
-    border-top: 1px solid var(--rule-key);
-    border-radius: 0;
-    box-shadow: none;
-    margin-top: 0.6rem;
-  }
-  .card--hero { border-top-width: 2px; }
-  .card__h, .card__b { padding-left: 0; padding-right: 0; }
-  .read, .tile, .pair > div, .gitem { border-radius: 0; box-shadow: none; }
+  .page, .bar__in, .foot { max-width: none; padding: 0; }
+  .bar { position: static; border-bottom-width: 2px; }
+  .card { border: 0; border-radius: 0; box-shadow: none; }
+  .streams, .row, .orgs, .meth { display: block; }
+  .stream, .card, .org { margin-top: 0.6rem; }
+  .card__b, .org { padding-left: 0; padding-right: 0; }
+  .org { border: 0; border-top: 1px solid var(--rule); border-radius: 0; }
   .skip { display: none; }
   details { display: block; }
   details > summary { display: none; }
-  .card, .gitem, tr { break-inside: avoid; }
+  .block, .card, .org, .stream, tr { break-inside: avoid; }
   #audit { break-before: page; }
   /* A printed audit trail has to carry its evidence: expand every link. */
   #audit a[href^="https"]::after,
   #give a[href^="https"]::after,
-  .read__src a::after {
+  .badge__src a::after {
     content: " (" attr(href) ")";
     font-size: 8pt;
     word-break: break-all;
@@ -745,24 +814,25 @@ td a { color: var(--accent); }
 </style>
 </head>
 <body>
-<a class="skip" href="#stmt">Skip to the dashboard</a>
+<a class="skip" href="#report">Skip to the record</a>
 
-<header class="topbar">
-  <div class="topbar__in">
+<header class="bar">
+  <div class="bar__in">
     <div class="brand">
-      <!-- A meter needle at three-quarter deflection. The mark says "instrument"
-           before a word is read, which is the whole thesis of the page. -->
+      <!-- Three streams leaving one source. The mark states the page's thesis
+           before a word is read: one act, recorded three ways. -->
       <svg class="brand__mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        <path d="M2.5 19.5a11 11 0 0 1 19 0" fill="none" stroke="var(--rule-key)" stroke-width="2.5" stroke-linecap="round"></path>
-        <line x1="12" y1="19.5" x2="18.4" y2="11.8" stroke="var(--ink-1)" stroke-width="2" stroke-linecap="round"></line>
-        <circle cx="12" cy="19.5" r="1.9" fill="var(--ink-1)"></circle>
+        <path d="M4 4v16" fill="none" stroke="var(--rule-key)" stroke-width="2.5" stroke-linecap="round"></path>
+        <path d="M4 7h15" fill="none" stroke="var(--viz-carbon)" stroke-width="2" stroke-linecap="round"></path>
+        <path d="M4 12h11" fill="none" stroke="var(--viz-energy)" stroke-width="2" stroke-linecap="round"></path>
+        <path d="M4 17h17" fill="none" stroke="var(--viz-water)" stroke-width="2" stroke-linecap="round"></path>
       </svg>
       <div>
         <h1 class="brand__t">Ficus</h1>
-        <p class="brand__sub">Carbon dashboard &middot; Claude Code</p>
+        <p class="brand__sub">Carbon station &middot; Claude Code</p>
       </div>
     </div>
-    <dl class="chips">
+    <dl class="meta">
       <div><dt>Period</dt><dd id="m-period">&mdash;</dd></div>
       <div><dt>Sessions</dt><dd id="m-sessions">&mdash;</dd></div>
       <div><dt>Updated</dt><dd><time id="m-issued" datetime=""></time></dd></div>
@@ -770,263 +840,161 @@ td a { color: var(--accent); }
   </div>
 </header>
 
-<div class="wrap">
-  <main id="stmt" tabindex="-1">
+<div class="page">
+  <main id="report" tabindex="-1">
 
     <p class="flag"><span class="flag__tag">Estimate</span><span id="caveat"></span></p>
 
-    <div class="grid">
-
-    <section class="card card--hero" id="balance" aria-labelledby="h-balance">
-      <div class="card__h">
-        <h2 class="card__t" id="h-balance">Settlement</h2>
-        <p class="card__sub">Lifetime, counting verified removal only</p>
+    <!-- 1. THE THREE STREAMS ------------------------------------------------->
+    <section class="block" id="streams" aria-labelledby="h-streams">
+      <div class="block__hd">
+        <span class="block__eyebrow">Lifetime</span>
+        <h2 class="block__t" id="h-streams">What this account has used</h2>
+        <p class="block__sub">One act, recorded as three streams. Each carries the same three readings: the
+          lifetime total, what that total is comparable to, and how the latest month compares with the one
+          before it.</p>
       </div>
-      <div class="card__b">
-        <p class="meter"><span class="meter__v" id="bal-value">&mdash;</span><span class="meter__u">kg CO2e outstanding</span></p>
-        <p class="meter__eq" id="bal-eq"></p>
-        <figure class="fig">
-          <svg class="chart" id="c-settle" viewBox="0 0 720 78" role="img" aria-labelledby="settle-t" aria-describedby="settle-d">
-            <title id="settle-t">Lifetime emissions, settled and unsettled</title>
-            <desc id="settle-d"></desc>
-            <defs>
-              <pattern id="hatch" class="hatch-ink" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-                <rect width="6" height="6"></rect>
-                <line x1="3" y1="0" x2="3" y2="6"></line>
-              </pattern>
-            </defs>
-            <g id="settle-marks"></g>
-          </svg>
-          <figcaption class="legend" id="settle-legend"></figcaption>
-        </figure>
-        <p class="note" style="margin-top:1.15rem">This reading counts <strong>verified removal only</strong>. Prevention credits and
-          unverified purchases are recorded below the line: they are real purchases, and they do not settle a
-          removal debt.</p>
-        <div class="memo">
-          <h3 class="memo__h">Below the line &mdash; recorded, not settled</h3>
+      <div class="streams" id="stream-cards"></div>
+    </section>
+
+    <!-- 2. THE TRACE ---------------------------------------------------------->
+    <section class="block" id="trace" aria-labelledby="h-trace">
+      <div class="block__hd">
+        <span class="block__eyebrow">By month</span>
+        <h2 class="block__t" id="h-trace">The trace</h2>
+        <p class="block__sub">Three lanes on one time axis, so a month reads across all three streams at once.</p>
+      </div>
+      <div class="card"><div class="card__b">
+        <div id="trace-body"></div>
+        <p class="note" style="margin-top:1.15rem"><strong>The three lanes are congruent by construction.</strong>
+          Energy is the physical quantity; carbon and water are derived from it by the fixed published factors in
+          the derivation below, so the shapes have to match. Drawing them together shows that rather than hiding
+          it &mdash; what changes between lanes is the scale and the unit, never the shape.</p>
+      </div></div>
+    </section>
+
+    <!-- 3. THE MEASURE --------------------------------------------------------->
+    <section class="block" id="balance" aria-labelledby="h-balance">
+      <div class="block__hd">
+        <span class="block__eyebrow">As of today</span>
+        <h2 class="block__t" id="h-balance">What is still outstanding</h2>
+        <p class="block__sub">Emitted minus verified removal. Prevention credits and unverified purchases are
+          recorded below the line, where they belong.</p>
+      </div>
+      <div class="row row--wide">
+        <div class="card"><div class="card__b">
+          <p class="measure__v" id="bal-value"></p>
+          <p class="measure__eq" id="bal-eq"></p>
+          <figure class="fig-wrap">
+            <svg class="chart" id="c-measure" viewBox="0 0 720 66" role="img" aria-labelledby="measure-t" aria-describedby="measure-d">
+              <title id="measure-t">Lifetime emissions, settled and unsettled</title>
+              <desc id="measure-d"></desc>
+              <g id="measure-marks"></g>
+            </svg>
+            <figcaption class="legend" id="measure-legend"></figcaption>
+          </figure>
+        </div></div>
+        <div class="card"><div class="card__b">
+          <p class="card__t">Below the line</p>
+          <p class="note">Recorded, not settled. Both are real purchases; neither settles a removal debt.</p>
           <ul class="memo__list" id="memo-list"></ul>
-        </div>
+        </div></div>
       </div>
     </section>
 
-    <section class="card" id="readings" aria-labelledby="h-readings">
-      <div class="card__h">
-        <h2 class="card__t" id="h-readings">Meter readings</h2>
-        <p class="card__sub">Lifetime totals, with a real-world equivalence for each</p>
+    <!-- 4. THE DOLLAR LEDGER ---------------------------------------------------->
+    <section class="block" id="dollars" aria-labelledby="h-dollars">
+      <div class="block__hd">
+        <span class="block__eyebrow">Cost to clear</span>
+        <h2 class="block__t" id="h-dollars">Dollars, kept separately from the tonnes</h2>
       </div>
-      <div class="card__b">
-        <ul class="reads" id="reads"></ul>
-      </div>
-    </section>
-
-    <section class="card" id="dollars" aria-labelledby="h-dollars">
-      <div class="card__h">
-        <h2 class="card__t" id="h-dollars">Cost to clear</h2>
-        <p class="card__sub">Dollars, kept separately from the tonnes</p>
-      </div>
-      <div class="card__b">
+      <div class="card"><div class="card__b">
         <div id="crow-host"></div>
-        <dl class="pair" id="pair"></dl>
-        <p class="note" style="margin-top:1.15rem"><strong>Overall</strong>
-          prices every gram emitted at the removal rate. <strong>Contributed</strong> is every dollar given &mdash;
-          offset purchases and donations alike, counted 1:1, with no attempt to convert a donation into tonnes.
-          <strong>Owed</strong> is the difference, and it is never clamped at zero.</p>
+        <dl class="pairs" id="pairs"></dl>
+        <p class="note" style="margin-top:1.25rem"><strong>Overall</strong> prices every gram emitted at the removal
+          rate. <strong>Contributed</strong> is every dollar given &mdash; offset purchases and donations alike,
+          counted 1:1, with no attempt to convert a donation into tonnes. <strong>Owed</strong> is the difference,
+          and it is never clamped at zero.</p>
         <p class="note" id="rate-note"></p>
+      </div></div>
+    </section>
+
+    <!-- 5. BREAKDOWN ------------------------------------------------------------>
+    <section class="block" id="breakdown" aria-labelledby="h-breakdown">
+      <div class="block__hd">
+        <span class="block__eyebrow">Lifetime</span>
+        <h2 class="block__t" id="h-breakdown">Where it came from, and what is reported apart</h2>
+      </div>
+      <div class="row row--2">
+        <div class="card" id="by-model"><div class="card__b">
+          <p class="card__t">Operational <span class="cs">CO2e</span> by model family</p>
+          <div id="model-body"></div>
+        </div></div>
+        <div class="card" id="apart"><div class="card__b">
+          <p class="card__t">Reported separately</p>
+          <dl class="pairs" id="tiles"></dl>
+          <p class="note" style="margin-top:1.25rem">Embodied <span class="cs">CO2e</span> is the amortised hardware
+            share, reported separately and never folded into operational. API value is what this work would have
+            cost at list price, not money spent.</p>
+        </div></div>
       </div>
     </section>
 
-    <section class="card card--half" id="by-month" aria-labelledby="h-month">
-      <div class="card__h">
-        <h2 class="card__t" id="h-month">Operational <span class="cs">CO2e</span> by month</h2>
+    <!-- 6. AUDIT TRAIL ---------------------------------------------------------->
+    <section class="block" id="audit" aria-labelledby="h-audit">
+      <div class="block__hd">
+        <span class="block__eyebrow">Tax year</span>
+        <h2 class="block__t" id="h-audit">Audit trail</h2>
+        <p class="block__sub">Offsets and donations, with receipts.</p>
       </div>
-      <div class="card__b"><div id="monthly-body"></div></div>
+      <div class="card"><div class="card__b">
+        <p class="note">Everything a tax year needs, in one place: who paid, what was bought, what it cost, and the
+          proof. Each purchase carries the <strong>SHA-256</strong> of its receipt as recorded at filing time, the
+          <strong>registry retirement ID</strong> where one was issued, and the receipt itself as a download built
+          from the stored bytes &mdash; no server, no link to rot. Two payers keep separate books:
+          <strong>Signalblur Security</strong> and <strong>Lies Above Media</strong>.</p>
+        <p class="note">For an accountant-ready CSV, one file per payer with a totals row, run
+          <strong>scripts/offset-export.sh --tax-year YYYY</strong> (add <strong>--payer NAME</strong> to narrow
+          it). The export records; it does not give tax advice &mdash; classify donation-versus-expense with your CPA.</p>
+        <h3 class="sub__h">By payer</h3>
+        <div id="payer-body"></div>
+        <h3 class="sub__h">Offset purchases</h3>
+        <div id="offsets-body"></div>
+        <h3 class="sub__h">Donations</h3>
+        <div id="donations-body"></div>
+      </div></div>
     </section>
 
-    <section class="card card--half" id="by-model" aria-labelledby="h-model">
-      <div class="card__h">
-        <h2 class="card__t" id="h-model">Operational <span class="cs">CO2e</span> by model family</h2>
+    <!-- 7. THE GIVING BRIEFING --------------------------------------------------->
+    <section class="block" id="give" aria-labelledby="h-give">
+      <div class="block__hd">
+        <span class="block__eyebrow">Before you give</span>
+        <h2 class="block__t" id="h-give">Seven destinations, and what each one actually does</h2>
+        <p class="block__sub">Grouped by what a gift does to the balance above, because that is the only grouping
+          this page needs. Every claim below is data, not copy: it lives in
+          <strong>data/giving-shortlist.json</strong> with the research document each sentence came from recorded
+          alongside it. Where the honest carbon verdict is unfavourable, it is printed rather than smoothed over.</p>
       </div>
-      <div class="card__b"><div id="model-body"></div></div>
+      <div id="give-body"></div>
     </section>
 
-    <section class="card" id="activity" aria-labelledby="h-activity">
-      <div class="card__h">
-        <h2 class="card__t" id="h-activity">Reported separately</h2>
-        <p class="card__sub">Two figures the meter readings deliberately do not carry</p>
+    <!-- 8. DERIVATION ------------------------------------------------------------>
+    <section class="block" id="method" aria-labelledby="h-method">
+      <div class="block__hd">
+        <span class="block__eyebrow">How these are made</span>
+        <h2 class="block__t" id="h-method">Derived, not measured</h2>
       </div>
-      <div class="card__b">
-        <dl class="tiles" id="tiles"></dl>
-        <p class="note" style="margin-top:1.15rem">Embodied <span class="cs">CO2e</span> is the amortised hardware
-          share, reported separately and never folded into operational; API value is what this work would have cost
-          at list price, not money spent.</p>
-      </div>
+      <div class="card"><div class="card__b">
+        <p class="note">Every figure on this page is derived from stored token counts by a published factor. Nothing
+          is measured. Anthropic publishes no per-query energy data, so the honest description of all of it is
+          <strong>order-of-magnitude, roughly &plusmn;50%</strong>. Trends and relative comparisons are meaningful;
+          absolute values are indicative.</p>
+        <dl class="meth" id="meth"></dl>
+        <p class="note" style="margin-top:1.5rem">Fuller derivations, the uncertainty bands per model family, and the
+          cross-check gate against an independent estimator are in <strong>METHODOLOGY.md</strong>.</p>
+      </div></div>
     </section>
 
-    <section class="card" id="audit" aria-labelledby="h-audit">
-      <div class="card__h">
-        <h2 class="card__t" id="h-audit">Audit trail</h2>
-        <p class="card__sub">Offsets and donations, with receipts</p>
-      </div>
-      <div class="card__b">
-      <p class="note">Everything a tax year needs, in one place: who paid, what was bought, what it cost, and the
-        proof. Each purchase carries the <strong>SHA-256</strong> of its receipt as recorded at filing time, the
-        <strong>registry retirement ID</strong> where one was issued, and the receipt itself as a download built
-        from the stored bytes &mdash; no server, no link to rot. Two payers keep separate books:
-        <strong>Signalblur Security</strong> and <strong>Lies Above Media</strong>.</p>
-      <p class="note">For an accountant-ready CSV, one file per payer with a totals row, run
-        <strong>scripts/offset-export.sh --tax-year YYYY</strong> (add <strong>--payer NAME</strong> to narrow
-        it). The export records; it does not give tax advice &mdash; classify donation-versus-expense with your CPA.</p>
-      <h3 class="sub__h">By payer</h3>
-      <div id="payer-body"></div>
-      <h3 class="sub__h">Offset purchases</h3>
-      <div id="offsets-body"></div>
-      <h3 class="sub__h">Donations</h3>
-      <div id="donations-body"></div>
-      </div>
-    </section>
-
-    <section class="card" id="give" aria-labelledby="h-give">
-      <div class="card__h">
-        <h2 class="card__t" id="h-give">Where to give</h2>
-        <p class="card__sub">Seven destinations, one per ecosystem</p>
-      </div>
-      <div class="card__b">
-      <p class="note">Seven destinations, one per ecosystem. The first two act on the balance above &mdash;
-        <strong>removal</strong> settles it, <strong>prevention</strong> complements it without settling. The other
-        five are restoration and land conservation, and the carbon verdict on several of them is honestly
-        unfavourable; it is printed here rather than smoothed over. Every claim links to its evidence, and every
-        org links to wherever it publishes news.</p>
-      <ul class="give">
-
-        <li class="gitem">
-          <span class="gitem__area">Air &mdash; removal</span>
-          <div>
-            <p class="gitem__name"><a href="https://www.removecarbontoday.com/collections">Remove Carbon Today</a> &mdash; biochar CORCs</p>
-            <p class="gitem__why">Ex-post biochar carbon-removal certificates, independently weighed and sampled, audited
-              under the Puro Standard and retired in your name on the public registry. About $160 per tonne; stock
-              rotates and sells out.</p>
-            <p class="gitem__verdict">The only pathway here that settles the balance above: verified removal, already done.</p>
-            <ul class="gitem__links">
-              <li><b>Sources</b> <a href="https://www.removecarbontoday.com/pages/proof-of-removal">retirement proof</a>,
-                <a href="https://puro.earth/insights/post/introducing-the-world-s-first-reference-price-indexes-for-engineered-carbon-removal/">Nasdaq CORCCHAR index</a></li>
-              <li><b>News</b> <a href="https://puro.earth/insights">Puro.earth insights</a> (the registry &mdash; the vendor publishes no newsroom)</li>
-            </ul>
-          </div>
-        </li>
-
-        <li class="gitem">
-          <span class="gitem__area">Air &mdash; prevention</span>
-          <div>
-            <p class="gitem__name"><a href="https://tradewater.co/buy-credits/">Tradewater</a></p>
-            <p class="gitem__why">Collects and destroys refrigerants and plugs orphaned methane wells. Every container is
-              third-party weighed, sampled and lab-analysed, certified under ACR or VCS. Around $15 per tonne, which is
-              well under comparable refrigerant-destruction pricing &mdash; worth a direct quote before a large purchase.</p>
-            <p class="gitem__verdict">Avoidance, not removal. It stops a future emission; it does not take carbon back out, so it never settles the balance.</p>
-            <ul class="gitem__links">
-              <li><b>Sources</b> <a href="https://tradewater.co/wp-content/uploads/2024/12/11197310-RPT-1-VCS-Verification-Report_TW-Ghana-08-14-19.pdf">VCS verification report, TW Ghana ODS (GHD Ltd, 2019)</a></li>
-              <li><b>News</b> <a href="https://tradewater.co/press">Tradewater press</a></li>
-            </ul>
-          </div>
-        </li>
-
-        <li class="gitem">
-          <span class="gitem__area">Rivers</span>
-          <div>
-            <p class="gitem__name"><a href="https://www.americanrivers.org/donate">American Rivers</a></p>
-            <p class="gitem__why">Dam removal and river restoration. Reservoir surfaces are a large methane source, and the
-              four removed Klamath River dams are estimated to have eliminated roughly 275,000 tonnes CO2e a year.</p>
-            <p class="gitem__verdict">The methane avoidance is real and reasonably well quantified for specific dams, but a
-              donation cannot be converted into a tonnage: American Rivers is one partner among many funders and sells no credit.</p>
-            <ul class="gitem__links">
-              <li><b>Sources</b> <a href="https://ww2.arb.ca.gov/sites/default/files/2026-04/Attachment-2-Estimate-of-California-Dam-and-Reservoir-Methane-Emissions-3-25-2026_v2.pdf">CARB-hosted Klamath methane estimate (2026)</a>,
-                <a href="https://academic.oup.com/bioscience/article/66/11/949/2754271">Deemer et al. 2016, BioScience</a></li>
-              <li><b>News</b> <a href="https://www.americanrivers.org/media-center/">Media center</a></li>
-            </ul>
-          </div>
-        </li>
-
-        <li class="gitem">
-          <span class="gitem__area">Oceans</span>
-          <div>
-            <p class="gitem__name"><a href="https://coralrestoration.org/donate">Coral Restoration Foundation</a></p>
-            <p class="gitem__why">Propagates and outplants staghorn coral in the Florida Keys. Dense outplanting has been shown
-              to return net-erosional reefs to positive carbonate accretion &mdash; that is reef structure rebuilt.</p>
-            <p class="gitem__verdict">Habitat restoration, not a carbon investment. Coral calcification releases CO2, and no
-              published CRF carbon claim exists to check. Fund it for the reef, the coastline and the biodiversity.</p>
-            <ul class="gitem__links">
-              <li><b>Sources</b> <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC11555216/">Esplandiu et al. 2024, Scientific Reports &mdash; reef carbonate budgets</a></li>
-              <li><b>News</b> <a href="https://coralrestoration.org/blog/">CRF blog</a></li>
-            </ul>
-          </div>
-        </li>
-
-        <li class="gitem">
-          <span class="gitem__area">Coasts &amp; estuaries</span>
-          <div>
-            <p class="gitem__name"><a href="https://www.billionoysterproject.org/donate">Billion Oyster Project</a></p>
-            <p class="gitem__why">Self-sustaining oyster reefs in New York Harbor, with 150 million-plus oysters and 17 acres
-              built. Filtration, storm-surge buffering, habitat, and a schools programme attached to all of it.</p>
-            <p class="gitem__verdict">Not a carbon investment, and possibly a net source: on exposed sandflats &mdash; much of this
-              footprint &mdash; inorganic carbon burial vents more CO2 than the organic burial takes down. Fund it for the harbour.</p>
-            <ul class="gitem__links">
-              <li><b>Sources</b> <a href="https://pubmed.ncbi.nlm.nih.gov/28747477/">Fodrie et al. 2017, Proc. R. Soc. B &mdash; oyster reefs as carbon sources and sinks</a></li>
-              <li><b>News</b> <a href="https://www.billionoysterproject.org/blog">BOP stories</a></li>
-            </ul>
-          </div>
-        </li>
-
-        <li class="gitem">
-          <span class="gitem__area">Land &amp; watershed</span>
-          <div>
-            <p class="gitem__name"><a href="https://naturalandtrust.org/donate-now">Naturaland Trust</a></p>
-            <p class="gitem__why">Buys and protects Blue Ridge escarpment land above Greenville &mdash; including 1,090 acres at
-              Saluda Bluffs &mdash; in the watershed that feeds Greenville's own drinking-water reservoirs.</p>
-            <p class="gitem__verdict">The only non-market org here where a rough number can be built from public data:
-              about $20&ndash;150 per tonne depending on method, which is a five-to-eightfold spread and no registry stands behind it.</p>
-            <ul class="gitem__links">
-              <li><b>Sources</b> <a href="https://greenvillejournal.com/outdoors-recreation/naturaland-trust-leads-conservation-of-1100-acres-between-table-rock-caesars-head-saluda-bluffs/">Greenville Journal &mdash; Saluda Bluffs, 1,090 acres</a></li>
-              <li><b>News</b> <a href="https://naturalandtrust.org/enewsletter">Newsletter &amp; archive</a> (no newsroom published)</li>
-            </ul>
-          </div>
-        </li>
-
-        <li class="gitem">
-          <span class="gitem__area">Wetlands &amp; swamp</span>
-          <div>
-            <p class="gitem__name"><a href="https://congareelt.org/donate">Congaree Land Trust</a></p>
-            <p class="gitem__why">Holds easements across the COWASEE basin around Congaree National Park &mdash; the largest
-              old-growth bottomland hardwood forest in the eastern United States, and one of the densest soil-carbon stores
-              of any protected forest type in North America.</p>
-            <p class="gitem__verdict">No defensible price per tonne, because the easements are largely donated: there is no
-              transaction to divide the carbon stock by. Fund it for the forest, and say so plainly.</p>
-            <ul class="gitem__links">
-              <li><b>Sources</b> <a href="https://www.frontiersin.org/journals/forests-and-global-change/articles/10.3389/ffgc.2025.1528440/full">Sapkota et al. 2025, Frontiers &mdash; freshwater forested wetland soil carbon</a></li>
-              <li><b>News</b> <a href="https://congareelt.org/news">CLT news</a></li>
-            </ul>
-          </div>
-        </li>
-
-      </ul>
-      </div>
-    </section>
-
-    <section class="card" id="method" aria-labelledby="h-method">
-      <div class="card__h">
-        <h2 class="card__t" id="h-method">How these numbers are made</h2>
-        <p class="card__sub">Derived, not measured</p>
-      </div>
-      <div class="card__b">
-      <p class="note">Every figure on this page is derived from stored token counts by a published factor. Nothing is
-        measured. Anthropic publishes no per-query energy data, so the honest description of all of it is
-        <strong>order-of-magnitude, roughly &plusmn;50%</strong>. Trends and relative comparisons are meaningful;
-        absolute values are indicative.</p>
-      <dl class="meth" id="meth"></dl>
-      <p class="note" style="margin-top:1.5rem">Fuller derivations, the uncertainty bands per model family, and the
-        cross-check gate against an independent estimator are in <strong>METHODOLOGY.md</strong>.</p>
-      </div>
-    </section>
-
-    </div>
   </main>
 </div>
 
@@ -1035,19 +1003,20 @@ td a { color: var(--accent); }
   <span>Recomputed from stored token counts. No figure here is a measurement.</span>
 </footer>
 <script>
-const DATA = {"generated_at":"2026-08-07T09:00:00Z","caveat":"No vendor publishes per-query energy: every figure is an order-of-magnitude estimate (±50%). Trends are meaningful; absolutes are indicative.","totals":{"co2_g":41600.0,"energy_wh":144947.7351916376502,"water_ml":763569.411333211232,"embodied_g":6392.195121951220245,"cost_usd":71.34999999999999431,"sessions":11},"monthly":[{"month":"2026-04","co2_g":2170.0,"energy_wh":7561.0,"sessions":2},{"month":"2026-05","co2_g":10220.0,"energy_wh":35609.80000000000292,"sessions":3},{"month":"2026-06","co2_g":14150.0,"energy_wh":49303.09999999999855,"sessions":2},{"month":"2026-07","co2_g":11560.0,"energy_wh":40278.69999999999708,"sessions":3},{"month":"2026-08","co2_g":3500.0,"energy_wh":12195.10000000000036,"sessions":1}],"by_model":[{"family":"fable","co2_g":17700.0,"energy_wh":61672.5,"sessions":2},{"family":"opus","co2_g":14250.0,"energy_wh":49651.59999999999855,"sessions":3},{"family":"sonnet","co2_g":8850.0,"energy_wh":30836.20000000000072,"sessions":4},{"family":"haiku","co2_g":800.0,"energy_wh":2787.5,"sessions":2}],"offset_state":{"removal_verified_kg":25.0,"prevention_verified_kg":200.0,"unverified_kg":0.0,"offset_spent_usd":7,"balance_kg":16.6},"offsets":[{"id":2,"purchase_date":"2026-07-22","vendor":"tradewater","pathway":"refrigerant-destruction","kg_co2e":200.0,"usd":3.0,"category":"prevention","payer":"Example Media Co","verified":1,"retirement_id":"","receipt_sha256":"ba9b10cb36cbba9c426a23d81de55ef9de4438d913a866292e6b42c308c77bf1","receipt_path":"~/.claude/carbon-ledger/receipts/2026/2026-07-22-tradewater-2.pdf","receipt_filename":"2026-07-22-tradewater-2.pdf","receipt_b64":"JVBERi0xLjQKMSAwIG9iaiA8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4gZW5kb2JqCjIgMCBvYmogPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4gZW5kb2JqCjMgMCBvYmogPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSAvQ29udGVudHMgNCAwIFIgPj4gZW5kb2JqCjQgMCBvYmogPDwgL0xlbmd0aCA5NiA+PiBzdHJlYW0KQlQgL0YxIDEyIFRmIDcyIDcyMCBUZCAoREVNTyBSRUNFSVBUIC0gbm90IGEgcmVhbCBwdXJjaGFzZSAtIDI1IGtnIGJpb2NoYXIgQ09SQykgVGogRVQKZW5kc3RyZWFtIGVuZG9iagp0cmFpbGVyIDw8IC9Sb290IDEgMCBSID4+CiUlRU9GCg=="},{"id":1,"purchase_date":"2026-06-30","vendor":"remove-carbon-today","pathway":"biochar","kg_co2e":25.0,"usd":4.0,"category":"removal","payer":"Acme Research LLC","verified":1,"retirement_id":"PURO-2026-DEMO-0001","receipt_sha256":"ba9b10cb36cbba9c426a23d81de55ef9de4438d913a866292e6b42c308c77bf1","receipt_path":"~/.claude/carbon-ledger/receipts/2026/2026-06-30-remove-carbon-today-1.pdf","receipt_filename":"2026-06-30-remove-carbon-today-1.pdf","receipt_b64":"JVBERi0xLjQKMSAwIG9iaiA8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4gZW5kb2JqCjIgMCBvYmogPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4gZW5kb2JqCjMgMCBvYmogPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSAvQ29udGVudHMgNCAwIFIgPj4gZW5kb2JqCjQgMCBvYmogPDwgL0xlbmd0aCA5NiA+PiBzdHJlYW0KQlQgL0YxIDEyIFRmIDcyIDcyMCBUZCAoREVNTyBSRUNFSVBUIC0gbm90IGEgcmVhbCBwdXJjaGFzZSAtIDI1IGtnIGJpb2NoYXIgQ09SQykgVGogRVQKZW5kc3RyZWFtIGVuZG9iagp0cmFpbGVyIDw8IC9Sb290IDEgMCBSID4+CiUlRU9GCg=="}],"donations":[{"id":1,"donation_date":"2026-08-01","org":"American Rivers","usd":25.0,"payer":"Acme Research LLC","receipt_sha256":""}],"cost":{"rate_usd_per_tonne":160,"overall_usd":6.66,"contributed_usd":32,"owed_usd":-25.34},"equivalences":{"home_days":4.9,"showers":12.01,"car_miles":105.85,"energy":{"value":10791,"unit":"kWh per year","noun":"days of an average U.S. home's electricity","cite":"EIA: average U.S. residential customer used 10,791 kWh in 2022","cite_url":"https://www.eia.gov/tools/faqs/faq.php?id=97&t=3"},"water":{"value":63.6,"unit":"liters per shower","noun":"showers","cite":"EPA WaterSense: 8-minute shower at 2.1 gal/min = 16.8 gal = 63.6 L","cite_url":"https://www.epa.gov/watersense/showerheads"},"co2":{"value":0.393,"unit":"kg CO2e per mile","noun":"miles driven in an average gasoline car","cite":"EPA: 3.93e-4 t CO2e per mile, 2022 fleet (22.8 mpg, 10,917 mi/yr)","cite_url":"https://www.epa.gov/energy/greenhouse-gases-equivalencies-calculator-calculations-and-references"}},"constants":{"grid_cif_g_per_wh":0.287,"pue":1.14,"wue_onsite_l_per_kwh":0.18,"wue_offsite_l_per_kwh":5.11,"embodied_gco2e_per_kwh":44.1,"cache_read_factor":0.08},"formulas":{"co2":"co2_g = ((input + cache_write) × f_in + cache_read × f_in × 0.08 + output × f_out) / 1e6","energy":"energy_wh = co2_g / 0.287","water":"water_ml = energy_wh × (0.18/1.14 + 5.11)","embodied":"embodied_g = energy_wh × 44.1 / 1000","balance":"balance_kg = emitted_kg − verified_removal_kg","owed":"owed = emitted_t × 160 − (offset_$ + donation_$)"}};
-/* Renders the statement from DATA. Every value reaches the DOM as a text node
-   (Node.append with a string, or textContent) — never as parsed markup — so no
-   ledger string can inject HTML. The only attributes ever built from data are
-   href (set through setAttribute, never parsed) and download.
+const DATA = {"generated_at":"2026-08-07T09:00:00Z","caveat":"No vendor publishes per-query energy: every figure is an order-of-magnitude estimate (±50%). Trends are meaningful; absolutes are indicative.","totals":{"co2_g":41600.0,"energy_wh":144947.7351916376502,"water_ml":763569.411333211232,"embodied_g":6392.195121951220245,"cost_usd":71.34999999999999431,"sessions":11},"monthly":[{"month":"2026-04","co2_g":2170.0,"energy_wh":7561.0,"water_ml":39830.40000000000145,"sessions":2},{"month":"2026-05","co2_g":10220.0,"energy_wh":35609.80000000000292,"water_ml":187588.3999999999942,"sessions":3},{"month":"2026-06","co2_g":14150.0,"energy_wh":49303.09999999999855,"water_ml":259723.7000000000116,"sessions":2},{"month":"2026-07","co2_g":11560.0,"energy_wh":40278.69999999999708,"water_ml":212184.2000000000116,"sessions":3},{"month":"2026-08","co2_g":3500.0,"energy_wh":12195.10000000000036,"water_ml":64242.59999999999855,"sessions":1}],"trend":{"month":"2026-08","prev_month":"2026-07","carbon":{"latest_g":3500.0,"prev_g":11560.0,"pct":-69.72},"energy":{"latest_wh":12195.10000000000036,"prev_wh":40278.69999999999708,"pct":-69.72},"water":{"latest_ml":64242.59999999999855,"prev_ml":212184.2000000000116,"pct":-69.72}},"by_model":[{"family":"fable","co2_g":17700.0,"energy_wh":61672.5,"sessions":2},{"family":"opus","co2_g":14250.0,"energy_wh":49651.59999999999855,"sessions":3},{"family":"sonnet","co2_g":8850.0,"energy_wh":30836.20000000000072,"sessions":4},{"family":"haiku","co2_g":800.0,"energy_wh":2787.5,"sessions":2}],"offset_state":{"removal_verified_kg":25.0,"prevention_verified_kg":200.0,"unverified_kg":0.0,"offset_spent_usd":7,"balance_kg":16.6},"offsets":[{"id":2,"purchase_date":"2026-07-22","vendor":"tradewater","pathway":"refrigerant-destruction","kg_co2e":200.0,"usd":3.0,"category":"prevention","payer":"Example Media Co","verified":1,"retirement_id":"","receipt_sha256":"ba9b10cb36cbba9c426a23d81de55ef9de4438d913a866292e6b42c308c77bf1","receipt_path":"~/.claude/carbon-ledger/receipts/2026/2026-07-22-tradewater-2.pdf","receipt_filename":"2026-07-22-tradewater-2.pdf","receipt_b64":"JVBERi0xLjQKMSAwIG9iaiA8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4gZW5kb2JqCjIgMCBvYmogPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4gZW5kb2JqCjMgMCBvYmogPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSAvQ29udGVudHMgNCAwIFIgPj4gZW5kb2JqCjQgMCBvYmogPDwgL0xlbmd0aCA5NiA+PiBzdHJlYW0KQlQgL0YxIDEyIFRmIDcyIDcyMCBUZCAoREVNTyBSRUNFSVBUIC0gbm90IGEgcmVhbCBwdXJjaGFzZSAtIDI1IGtnIGJpb2NoYXIgQ09SQykgVGogRVQKZW5kc3RyZWFtIGVuZG9iagp0cmFpbGVyIDw8IC9Sb290IDEgMCBSID4+CiUlRU9GCg=="},{"id":1,"purchase_date":"2026-06-30","vendor":"remove-carbon-today","pathway":"biochar","kg_co2e":25.0,"usd":4.0,"category":"removal","payer":"Acme Research LLC","verified":1,"retirement_id":"PURO-2026-DEMO-0001","receipt_sha256":"ba9b10cb36cbba9c426a23d81de55ef9de4438d913a866292e6b42c308c77bf1","receipt_path":"~/.claude/carbon-ledger/receipts/2026/2026-06-30-remove-carbon-today-1.pdf","receipt_filename":"2026-06-30-remove-carbon-today-1.pdf","receipt_b64":"JVBERi0xLjQKMSAwIG9iaiA8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4gZW5kb2JqCjIgMCBvYmogPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4gZW5kb2JqCjMgMCBvYmogPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSAvQ29udGVudHMgNCAwIFIgPj4gZW5kb2JqCjQgMCBvYmogPDwgL0xlbmd0aCA5NiA+PiBzdHJlYW0KQlQgL0YxIDEyIFRmIDcyIDcyMCBUZCAoREVNTyBSRUNFSVBUIC0gbm90IGEgcmVhbCBwdXJjaGFzZSAtIDI1IGtnIGJpb2NoYXIgQ09SQykgVGogRVQKZW5kc3RyZWFtIGVuZG9iagp0cmFpbGVyIDw8IC9Sb290IDEgMCBSID4+CiUlRU9GCg=="}],"donations":[{"id":1,"donation_date":"2026-08-01","org":"American Rivers","usd":25.0,"payer":"Acme Research LLC","receipt_sha256":""}],"cost":{"rate_usd_per_tonne":160,"overall_usd":6.66,"contributed_usd":32,"owed_usd":-25.34},"equivalences":{"home_days":4.9,"showers":12.01,"car_miles":105.85,"energy":{"value":10791,"unit":"kWh per year","noun":"days of an average U.S. home's electricity","cite":"EIA: average U.S. residential customer used 10,791 kWh in 2022","cite_url":"https://www.eia.gov/tools/faqs/faq.php?id=97&t=3"},"water":{"value":63.6,"unit":"liters per shower","noun":"showers","cite":"EPA WaterSense: 8-minute shower at 2.1 gal/min = 16.8 gal = 63.6 L","cite_url":"https://www.epa.gov/watersense/showerheads"},"co2":{"value":0.393,"unit":"kg CO2e per mile","noun":"miles driven in an average gasoline car","cite":"EPA: 3.93e-4 t CO2e per mile, 2022 fleet (22.8 mpg, 10,917 mi/yr)","cite_url":"https://www.epa.gov/energy/greenhouse-gases-equivalencies-calculator-calculations-and-references"}},"giving":{"tiers":[{"id":"settles","label":"Settles the balance","blurb":"Verified removal. Carbon already taken out of the atmosphere and retired in your name, so a purchase moves the tonnes figure above."},{"id":"prevents","label":"Prevents a future emission","blurb":"Verified avoidance. Real, third-party audited, and a different accounting category: it stops an emission that would otherwise happen rather than removing one that already did, so it never settles a removal debt."},{"id":"fund-separately","label":"Fund from a conservation budget","blurb":"Land, river, wetland and reef work. The research is blunt that most of these cannot be honestly priced per tonne, and that two of them are probably net carbon sources. They are here because they are worth funding — not because they offset anything."}],"orgs":[{"tier":"settles","area":"Air — removal","name":"Remove Carbon Today","sub":"biochar CORCs","url":"https://www.removecarbontoday.com/collections","does":"Sells ex-post biochar carbon-removal certificates issued under the Puro Standard: the biochar is independently weighed and sampled, third-party audited, and the certificate is retired in your name on the public registry. Puro does not sell direct, so a reseller is the small-buyer route; the minimum here is 1 kg.","price":"≈ $160 / tonne","price_note":"Best estimate, ±40%. The Nasdaq CORCCHAR biochar index clustered around $125–145/t through late 2025 into 2026; broader spot and institutional quotes run $200–400/t.","verdict":"The only pathway on this page that settles the balance above — verified removal, already delivered rather than promised.","update":"Live durability revision: a 2025 peer-reviewed paper (Petersen & Sanei, GCB Bioenergy) found the H:Corg ratio biochar certification rests on can both under- and over-predict true stability, and field decay rates across six isotope-labelled experiments run from 0.8% to 7.0% a year. Puro responded by downgrading its top durability claim from a de facto millennial framing to a new CORC200+ class — several centuries, not millennia. Biochar still delivered 91% of all durable-removal volume in 2025.","evidence":[{"label":"Puro CORCCHAR reference price index","url":"https://puro.earth/insights/post/introducing-the-world-s-first-reference-price-indexes-for-engineered-carbon-removal/"},{"label":"Retirement proof","url":"https://www.removecarbontoday.com/pages/proof-of-removal"}],"news":{"label":"Puro.earth insights","url":"https://puro.earth/insights","note":"the registry — the reseller publishes no newsroom"}},{"tier":"prevents","area":"Air — prevention","name":"Tradewater","sub":"refrigerant destruction","url":"https://tradewater.co/buy-credits/","does":"Collects and destroys ozone-depleting refrigerants and plugs orphaned methane wells. Every container is third-party weighed, sampled and lab-analysed, destruction facilities are monitored to better than 99.99% completion, and the credits are certified under ACR or VCS. The research calls this the cleanest additionality story in the cheap tier.","price":"$15 / tonne, stated","price_note":"Not independently confirmed, and plausibly 3–5× off the market. The nearest public comparable — Recoolit, a rival refrigerant-destruction project — sells pilot credits around $75/t. Worth a direct quote before a large purchase.","verdict":"Avoidance, not removal. It stops a future emission; it does not take carbon back out, so it is recorded below the line and never settles the balance.","update":"The accounting is tightening around this distinction. SBTi's Corporate Net-Zero Standard V2.0, finalised 11 June 2026, is explicit that reduction and avoidance credits are disallowed for net-zero neutralisation claims — only removal credits qualify — and becomes mandatory for new targets from January 2028.","evidence":[{"label":"VCS verification report, TW Ghana ODS (GHD Ltd, 2019)","url":"https://tradewater.co/wp-content/uploads/2024/12/11197310-RPT-1-VCS-Verification-Report_TW-Ghana-08-14-19.pdf"},{"label":"Giving Green refrigerants review","url":"https://www.givinggreen.earth/carbon-offsets-research/refrigerants"}],"news":{"label":"Tradewater press","url":"https://tradewater.co/press","note":""}},{"tier":"fund-separately","area":"Land & watershed","name":"Naturaland Trust","sub":"Blue Ridge escarpment","url":"https://naturalandtrust.org/donate-now","does":"Buys and protects escarpment land above Greenville — 1,090 acres at Saluda Bluffs for about $9M, and a 365-acre stretch of the Highway 11 corridor — inside the watershed that feeds Greenville Water's own reservoirs at Table Rock, North Saluda and Poinsett.","price":"≈ $20–150 / tonne","price_note":"Rough and self-constructed from public data, not a credit. Amortised-flux method: $8,250/acre ÷ (4.78 tCO2e/acre/yr × 40 years) ≈ $43/t, or ≈ $17/t over 100 years. Avoided-conversion stock method: $8,250 ÷ ~83 tCO2e/acre ≈ $100/t, and ≈ $165/t at the Highway 11 asking price. Both are defensible; they differ 5–8× purely by method, and that spread is the honest uncertainty band.","verdict":"The only non-market organisation here where a number can be built from public data with a paper trail. Additionality is plausible — this land carries genuine $8,000–20,000/acre development pricing — but Naturaland has published no baseline scenario and no leakage assessment, which is what a registry would require.","update":"The water case is the stronger one. The structural analogue is New York City's Catskill/Delaware programme: about $2.5B spent since 1997 on land buyouts and watershed protection avoided an estimated $6–10B filtration plant plus $250–300M a year to run it. No equivalent engineering study exists for this watershed, so no dollars-per-litre figure can be built — but it is the only organisation on this page protecting an actual drinking-water source, including the one this account drinks from.","evidence":[{"label":"Greenville Journal — Saluda Bluffs, 1,090 acres","url":"https://greenvillejournal.com/outdoors-recreation/naturaland-trust-leads-conservation-of-1100-acres-between-table-rock-caesars-head-saluda-bluffs/"},{"label":"USFS Southeast carbon storage","url":"https://www2.nau.edu/~gaud/bio326/class/ecosyst/USFScarb.htm"}],"news":{"label":"Newsletter & archive","url":"https://naturalandtrust.org/enewsletter","note":"no newsroom published"}},{"tier":"fund-separately","area":"Rivers","name":"American Rivers","sub":"dam removal","url":"https://www.americanrivers.org/donate","does":"Dam removal and river restoration. Reservoir surfaces are a large methane source — an estimated 0.8 (0.5–1.2) Pg CO2-eq a year globally, about 1.3% of all human emissions — and a CARB-hosted March 2026 report estimates the four removed Klamath River dams eliminated roughly 275,000 tonnes CO2e a year.","price":"No purchasable tonne","price_note":"Illustrative arithmetic only: the Klamath project's $450M total budget ÷ 5.5 Mt cumulative over 20 years ≈ $82/t; ÷ 27.5 Mt over 100 years ≈ $16/t. The horizon choice alone swings it 5×, and no registry standardises it.","verdict":"The methane avoidance is real and reasonably well quantified for specific dams. A donation still cannot be converted into tonnes: American Rivers is one policy, legal and technical partner among many funders on Klamath, not the payee of the $450M, and it sells no credit. Dam removal also creates a short-term emissions pulse from erosional carbon loss and sediment methane.","update":"A 2024 BioScience review of river restoration says it in its own title: river restoration can increase carbon storage but is not yet a suitable basis for carbon credits.","evidence":[{"label":"CARB-hosted Klamath methane estimate (2026)","url":"https://ww2.arb.ca.gov/sites/default/files/2026-04/Attachment-2-Estimate-of-California-Dam-and-Reservoir-Methane-Emissions-3-25-2026_v2.pdf"},{"label":"Deemer et al. 2016, BioScience — reservoir greenhouse gases","url":"https://academic.oup.com/bioscience/article/66/11/949/2754271"}],"news":{"label":"Media center","url":"https://www.americanrivers.org/media-center/","note":""}},{"tier":"fund-separately","area":"Wetlands & swamp","name":"Congaree Land Trust","sub":"COWASEE basin","url":"https://congareelt.org/donate","does":"Holds conservation easements across 25,398 acres in the COWASEE basin around Congaree National Park — the largest old-growth bottomland hardwood forest in the eastern United States. The easements are overwhelmingly donated rather than bought, so a gift funds legal, stewardship and monitoring work rather than land purchase.","price":"No defensible number","price_note":"There is no market transaction to divide the carbon stock by. The stock itself is exceptional: floodplain forested wetlands hold 176.6 ± 84 MgC/ha in the top metre — about 262 tCO2e/acre in soil alone — plus roughly 80–90 tCO2e/acre of old-growth aboveground biomass. That is several times the upland figure, but it is a stock, not a flux.","verdict":"One of the highest carbon stocks of any protected forest type in North America, genuinely protected, with nothing to price it against. 'No defensible dollars per tonne' is the honest answer here, not a knock on the ecology.","update":"Open evidence gap: no Congaree-specific methane flux measurement was found. The wetland literature splits by hydrology — permanently inundated freshwater wetlands run high methane, while seasonally inundated types like this one tend to sequester more than they emit — but that is a general finding, not a measurement of this basin.","evidence":[{"label":"Sapkota et al. 2025, Frontiers — freshwater forested wetland soil carbon","url":"https://www.frontiersin.org/journals/forests-and-global-change/articles/10.3389/ffgc.2025.1528440/full"}],"news":{"label":"CLT news","url":"https://congareelt.org/news","note":""}},{"tier":"fund-separately","area":"Coasts & estuaries","name":"Billion Oyster Project","sub":"New York Harbor","url":"https://www.billionoysterproject.org/donate","does":"Builds self-sustaining oyster reefs in New York Harbor — about 150 million oysters across 17 acres as of December 2025, at roughly $250,000 an acre — with a public-schools programme attached to the restoration work.","price":"No defensible number","price_note":"Filtration is the real benefit and it is genuine: an acre of reef, around 750,000 oysters, can filter 15–40 million gallons a day. But that is cleaning water rather than creating it, and it is saline estuarine water — no bearing on a datacentre's freshwater draw.","verdict":"Not a carbon investment, and probably a net source. Fodrie et al. 2017 find restored reefs can bury organic carbon at rates comparable to mangroves and marshes, but on exposed sandflats — much of this footprint — inorganic carbon burial vents more CO2 than the organic burial takes down, leaving them slight net sources at about 0.5 ± 0.3 MgC per hectare per year. The result holds across a 100–4,000 year sediment-core dataset, so it is not a transient artefact.","update":"Nitrogen cuts both ways too: the reefs remove reactive nitrogen through denitrification, a real water-quality benefit, but preliminary reef-scale work found nitrous-oxide production high enough that the researchers explicitly called for reevaluating the climate benefit of oyster-reef restoration. No BOP-specific carbon accounting exists in any BOP publication.","evidence":[{"label":"Fodrie et al. 2017, Proc. R. Soc. B — oyster reefs as carbon sources and sinks","url":"https://pubmed.ncbi.nlm.nih.gov/28747477/"},{"label":"Bay Journal — filtration figures overstated in field conditions","url":"https://www.bayjournal.com/news/fisheries/pumped-up-performance-oysters-filtering-feat-overstated/article_bbe67d38-8f09-11ea-a5ab-5fd7465dee21.html"}],"news":{"label":"BOP stories","url":"https://www.billionoysterproject.org/blog","note":""}},{"tier":"fund-separately","area":"Oceans","name":"Coral Restoration Foundation","sub":"Florida Keys","url":"https://coralrestoration.org/donate","does":"Propagates and outplants staghorn coral in the Florida Keys. One empirical Florida study found that CRF-style high-density Acropora cervicornis outplanting restores positive net carbonate accretion on reefs that had gone net-erosional — that is reef structure rebuilt, not atmospheric carbon removed.","price":"No defensible number","price_note":"Florida's reefs carry a documented $1.8B flood-protection value, and the tourism and biodiversity case is strong. None of that converts into tonnes.","verdict":"No carbon benefit, defensible or otherwise. Net calcification lowers seawater alkalinity faster than dissolved inorganic carbon, producing a net CO2 flux to the atmosphere, and a search specifically for a CRF carbon claim found none at all — not even a marketing-level one. Fund it for the reef, the coastline and the biodiversity.","update":"The direction of travel is counterintuitive: a 2025 PNAS study projects that the decline of coral calcification under warming and acidification will modestly increase ocean carbon uptake — up to 0.48 GtCO2 a year, median, by midcentury. That is the opposite of what a restoration donor might hope, and it is another reason to fund this for the reef rather than the ledger.","evidence":[{"label":"Florida reef carbonate-budget restoration study (2024)","url":"https://pmc.ncbi.nlm.nih.gov/articles/PMC11555216/"},{"label":"PNAS 2025 — coral calcification decline and ocean carbon uptake","url":"https://www.pnas.org/doi/10.1073/pnas.2501562122"}],"news":{"label":"CRF blog","url":"https://coralrestoration.org/blog/","note":""}}]},"constants":{"grid_cif_g_per_wh":0.287,"pue":1.14,"wue_onsite_l_per_kwh":0.18,"wue_offsite_l_per_kwh":5.11,"embodied_gco2e_per_kwh":44.1,"cache_read_factor":0.08},"formulas":{"co2":"co2_g = ((input + cache_write) × f_in + cache_read × f_in × 0.08 + output × f_out) / 1e6","energy":"energy_wh = co2_g / 0.287","water":"water_ml = energy_wh × (0.18/1.14 + 5.11)","embodied":"embodied_g = energy_wh × 44.1 / 1000","balance":"balance_kg = emitted_kg − verified_removal_kg","owed":"owed = emitted_t × 160 − (offset_$ + donation_$)"}};
+/* Renders the station record from DATA. Every value reaches the DOM as a text
+   node (Node.append with a string, or textContent) — never as parsed markup —
+   so no ledger string and no shortlist sentence can inject HTML. The only
+   attributes ever built from data are href (set through setAttribute, never
+   parsed) and download.
 
    Charts are inline SVG built through the namespace read off the static <svg>
    in the skeleton, which keeps the URL of the SVG namespace out of this file:
-   the dashboard must carry zero external references and be openable over
-   file:// with the network off. */
+   the page must carry zero external references and open over file:// with the
+   network off. */
 (function () {
   "use strict";
-  var doc = document, settle = doc.getElementById("c-settle"), NS = settle.namespaceURI;
+  var doc = document, measure = doc.getElementById("c-measure"), NS = measure.namespaceURI;
 
   function make(ns, tag, attrs, kids) {
     var n = ns ? doc.createElementNS(ns, tag) : doc.createElement(tag), k;
@@ -1063,17 +1032,28 @@ const DATA = {"generated_at":"2026-08-07T09:00:00Z","caveat":"No vendor publishe
     return (x < 0 ? "−" : "") + p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",") + (p[1] ? "." + p[1] : "");
   }
   function usd(v) { var x = Number(v) || 0; return (x < 0 ? "−$" : "$") + num(Math.abs(x), 2); }
-  function width(node) { return Math.max(240, Math.round(node.getBoundingClientRect().width) || 720); }
+  function width(node) { return Math.max(280, Math.round(node.getBoundingClientRect().width) || 720); }
+
+  /* SIGNATURE — the split readout. Integer large, fraction small, the way a
+     meter face reads. Both halves live inside one element as plain text, so a
+     screen reader still announces "41.60" and a find-in-page still matches. */
+  function fig(v, unit) {
+    var p = String(v).split("."), n = h("span", { class: "fig" }, p[0]);
+    if (p.length > 1) n.append(h("span", { class: "fig__f" }, "." + p[1]));
+    if (unit) n.append(h("span", { class: "fig__u" }, unit));
+    return n;
+  }
 
   var T = DATA.totals || {}, OS = DATA.offset_state || {}, EQ = DATA.equivalences || {};
-  var C = DATA.constants || {}, COST = DATA.cost || {};
+  var C = DATA.constants || {}, COST = DATA.cost || {}, TR = DATA.trend || {};
   var months = DATA.monthly || [], models = DATA.by_model || [];
   var buys = DATA.offsets || [], gifts = DATA.donations || [];
+  var GIVE = DATA.giving || { tiers: [], orgs: [] };
   var emitted = (Number(T.co2_g) || 0) / 1000;
   var removal = Number(OS.removal_verified_kg) || 0;
   var settled = Math.min(removal, emitted), unsettled = Math.max(emitted - removal, 0);
 
-  /* --- masthead and standing text ----------------------------------------- */
+  /* --- station header ------------------------------------------------------ */
   set("caveat", DATA.caveat || "");
   [["gen", DATA.generated_at], ["m-issued", DATA.generated_at]].forEach(function (p) {
     var n = doc.getElementById(p[0]);
@@ -1086,40 +1066,239 @@ const DATA = {"generated_at":"2026-08-07T09:00:00Z","caveat":"No vendor publishe
     : "no sessions yet");
   set("m-sessions", num(T.sessions, 0));
 
-  /* --- SIGNATURE: the three meter readings, each with its equivalence -------
-     The readings are three different units, not a series, so none of them
-     wears a chart color: color would be encoding nothing. Identity comes from
-     the label and the equivalence beneath it. */
-  var reads = doc.getElementById("reads");
-  [["Energy", num((Number(T.energy_wh) || 0) / 1000, 2), "kWh",
-    EQ.home_days, EQ.energy],
-   ["Water", num((Number(T.water_ml) || 0) / 1000, 1), "L",
-    EQ.showers, EQ.water],
-   ["Carbon", num(emitted / 1000, 3), "t CO2e",
-    EQ.car_miles, EQ.co2]
-  ].forEach(function (r) {
-    var f = r[4] || {}, eq = [];
+  /* --- the three streams ---------------------------------------------------
+     One definition per stream, consumed three times: once for the reading
+     trio, once for the trace lane, once for the details table. The order —
+     carbon, electricity, water — is the same everywhere on the page. */
+  var STREAMS = [
+    { id: "carbon", name: "Carbon", cls: "m-carbon", key: "co2_g", tkey: "latest_g",
+      unit: "kg CO2e", laneUnit: "kg CO2e", div: 1000, dp: 2,
+      total: num(emitted, 2), totalUnit: "kg CO2e",
+      eq: EQ.car_miles, eqf: EQ.co2,
+      mark: function () {
+        return glyph([["M3 7c2-2 4 2 6 0s4-2 6 0 4 2 6 0"],
+          ["M3 12c2-2 4 2 6 0s4-2 6 0 4 2 6 0"], ["M3 17c2-2 4 2 6 0s4-2 6 0"]]);
+      } },
+    { id: "energy", name: "Electricity", cls: "m-energy", key: "energy_wh", tkey: "latest_wh",
+      unit: "kWh", laneUnit: "kWh", div: 1000, dp: 2,
+      total: num((Number(T.energy_wh) || 0) / 1000, 2), totalUnit: "kWh",
+      eq: EQ.home_days, eqf: EQ.energy,
+      mark: function () { return glyph([["M13.5 2.5 6 13h4.8l-1.3 8.5L17 11h-4.8z"]]); } },
+    { id: "water", name: "Water", cls: "m-water", key: "water_ml", tkey: "latest_ml",
+      unit: "L", laneUnit: "L", div: 1000, dp: 1,
+      total: num((Number(T.water_ml) || 0) / 1000, 1), totalUnit: "L",
+      eq: EQ.showers, eqf: EQ.water,
+      mark: function () { return glyph([["M12 3c3.7 4.4 6 7.5 6 10a6 6 0 0 1-12 0c0-2.5 2.3-5.6 6-10z"]]); } }
+  ];
+  function glyph(paths) {
+    var g = s("svg", { class: "stream__mark", viewBox: "0 0 24 24", "aria-hidden": "true", focusable: "false" });
+    paths.forEach(function (p) {
+      g.append(s("path", { d: p[0], fill: "none", stroke: "currentColor",
+        "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round" }));
+    });
+    return g;
+  }
+
+  var host = doc.getElementById("stream-cards");
+  STREAMS.forEach(function (m) {
+    var f = m.eqf || {}, t = TR[m.id] || {};
+    var card = h("section", { class: "card stream stream--" + m.id });
+
+    card.append(h("div", { class: "stream__hd" }, m.mark(),
+      h("h3", { class: "stream__n" }, m.name)));
+
+    var trio = h("ul", { class: "trio" });
+
+    /* 1 — the lifetime total. */
+    trio.append(h("li", {},
+      h("p", { class: "badge__k" }, "Lifetime total"),
+      h("p", { class: "badge__v" }, fig(m.total, m.totalUnit))));
+
+    /* 2 — the same total on a familiar scale. The factor, the noun and the
+       citation all come from data/equivalence-constants.json, and the division
+       happened in the generator: no reader and no model is asked to do it. */
+    var eqLi = h("li", {}, h("p", { class: "badge__k" }, "In familiar terms"));
     if (f.noun) {
-      eq.push("≈ ", h("b", {}, num(r[3], Number(r[3]) >= 10 ? 0 : 2)), " " + f.noun);
+      eqLi.append(h("p", { class: "badge__v" }, fig(num(m.eq, Number(m.eq) >= 10 ? 0 : 2), "")));
+      eqLi.append(h("p", { class: "badge__why" }, f.noun));
+    } else {
+      eqLi.append(h("p", { class: "badge__why" }, "No factor on file."));
     }
-    var cite = f.cite
-      ? h("span", { class: "read__src" }, f.cite + " · ",
-          f.cite_url ? h("a", { href: f.cite_url }, "source") : null)
-      : null;
-    /* The space between the figure and its unit is a real text node, not a
-       margin: at 320px it is the only break opportunity the pair has, and
-       without it the unit runs off the sheet (SC 1.4.10 Reflow). */
-    reads.append(h("li", { class: "read" },
-      h("p", { class: "read__k" }, r[0]),
-      h("p", { class: "read__v" }, r[1], " ", h("span", { class: "read__u" }, r[2])),
-      h("p", { class: "read__eq" }, make(null, "span", {}, eq), cite)));
+    if (f.cite) {
+      eqLi.append(h("p", { class: "badge__src" }, f.cite + " · ",
+        f.cite_url ? h("a", { href: f.cite_url }, "source") : null));
+    }
+    trio.append(eqLi);
+
+    /* 3 — the latest month, against the one before it. Direction is carried by
+       an arrow and by the sign, never by colour: a heavier month is not an
+       error and a lighter one is not a success. */
+    var latest = Number(t[m.tkey]) || 0, pct = t.pct;
+    var chip;
+    if (pct === null || pct === undefined) {
+      chip = h("span", { class: "delta" }, TR.prev_month ? "no prior month" : "first month on record");
+    } else {
+      var up = Number(pct) >= 0;
+      chip = h("span", { class: "delta" },
+        h("span", { class: "delta__d", "aria-hidden": "true" }, up ? "▲" : "▼"),
+        (up ? "+" : "−") + num(Math.abs(Number(pct)), 1) + "% vs " + String(TR.prev_month || ""));
+    }
+    trio.append(h("li", {},
+      h("p", { class: "badge__k" }, "Latest month" + (TR.month ? " · " + TR.month : "")),
+      h("p", { class: "badge__v" }, fig(num(latest / m.div, m.dp), m.laneUnit)),
+      chip));
+
+    card.append(trio);
+    host.append(card);
   });
 
-  /* --- balance ------------------------------------------------------------ */
-  set("bal-value", num(OS.balance_kg, 2));
+  /* --- SIGNATURE: the trace ------------------------------------------------
+     Three lanes, one monthly axis. Thin columns rather than lines, because a
+     monthly total is a bin and not a sample. Each lane keeps its own scale —
+     the units are not comparable — and says so in the gutter, so this is three
+     small multiples sharing an axis, never a two-scale chart. */
+  var LANE_H = 80, PLOT_H = 52, LANE_TOP = 22, AX_H = 24, RPAD = 8;
+  var cTrace = null;
+  (function buildTrace() {
+    var body = doc.getElementById("trace-body");
+    if (!months.length) {
+      body.append(h("p", { class: "empty" }, "No sessions recorded yet, so there is nothing to trace."));
+      return;
+    }
+    var g = s("g", {});
+    var svg = s("svg", { class: "chart", id: "c-trace", role: "img",
+      "aria-labelledby": "trace-t", "aria-describedby": "trace-d" },
+      s("title", { id: "trace-t" }, "Monthly carbon, electricity and water, three lanes on one time axis"),
+      s("desc", { id: "trace-d" }), g);
+    body.append(h("figure", { class: "fig-wrap" }, svg));
+    cTrace = { svg: svg, g: g, desc: svg.querySelector("desc") };
+  })();
+
+  function drawTrace() {
+    if (!cTrace) return;
+    var W = width(cTrace.svg.parentNode);
+    var H = STREAMS.length * LANE_H + AX_H;
+    cTrace.svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    cTrace.g.textContent = "";
+    /* The gutter carries the lane name and unit. Fixed at 98px it would eat a
+       third of a 320px viewport, so it gives ground before the plot does. */
+    var GUT = Math.round(Math.min(98, Math.max(56, W * 0.22)));
+    var plotW = Math.max(W - GUT - RPAD, 60);
+    var step = plotW / months.length;
+    var bw = Math.max(Math.min(step * 0.58, 24), 2);
+    var labelAll = step >= 62;
+    var desc = [];
+
+    STREAMS.forEach(function (m, li) {
+      var top = li * LANE_H, plotTop = top + LANE_TOP, baseY = plotTop + PLOT_H;
+      var vals = months.map(function (r) { return (Number(r[m.key]) || 0) / m.div; });
+      var max = Math.max.apply(null, vals.concat([0])) || 1;
+      var peak = vals.indexOf(max);
+
+      /* Lane identity lives in the gutter, in words: the colour is a second
+         channel on top of the label, never the only one. */
+      cTrace.g.append(s("text", { class: "lane__n", x: "0", y: plotTop + PLOT_H / 2 - 3 }, m.name));
+      cTrace.g.append(s("text", { class: "lane__u", x: "0", y: plotTop + PLOT_H / 2 + 12 }, m.laneUnit));
+
+      months.forEach(function (r, i) {
+        var v = vals[i], bh = Math.max(Math.round((v / max) * PLOT_H), v > 0 ? 2 : 0);
+        var x = Math.round(GUT + i * step + (step - bw) / 2), y = baseY - bh;
+        var bar = s("rect", { class: m.cls, x: x, y: y, width: Math.round(bw), height: bh, rx: "2" });
+        bar.append(s("title", {}, r.month + " · " + m.name + " " + num(v, m.dp) + " " + m.laneUnit));
+        cTrace.g.append(bar);
+        if (labelAll || i === peak) {
+          cTrace.g.append(s("text", { class: "val", x: x + bw / 2, y: y - 6, "text-anchor": "middle" },
+            num(v, m.dp)));
+        }
+      });
+
+      cTrace.g.append(s("line", { class: "base", x1: GUT - 0.5, y1: baseY + 0.5, x2: GUT + plotW, y2: baseY + 0.5 }));
+      desc.push(m.name + " in " + m.laneUnit + ": " + months.map(function (r, i) {
+        return r.month + " " + num(vals[i], m.dp); }).join(", "));
+    });
+
+    /* One time axis under the stack, shared by all three lanes. */
+    var axY = STREAMS.length * LANE_H + 14;
+    months.forEach(function (r, i) {
+      var label = step >= 58 ? String(r.month) : step >= 26 ? String(r.month).slice(-2) : "";
+      if (!label && i !== 0 && i !== months.length - 1) return;
+      if (!label) label = String(r.month).slice(-2);
+      cTrace.g.append(s("text", { class: "ax", x: Math.round(GUT + i * step + step / 2), y: axY,
+        "text-anchor": "middle" }, label));
+    });
+    cTrace.desc.textContent = desc.join(". ") + ".";
+  }
+
+  /* --- the measure ---------------------------------------------------------
+     Settled solid, unsettled OPEN, with a caliper rule where they meet. Filled
+     versus open is the channel that survives a greyscale print, colour-vision
+     deficiency and forced colours; hue is the second channel, not the only
+     one, and both spans are labelled with their figure in the legend. */
+  var TOPLAB_Y = 9, TRACK_Y = 15, TRACK_H = 34, CAL_TOP = 7, CAL_BOT = 55, PCT_Y = 67, MH = 70;
+  doc.getElementById("bal-value").append(fig(num(OS.balance_kg, 2), "kg CO2e outstanding"));
   set("bal-eq", num(emitted, 2) + " kg emitted − " + num(removal, 2) + " kg verified removal"
     + (emitted > 0 && unsettled === 0 ? " · fully settled" : ""));
 
+  function drawMeasure() {
+    var g = doc.getElementById("measure-marks"), W = width(measure.parentNode);
+    measure.setAttribute("viewBox", "0 0 " + W + " " + MH);
+    g.textContent = "";
+    if (emitted <= 0) {
+      /* Nothing emitted is not the same state as nothing settled, so it does
+         not get the same mark: a dashed hairline track, never an open one. */
+      g.append(s("rect", { class: "track-none", x: "1", y: TRACK_Y, width: W - 2, height: TRACK_H, rx: "3" }));
+      g.append(s("text", { class: "ax", x: "0", y: PCT_Y }, "Nothing emitted yet — nothing to settle"));
+      set("measure-d", "No emissions recorded, so there is nothing to settle.");
+      return;
+    }
+    var wS = Math.round((settled / emitted) * W), gap = wS > 0 && wS < W ? 3 : 0;
+    g.append(s("text", { class: "ax", x: "0", y: TOPLAB_Y }, "0"));
+    g.append(s("text", { class: "ax", x: W, y: TOPLAB_Y, "text-anchor": "end" },
+      num(emitted, 2) + " kg emitted"));
+    if (wS > 0) {
+      g.append(s("rect", { class: "m-settled", x: "0", y: TRACK_Y,
+        width: Math.max(wS - gap, 1), height: TRACK_H, rx: "3" }));
+    }
+    if (wS < W) {
+      /* Inset by one so the 2px stroke stays inside the viewBox rather than
+         being clipped in half at the right edge. */
+      g.append(s("rect", { class: "m-open", x: wS + 1, y: TRACK_Y + 1,
+        width: Math.max(W - wS - 2, 1), height: TRACK_H - 2, rx: "3" }));
+    }
+    g.append(s("line", { class: "base", x1: "0", y1: TRACK_Y + TRACK_H + 5.5, x2: W, y2: TRACK_Y + TRACK_H + 5.5 }));
+    var pct = (settled / emitted) * 100;
+    if (wS > 0 && wS < W) {
+      var mx = Math.min(Math.max(wS, 1), W - 1);
+      var anchor = pct > 72 ? "end" : pct < 28 ? "start" : "middle";
+      g.append(s("g", { class: "bound" },
+        s("line", { x1: mx, y1: CAL_TOP, x2: mx, y2: CAL_BOT }),
+        s("text", { x: mx, y: PCT_Y, "text-anchor": anchor }, num(pct, 1) + "% settled")));
+    } else {
+      g.append(s("text", { class: "ax", x: "0", y: PCT_Y },
+        wS >= W ? "100% settled" : "0% settled"));
+    }
+    set("measure-d", "Of " + num(emitted, 2) + " kg CO2e emitted, " + num(settled, 2)
+      + " kg is settled by verified removal and " + num(unsettled, 2) + " kg is unsettled."
+      + (removal > emitted ? " Verified removal exceeds emissions by " + num(removal - emitted, 2) + " kg." : ""));
+  }
+
+  /* The legend swatches are the chart's own marks at 12px, drawn as SVG rather
+     than as CSS backgrounds: a chart colour never becomes a background
+     anywhere, which is what keeps "mint is line-work, never a field" testable. */
+  function swatch(kind) {
+    var g = s("svg", { class: "legend__sw", viewBox: "0 0 12 12", "aria-hidden": "true", focusable: "false" });
+    g.append(kind === "settled"
+      ? s("rect", { class: "m-settled", width: "12", height: "12", rx: "2" })
+      : s("rect", { class: "m-open", x: "1", y: "1", width: "10", height: "10", rx: "2" }));
+    return g;
+  }
+  var legend = doc.getElementById("measure-legend");
+  [["settled", "Settled by verified removal", settled], ["open", "Unsettled", unsettled]].forEach(function (l) {
+    legend.append(h("span", { class: "legend__i" }, swatch(l[0]),
+      l[1] + " ", h("span", { class: "legend__v" }, num(l[2], 2) + " kg")));
+  });
+
+  /* --- below the line ------------------------------------------------------ */
   var memo = doc.getElementById("memo-list");
   function mark(kind) {
     var g = s("svg", { class: "memo__mark mk mk--" + kind, viewBox: "0 0 18 18", "aria-hidden": "true" },
@@ -1148,22 +1327,22 @@ const DATA = {"generated_at":"2026-08-07T09:00:00Z","caveat":"No vendor publishe
         h("p", {}, "Contributions have passed the cost of everything this account has emitted, by "
           + usd(Math.abs(owed)) + ". The ledger stays unclamped so the surplus keeps showing.")));
   }
-  var pair = doc.getElementById("pair");
+  var pairs = doc.getElementById("pairs");
   [["Overall", usd(COST.overall_usd), "Everything emitted, priced at the removal rate.", null],
    ["Contributed", usd(COST.contributed_usd), "Every dollar given: offset purchases and donations, 1:1.", null],
    ["Owed", usd(owed), negative
       ? "In credit. Contributions exceed the overall cost."
       : "Overall minus contributed. Never clamped at zero.", negative ? "owed--neg" : null]
   ].forEach(function (p) {
-    pair.append(h("div", {}, h("dt", {}, p[0]),
-      h("dd", { class: p[3] }, p[1], h("small", {}, p[2]))));
+    pairs.append(h("div", {}, h("dt", {}, p[0]),
+      h("dd", { class: p[3] }, fig(p[1], ""), h("small", {}, p[2]))));
   });
   set("rate-note", "Removal rate: " + usd(COST.rate_usd_per_tonne) + " per tonne (data/offset-constants.json). "
     + "Dollars given never move the tonnes balance above — only verified removal does.");
 
-  /* --- tables ------------------------------------------------------------- */
-  /* The wrapper scrolls horizontally on a narrow viewport, so it takes focus:
-     a scrollable region a keyboard user cannot reach is a keyboard trap in
+  /* --- tables --------------------------------------------------------------
+     The wrapper scrolls horizontally on a narrow viewport, so it takes focus: a
+     scrollable region a keyboard user cannot reach is a keyboard trap in
      reverse (SC 2.1.1 Keyboard; EN 301 549 9.2.1.1). */
   function table(caption, cols, rows, foot) {
     return h("div", { class: "tw", tabindex: "0" }, h("table", {}, h("caption", {}, caption),
@@ -1172,119 +1351,39 @@ const DATA = {"generated_at":"2026-08-07T09:00:00Z","caveat":"No vendor publishe
       }))), make(null, "tbody", {}, rows), foot || null));
   }
 
-  /* --- charts ------------------------------------------------------------- */
-  function chart(hostId, id, titleText) {
-    var host = doc.getElementById(hostId);
+  /* --- model families ------------------------------------------------------
+     Horizontal bars, ranked, every bar directly labelled. One nominal series,
+     so every bar takes the same slot: length already carries the magnitude,
+     and colouring by rank would repaint the survivors under any filter. */
+  var cModel = null;
+  (function buildModel() {
+    var body = doc.getElementById("model-body");
+    if (!models.length) return;
     var g = s("g", {});
-    var svg = s("svg", { class: "chart", id: id, role: "img",
-      "aria-labelledby": id + "-t", "aria-describedby": id + "-d" },
-      s("title", { id: id + "-t" }, titleText), s("desc", { id: id + "-d" }), g);
-    host.append(h("figure", { class: "fig" }, svg));
-    return { svg: svg, g: g, desc: svg.querySelector("desc") };
-  }
-  function frame(c, w, hgt) { c.svg.setAttribute("viewBox", "0 0 " + w + " " + hgt); c.g.textContent = ""; }
-
-  /* SIGNATURE — the settlement meter.
-     One track, split at the verified-removal boundary, dressed as an instrument
-     rather than a progress bar: a tick scale runs above it (minor every 10% of
-     what was emitted, major at 0/50/100) and a marker drops at the boundary
-     carrying the settled percentage. The scale is the point — it turns "some of
-     the bar is filled" into a reading you can take. The unsettled remainder is
-     hatched as well as colored, and prevention is nowhere on it. */
-  var TICK_TOP_MAJ = 4, TICK_TOP_MIN = 7, TICK_BOT = 13;
-  var TRACK_Y = 17, TRACK_H = 28, BASE_Y = 46.5, AX_Y = 58, MARK_Y = 70;
-  function drawSettle() {
-    var g = doc.getElementById("settle-marks"), W = width(settle.parentNode), H = 78;
-    settle.setAttribute("viewBox", "0 0 " + W + " " + H);
-    g.textContent = "";
-    if (emitted <= 0) {
-      g.append(s("rect", { class: "track-empty", x: "0.5", y: TRACK_Y, width: W - 1, height: TRACK_H, rx: "3" }));
-      g.append(s("text", { class: "ax", x: "0", y: AX_Y }, "Nothing emitted yet — nothing to settle"));
-      set("settle-d", "No emissions recorded, so there is nothing to settle.");
-      return;
-    }
-    /* Tick scale. Drawn first so the track and the boundary marker sit over it. */
-    for (var p = 0; p <= 100; p += 10) {
-      var major = p === 0 || p === 50 || p === 100;
-      var tx = Math.round((p / 100) * W) + 0.5;
-      tx = Math.min(Math.max(tx, 0.5), W - 0.5);
-      g.append(s("line", { class: "tick" + (major ? " tick--major" : ""),
-        x1: tx, y1: major ? TICK_TOP_MAJ : TICK_TOP_MIN, x2: tx, y2: TICK_BOT }));
-    }
-    var wS = Math.round((settled / emitted) * W), gap = wS > 0 && wS < W ? 2 : 0;
-    if (wS > 0) g.append(s("rect", { class: "m-credit", x: "0", y: TRACK_Y, width: Math.max(wS - gap, 1), height: TRACK_H, rx: "3" }));
-    if (wS < W) g.append(s("rect", { x: wS, y: TRACK_Y, width: W - wS, height: TRACK_H, rx: "3", fill: "url(#hatch)" }));
-    g.append(s("line", { class: "base", x1: "0", y1: BASE_Y, x2: W, y2: BASE_Y }));
-    g.append(s("text", { class: "ax", x: "0", y: AX_Y }, "0"));
-    g.append(s("text", { class: "ax", x: W, y: AX_Y, "text-anchor": "end" }, num(emitted, 2) + " kg emitted"));
-    /* The boundary marker only earns its place when there is a boundary to
-       mark: at 0% or 100% it would just restate an end of the track. */
-    var pct = (settled / emitted) * 100;
-    if (wS > 0 && wS < W) {
-      var mx = Math.min(Math.max(wS, 0.5), W - 0.5);
-      var anchor = pct > 70 ? "end" : pct < 30 ? "start" : "middle";
-      var mark = s("g", { class: "bound" },
-        s("line", { x1: mx, y1: TICK_BOT, x2: mx, y2: BASE_Y }),
-        s("text", { x: mx, y: MARK_Y, "text-anchor": anchor }, num(pct, 1) + "% settled"));
-      g.append(mark);
-    }
-    set("settle-d", "Of " + num(emitted, 2) + " kg CO2e emitted, " + num(settled, 2)
-      + " kg is settled by verified removal and " + num(unsettled, 2) + " kg is unsettled."
-      + (removal > emitted ? " Verified removal exceeds emissions by " + num(removal - emitted, 2) + " kg." : ""));
-  }
-  var legend = doc.getElementById("settle-legend");
-  [["credit", "Settled by verified removal", settled], ["debit", "Unsettled", unsettled]].forEach(function (l) {
-    legend.append(h("span", { class: "legend__i" }, h("span", { class: "legend__sw legend__sw--" + l[0] }),
-      l[1] + " ", h("span", { class: "legend__v" }, num(l[2], 2) + " kg")));
-  });
-
-  /* Monthly columns. One measure, one axis, one series — so no legend box; the
-     title names it. Every column is directly labelled when there is room, and
-     the data table below carries the full numbers. */
-  var cMonth = months.length ? chart("monthly-body", "c-month", "Operational CO2e by month, in kilograms") : null;
-  function drawMonthly() {
-    if (!cMonth) return;
-    var W = width(cMonth.svg.parentNode), H = 190, top = 24, bot = 26, plot = H - top - bot;
-    var vals = months.map(function (m) { return (Number(m.co2_g) || 0) / 1000; });
-    var max = Math.max.apply(null, vals.concat([0])) || 1;
-    /* Cap the column pitch so two months cluster at the left instead of
-       drifting half a page apart; a long history still fills the width. */
-    var step = Math.min(W / months.length, 110), bw = Math.min(step * 0.6, 56), label = step >= 44;
-    var axis = Math.min(months.length * step, W);
-    frame(cMonth, W, H);
-    months.forEach(function (m, i) {
-      var v = vals[i], bh = Math.max(Math.round((v / max) * plot), v > 0 ? 2 : 0);
-      var x = Math.round(i * step + (step - bw) / 2), y = top + plot - bh;
-      var bar = s("rect", { class: "m-debit", x: x, y: y, width: Math.round(bw), height: bh, rx: "3" });
-      bar.append(s("title", {}, m.month + ": " + num(v, 2) + " kg CO2e"));
-      cMonth.g.append(bar);
-      if (label) cMonth.g.append(s("text", { class: "val", x: x + bw / 2, y: y - 7, "text-anchor": "middle" }, num(v, 2)));
-      cMonth.g.append(s("text", { class: "ax", x: x + bw / 2, y: H - 8, "text-anchor": "middle" },
-        step >= 62 ? String(m.month) : String(m.month).slice(-2)));
-    });
-    cMonth.g.append(s("line", { class: "base", x1: "0", y1: top + plot + 0.5, x2: axis, y2: top + plot + 0.5 }));
-    cMonth.desc.textContent = "Kilograms of operational CO2e per month: " + months.map(function (m, i) {
-      return m.month + " " + num(vals[i], 2); }).join("; ") + ".";
-  }
-
-  /* Model families: horizontal bars, ranked, every bar directly labelled. One
-     nominal series, so every bar takes the same slot rather than coloring by
-     value — bar length already carries the magnitude. */
-  var cModel = models.length ? chart("model-body", "c-model", "Operational CO2e by model family, in kilograms") : null;
+    var svg = s("svg", { class: "chart", id: "c-model", role: "img",
+      "aria-labelledby": "model-t", "aria-describedby": "model-d" },
+      s("title", { id: "model-t" }, "Operational CO2e by model family, in kilograms"),
+      s("desc", { id: "model-d" }), g);
+    body.append(h("figure", { class: "fig-wrap" }, svg));
+    cModel = { svg: svg, g: g, desc: svg.querySelector("desc") };
+  })();
   function drawModel() {
     if (!cModel) return;
-    var W = width(cModel.svg.parentNode), rh = 32, gut = 88, right = 84;
+    var W = width(cModel.svg.parentNode), rh = 34, gut = 80, right = 86;
     var span = Math.max(W - gut - right, 40), H = models.length * rh + 4;
     var vals = models.map(function (m) { return (Number(m.co2_g) || 0) / 1000; });
     var max = Math.max.apply(null, vals.concat([0])) || 1;
-    frame(cModel, W, H);
+    cModel.svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    cModel.g.textContent = "";
     models.forEach(function (m, i) {
       var y = i * rh + 6, bw = Math.max(Math.round((vals[i] / max) * span), vals[i] > 0 ? 2 : 0);
-      cModel.g.append(s("text", { class: "cat", x: "0", y: y + 14, "dominant-baseline": "middle" }, String(m.family)));
-      var bar = s("rect", { class: "m-debit", x: gut, y: y + 3, width: bw, height: "18", rx: "3" });
+      cModel.g.append(s("text", { class: "lane__n", x: "0", y: y + 15, "dominant-baseline": "middle" },
+        String(m.family)));
+      var bar = s("rect", { class: "m-carbon", x: gut, y: y + 4, width: bw, height: "20", rx: "2" });
       bar.append(s("title", {}, m.family + ": " + num(vals[i], 2) + " kg CO2e"));
       cModel.g.append(bar);
-      cModel.g.append(s("text", { class: "val", x: gut + bw + 8, y: y + 14, "dominant-baseline": "middle" }, num(vals[i], 2) + " kg"));
+      cModel.g.append(s("text", { class: "val", x: gut + bw + 8, y: y + 15, "dominant-baseline": "middle" },
+        num(vals[i], 2) + " kg"));
     });
     cModel.g.append(s("line", { class: "base", x1: gut - 0.5, y1: "4", x2: gut - 0.5, y2: H - 4 }));
     cModel.desc.textContent = "Kilograms of operational CO2e by model family: " + models.map(function (m, i) {
@@ -1292,30 +1391,41 @@ const DATA = {"generated_at":"2026-08-07T09:00:00Z","caveat":"No vendor publishe
   }
 
   /* --- the numbers behind each chart, and the fresh-install empty state ---- */
-  [["monthly-body", months, "month", "Month", "monthly figures", "month"],
-   ["model-body", models, "family", "Family", "model figures", "model family"]
-  ].forEach(function (d) {
-    var host = doc.getElementById(d[0]);
-    if (!d[1].length) { host.append(h("p", { class: "empty" }, "No sessions recorded yet.")); return; }
-    host.append(h("details", {}, h("summary", {}, "Show " + d[4]),
-      table("Operational CO2e, energy and session count by " + d[5] + ".",
-        [[d[3]], [h("span", { class: "cs" }, "kg CO2e"), 1], ["kWh", 1], ["Sessions", 1]], d[1].map(function (r) {
-          return h("tr", {}, h("th", { scope: "row" }, String(r[d[2]])),
+  (function traceTable() {
+    var body = doc.getElementById("trace-body");
+    if (!months.length) return;
+    body.append(h("details", {}, h("summary", {}, "Show the monthly figures"),
+      table("Operational CO2e, energy, water and session count by month.",
+        [["Month"], [h("span", { class: "cs" }, "kg CO2e"), 1], ["kWh", 1], ["L", 1], ["Sessions", 1]],
+        months.map(function (r) {
+          return h("tr", {}, h("th", { scope: "row" }, String(r.month)),
+            h("td", { class: "n" }, num((Number(r.co2_g) || 0) / 1000, 2)),
+            h("td", { class: "n" }, num((Number(r.energy_wh) || 0) / 1000, 2)),
+            h("td", { class: "n" }, num((Number(r.water_ml) || 0) / 1000, 1)),
+            h("td", { class: "n" }, num(r.sessions, 0)));
+        }))));
+  })();
+  (function modelTable() {
+    var body = doc.getElementById("model-body");
+    if (!models.length) { body.append(h("p", { class: "empty" }, "No sessions recorded yet.")); return; }
+    body.append(h("details", {}, h("summary", {}, "Show the model figures"),
+      table("Operational CO2e, energy and session count by model family.",
+        [["Family"], [h("span", { class: "cs" }, "kg CO2e"), 1], ["kWh", 1], ["Sessions", 1]],
+        models.map(function (r) {
+          return h("tr", {}, h("th", { scope: "row" }, String(r.family)),
             h("td", { class: "n" }, num((Number(r.co2_g) || 0) / 1000, 2)),
             h("td", { class: "n" }, num((Number(r.energy_wh) || 0) / 1000, 2)),
             h("td", { class: "n" }, num(r.sessions, 0)));
         }))));
-  });
+  })();
 
-  /* --- the two figures the reading band does not carry --------------------
-     Energy, water and carbon already lead the page; repeating them here would
-     be decoration. Only embodied CO2e and API value are new information. */
+  /* --- the two figures the stream trios deliberately do not carry ---------- */
   var tiles = doc.getElementById("tiles");
   [["Embodied CO2e", num((Number(T.embodied_g) || 0) / 1000, 2), "kg, hardware manufacture"],
    ["API value", usd(T.cost_usd), "list price, not money spent"]
   ].forEach(function (t) {
-    tiles.append(h("div", { class: "tile" }, h("dt", { class: "tile__k" }, t[0]),
-      h("dd", { class: "tile__v" }, t[1], h("span", { class: "tile__u" }, t[2]))));
+    tiles.append(h("div", {}, h("dt", {}, t[0]),
+      h("dd", {}, fig(t[1], ""), h("small", {}, t[2]))));
   });
 
   /* --- audit trail: by payer, then the two registers ---------------------- */
@@ -1426,7 +1536,56 @@ const DATA = {"generated_at":"2026-08-07T09:00:00Z","caveat":"No vendor publishe
       [["Date"], ["Payer"], ["Organisation"], ["USD", 1], ["Receipt SHA-256"]], grows));
   }
 
-  /* --- methodology: static prose, live constants --------------------------- */
+  /* --- the giving briefing -------------------------------------------------
+     Rendered entirely from DATA.giving. Not one sentence about any
+     organisation is written in this template: the copy, the price signal, the
+     honest verdict and the research behind them all live in
+     data/giving-shortlist.json, which records the document each claim came
+     from. Links are set through setAttribute, never parsed as markup. */
+  var giveHost = doc.getElementById("give-body");
+  (GIVE.tiers || []).forEach(function (tier) {
+    var orgs = (GIVE.orgs || []).filter(function (o) { return o.tier === tier.id; });
+    if (!orgs.length) return;
+    var sec = h("section", { class: "tier" },
+      h("div", { class: "tier__hd" },
+        h("h3", { class: "tier__t" }, String(tier.label || "")),
+        h("p", { class: "tier__d" }, String(tier.blurb || ""))));
+    var list = h("ul", { class: "orgs" + (orgs.length > 1 ? " orgs--multi" : "") });
+    orgs.forEach(function (o) {
+      var li = h("li", { class: "card org" });
+      li.append(h("span", { class: "org__area" }, String(o.area || "")));
+      li.append(h("h4", { class: "org__n" },
+        h("a", { href: String(o.url || "") }, String(o.name || "")),
+        o.sub ? h("small", {}, String(o.sub)) : null));
+      if (o.price) li.append(h("p", {}, h("span", { class: "org__price" }, String(o.price))));
+      li.append(h("p", { class: "org__does" }, String(o.does || "")));
+      if (o.price_note) li.append(h("p", { class: "org__pn" }, String(o.price_note)));
+      if (o.verdict) {
+        li.append(h("p", { class: "org__verdict" },
+          h("b", {}, "Carbon verdict"), String(o.verdict)));
+      }
+      if (o.update) {
+        li.append(h("p", { class: "org__update" },
+          h("b", {}, "Supporting research"), String(o.update)));
+      }
+      var links = h("ul", { class: "org__links" });
+      (o.evidence || []).forEach(function (e, i) {
+        links.append(h("li", {}, i === 0 ? h("b", {}, "Evidence ") : null,
+          h("a", { href: String(e.url || "") }, String(e.label || ""))));
+      });
+      if (o.news && o.news.url) {
+        links.append(h("li", {}, h("b", {}, "News "),
+          h("a", { href: String(o.news.url) }, String(o.news.label || "News")),
+          o.news.note ? " (" + String(o.news.note) + ")" : null));
+      }
+      li.append(links);
+      list.append(li);
+    });
+    sec.append(list);
+    giveHost.append(sec);
+  });
+
+  /* --- derivation: static prose, live constants ---------------------------- */
   var meth = doc.getElementById("meth"), F = DATA.formulas || {};
   [["Operational CO2e",
     "Estimated from deduplicated token counts by per-model factors in gCO2e per million tokens (Jegham et al. 2025, "
@@ -1470,7 +1629,7 @@ const DATA = {"generated_at":"2026-08-07T09:00:00Z","caveat":"No vendor publishe
 
   /* --- draw, and redraw at the measured width on resize -------------------- */
   var pending = 0;
-  function render() { drawSettle(); drawMonthly(); drawModel(); }
+  function render() { drawMeasure(); drawTrace(); drawModel(); }
   render();
   addEventListener("resize", function () {
     cancelAnimationFrame(pending);
