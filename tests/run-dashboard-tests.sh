@@ -604,6 +604,21 @@ fi
 # shape so a later content edit cannot quietly collapse it back into a bill or a
 # generic admin console.
 want "station header" 'class="bar"'
+# The mark is a potted ficus, not a chart. A bar-chart glyph in the masthead
+# competes with the real charts underneath it — a mark that looks like data
+# reads as data — and the project is named after the plant.
+want "the wordmark carries a ficus" 'class="brand__mark"'
+want "the mark is drawn as leaves, not strokes on a baseline" 'A potted ficus'
+if grep -q 'd="M4 4v16"' "$OUT"; then
+  echo "FAIL dashboard: the bar-chart wordmark is back — the mark is a ficus" >&2
+  fail=1
+else
+  echo "PASS dashboard: the bar-chart wordmark is gone"
+fi
+# It has to survive greyscale and forced colours, which it only does because the
+# pot is the single dark mass under two mint tones. Assert the tonal split.
+want "the mark uses both mint tones for depth" 'fill="var(--mint-soft)"'
+want "the pot is the mark's one dark mass" 'fill="var(--ink-head)"'
 want "streams block" 'id="h-streams"'
 want "one card per stream, keyed to its lane" 'stream stream--'
 want "carbon stream present" 'stream--carbon'
