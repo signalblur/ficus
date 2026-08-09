@@ -8,8 +8,12 @@ Everything runs on your machine. No network calls, no telemetry, no installer.
 
 ![The Ficus dashboard, showing lifetime carbon, electricity and water totals with a monthly trend chart](docs/dashboard.png)
 
-**[Live demo dashboard →](https://signalblur.github.io/ficus/)** (fabricated
-data: fake sessions, fake purchases, fake receipt)
+**[Documentation →](https://signalblur.github.io/ficus/)** — install, where the
+data comes from, how every figure is calculated, and the research behind each
+organisation it links to.
+
+**[Live demo dashboard →](https://signalblur.github.io/ficus/dashboard.html)**
+(fabricated data: fake sessions, fake purchases, fake receipt)
 
 ## Install
 

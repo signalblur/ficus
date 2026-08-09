@@ -382,12 +382,7 @@ cd ficus</code></pre>
         <caption>Physical constants used to derive electricity, water and embodied carbon.</caption>
         <thead><tr><th>Constant</th><th class="n">Value</th><th>Source</th></tr></thead>
         <tbody>
-          <tr><th scope="row">Grid carbon intensity · g/Wh</th><td class="n">0.287</td><td class="src">AWS location-based grid carbon intensity 0.287 kgCO2e/kWh = 0.287 g/Wh, Jegham et al. 2025 (arXiv:2505.09598) — the same constant the co2 factors embed, making the identity exact. Recorded 2026-08-06.</td></tr>
-          <tr><th scope="row">Power usage effectiveness (PUE)</th><td class="n">1.14</td><td class="src">AWS fleet PUE 1.14, Jegham et al. 2025 / upstream METHODOLOGY.md. Recorded 2026-08-06.</td></tr>
-          <tr><th scope="row">On-site water use · L/kWh</th><td class="n">0.18</td><td class="src">AWS on-site WUE 0.18 L/kWh (AWS 2023 sustainability figure, documented in upstream METHODOLOGY.md:42-47); applied to IT energy E/PUE. Recorded 2026-08-06.</td></tr>
-          <tr><th scope="row">Off-site water use · L/kWh</th><td class="n">5.11</td><td class="src">US off-site (generation) water intensity 5.11 L/kWh, WRI methodology via Li et al. Making AI Less Thirsty, documented in upstream METHODOLOGY.md:42-47; applied to facility energy. Recorded 2026-08-06.</td></tr>
-          <tr><th scope="row">Embodied carbon · gCO2e/kWh</th><td class="n">44.1</td><td class="src">Derived proxy: 8xH100 server embodied = 5700 kgCO2e (p5.48xlarge ex-GPU, BoaviztAPI) + 8 x 273 kgCO2e (H100 80GB, Lees-Perasso et al.) = 7884 kgCO2e over a 3-year life; lifetime energy at full TDP = (8 x 0.7 kW + 1.2 kW) x 26280 h = 178704 kWh; 7884000 / 178704 = 44.1 gCO2e/kWh. Allocation proxies through energy because the DB stores tokens, not GPU-seconds. Caveat: assumes 100% utilization at TDP; lower utilization raises per-kWh embodied. EcoLogits methodology (fetched 2026-08-06).</td></tr>
-          <tr><th scope="row">Cache-read factor</th><td class="n">0.08</td><td class="src">Energy of a cache_read token as a fraction of an uncached input token. Engineering estimate (~0.08, defensible range 0.05-0.15) derived from the decode-phase KV re-read residual. NOT Anthropic&apos;s 0.1x billing ratio (a price, not energy). See METHODOLOGY.md.</td></tr>
+<!--{{CONSTANTS}}-->
         </tbody>
       </table>
     </div>
@@ -407,8 +402,8 @@ cd ficus</code></pre>
       <p class="note">Deduplicated token counts multiplied by per-model factors in grams of CO2e per
         million tokens. A cache-read token is charged a fraction of a fresh input token, because it
         skips the prefill:</p>
-      <p class="formula">co2_g = ((input + cache_write) × f_in + cache_read × f_in × 0.08 + output × f_out) / 1e6</p>
-      <p class="note">Cache-read factor: <span class="n">0.08</span>. This is the only step
+      <p class="formula">{{F_CO2}}</p>
+      <p class="note">Cache-read factor: <span class="n">{{CACHE_READ}}</span>. This is the only step
         that is a model rather than an identity — everything below follows from it arithmetically.</p>
     </div>
 
@@ -417,8 +412,8 @@ cd ficus</code></pre>
       <p class="note">Not a second model. The published CO2e factors <em>are</em> facility energy
         multiplied by a grid carbon-intensity figure, so dividing by that same figure recovers the
         energy exactly:</p>
-      <p class="formula">energy_wh = co2_g / 0.287</p>
-      <p class="note">Grid carbon intensity: <span class="n">0.287</span> g/Wh. Because this is an
+      <p class="formula">{{F_ENERGY}}</p>
+      <p class="note">Grid carbon intensity: <span class="n">{{CIF}}</span> g/Wh. Because this is an
         exact identity rather than an independent measurement, <strong>electricity is deliberately
         never given a price</strong> on the dashboard — the kilowatt-hours and the carbon are one
         quantity in two units, and charging for both would bill the same externality twice.</p>
@@ -428,28 +423,28 @@ cd ficus</code></pre>
       <h3 style="margin-top:0">3 · Water, two terms kept PUE-consistent</h3>
       <p class="note">On-site cooling water applies to IT energy — facility energy divided by PUE —
         while off-site generation water applies to the full facility energy:</p>
-      <p class="formula">water_ml = energy_wh × (0.18/1.14 + 5.11)</p>
-      <p class="note">PUE <span class="n">1.14</span>, on-site WUE <span class="n">0.18</span> L/kWh,
-        off-site WUE <span class="n">5.11</span> L/kWh. The off-site figure is the largest single
+      <p class="formula">{{F_WATER}}</p>
+      <p class="note">PUE <span class="n">{{PUE}}</span>, on-site WUE <span class="n">{{WUE_ON}}</span> L/kWh,
+        off-site WUE <span class="n">{{WUE_OFF}}</span> L/kWh. The off-site figure is the largest single
         source of uncertainty in the whole chain and sits at the high end of published estimates.</p>
     </div>
 
     <div class="panel">
       <h3 style="margin-top:0">4 · Embodied carbon, reported apart</h3>
       <p class="note">The amortised share of manufacturing the hardware, at
-        <span class="n">44.1</span> gCO2e/kWh:</p>
-      <p class="formula">embodied_g = energy_wh × 44.1 / 1000</p>
+        <span class="n">{{EMB}}</span> gCO2e/kWh:</p>
+      <p class="formula">{{F_EMBODIED}}</p>
       <p class="note">It is <strong>never folded into the operational figure</strong> and never enters
         what you owe. It is a real cost with a different owner, so it gets its own line.</p>
     </div>
 
     <h3>What a dollar is being asked to buy</h3>
-    <p class="note">The balance is priced at <strong>$227 per tonne</strong>, the retail
+    <p class="note">The balance is priced at <strong>${{REMOVAL_RATE}} per tonne</strong>, the retail
       price of ex-post biochar removal certificates from the vendor this project actually links to.
       Three rules keep that figure honest:</p>
     <ul class="tight">
       <li><strong>Ex-post only.</strong> A dollar buys carbon already verifiably removed or destroyed, never a promise to remove it later.</li>
-      <li><strong>Only verified removal settles the balance.</strong> Prevention credits ($15/t) are real and worth buying, but they stop a future emission rather than reversing a past one, so they are reported below the line and never subtracted from the tonnes owed.</li>
+      <li><strong>Only verified removal settles the balance.</strong> Prevention credits (${{PREVENTION_RATE}}/t) are real and worth buying, but they stop a future emission rather than reversing a past one, so they are reported below the line and never subtracted from the tonnes owed.</li>
       <li><strong>No uncertainty multipliers.</strong> The price is what the vendor charges, with no risk factor bolted on — an upward-pointing error is still an error.</li>
     </ul>
     <p class="note">Water gets a <em>restoration match</em> rather than an offset: water is
@@ -468,136 +463,7 @@ cd ficus</code></pre>
       the research document each claim came from — including the two entries whose honest verdict is
       that they do not offset anything.</p>
     <div class="hr"></div>
-    <div class="tier">
-      <div class="tier__h"><h3>Settles the balance</h3></div>
-      <p class="tier__b">Verified removal. Carbon already taken out of the atmosphere and retired in your name, so a purchase moves the tonnes figure above.</p>
-      <article class="org">
-        <div class="org__h">
-          <h4>Remove Carbon Today</h4>
-          <span class="org__area">Air — removal · biochar CORCs</span>
-          <span class="chip">€198 / tonne · ≈ $227</span>
-        </div>
-        <p>Sells ex-post biochar carbon-removal certificates issued under the Puro Standard: the biochar is independently weighed and sampled, third-party audited, and the certificate is retired in your name on the public registry. Puro does not sell direct, so a reseller is the small-buyer route; the minimum here is 1 kg.</p>
-        <p class="note"><strong>On the price.</strong> First-party retail, fetched 2026-08-08: the vendor sells one tonne of ex-post biochar removal at EUR 198 with Puro registry retirement proof, priced as its average CORC acquisition cost plus a 10% operating margin. Converted at the ledger&apos;s own dated FX constant (ECB 0.8729 EUR/USD): 198 / 0.8729 = 226.83, stored as 227 in data/offset-constants.json and used for every cost-to-clear figure. This replaces the ≈$160 shown here previously, which was the Nasdaq CORCCHAR wholesale index — what institutions clear at, not a price a small buyer can transact, and below this supplier&apos;s own ask. FX-sensitive: it moves with both the CORC market and the euro.</p>
-        <p class="verdict">The only pathway on this page that settles the balance above — verified removal, already delivered rather than promised.</p>
-        <p class="update"><strong>Since the research was written.</strong> Live durability revision: a 2025 peer-reviewed paper (Petersen &amp; Sanei, GCB Bioenergy) found the H:Corg ratio biochar certification rests on can both under- and over-predict true stability, and field decay rates across six isotope-labelled experiments run from 0.8% to 7.0% a year. Puro responded by downgrading its top durability claim from a de facto millennial framing to a new CORC200+ class — several centuries, not millennia. Biochar still delivered 91% of all durable-removal volume in 2025.</p>
-        <ul class="org__links">
-          <li><a href="https://www.removecarbontoday.com/collections">Remove Carbon Today →</a></li>
-          <li><a href="https://puro.earth/insights/post/introducing-the-world-s-first-reference-price-indexes-for-engineered-carbon-removal/">Puro CORCCHAR reference price index</a></li>
-          <li><a href="https://www.removecarbontoday.com/pages/proof-of-removal">Retirement proof</a></li>
-          <li><a href="https://puro.earth/insights">Puro.earth insights</a> <span class="note">(the registry — the reseller publishes no newsroom)</span></li>
-        </ul>
-      </article>
-    </div>
-    <div class="tier">
-      <div class="tier__h"><h3>Prevents a future emission</h3></div>
-      <p class="tier__b">Verified avoidance. Real, third-party audited, and a different accounting category: it stops an emission that would otherwise happen rather than removing one that already did, so it never settles a removal debt.</p>
-      <article class="org">
-        <div class="org__h">
-          <h4>Tradewater</h4>
-          <span class="org__area">Air — prevention · refrigerant destruction</span>
-          <span class="chip">$15 / tonne, stated</span>
-        </div>
-        <p>Collects and destroys ozone-depleting refrigerants and plugs orphaned methane wells. Every container is third-party weighed, sampled and lab-analysed, destruction facilities are monitored to better than 99.99% completion, and the credits are certified under ACR or VCS. The research calls this the cleanest additionality story in the cheap tier.</p>
-        <p class="note"><strong>On the price.</strong> Not independently confirmed, and plausibly 3–5× off the market. The nearest public comparable — Recoolit, a rival refrigerant-destruction project — sells pilot credits around $75/t. Worth a direct quote before a large purchase.</p>
-        <p class="verdict">Avoidance, not removal. It stops a future emission; it does not take carbon back out, so it is recorded below the line and never settles the balance.</p>
-        <p class="update"><strong>Since the research was written.</strong> The accounting is tightening around this distinction. SBTi&apos;s Corporate Net-Zero Standard V2.0, finalised 11 June 2026, is explicit that reduction and avoidance credits are disallowed for net-zero neutralisation claims — only removal credits qualify — and becomes mandatory for new targets from January 2028.</p>
-        <ul class="org__links">
-          <li><a href="https://tradewater.co/buy-credits/">Tradewater →</a></li>
-          <li><a href="https://tradewater.co/wp-content/uploads/2024/12/11197310-RPT-1-VCS-Verification-Report_TW-Ghana-08-14-19.pdf">VCS verification report, TW Ghana ODS (GHD Ltd, 2019)</a></li>
-          <li><a href="https://www.givinggreen.earth/carbon-offsets-research/refrigerants">Giving Green refrigerants review</a></li>
-          <li><a href="https://tradewater.co/press">Tradewater press</a></li>
-        </ul>
-      </article>
-    </div>
-    <div class="tier">
-      <div class="tier__h"><h3>Fund from a conservation budget</h3></div>
-      <p class="tier__b">Land, river, wetland and reef work. The research is blunt that most of these cannot be honestly priced per tonne, and that two of them are probably net carbon sources. They are here because they are worth funding — not because they offset anything.</p>
-      <article class="org">
-        <div class="org__h">
-          <h4>Naturaland Trust</h4>
-          <span class="org__area">Land &amp; watershed · Blue Ridge escarpment</span>
-          <span class="chip">≈ $20–150 / tonne</span>
-        </div>
-        <p>Buys and protects escarpment land above Greenville — 1,090 acres at Saluda Bluffs for about $9M, and a 365-acre stretch of the Highway 11 corridor — inside the watershed that feeds Greenville Water&apos;s own reservoirs at Table Rock, North Saluda and Poinsett.</p>
-        <p class="note"><strong>On the price.</strong> Rough and self-constructed from public data, not a credit. Amortised-flux method: $8,250/acre ÷ (4.78 tCO2e/acre/yr × 40 years) ≈ $43/t, or ≈ $17/t over 100 years. Avoided-conversion stock method: $8,250 ÷ ~83 tCO2e/acre ≈ $100/t, and ≈ $165/t at the Highway 11 asking price. Both are defensible; they differ 5–8× purely by method, and that spread is the honest uncertainty band.</p>
-        <p class="verdict">The only non-market organisation here where a number can be built from public data with a paper trail. Additionality is plausible — this land carries genuine $8,000–20,000/acre development pricing — but Naturaland has published no baseline scenario and no leakage assessment, which is what a registry would require.</p>
-        <p class="update"><strong>Since the research was written.</strong> The water case is the stronger one. The structural analogue is New York City&apos;s Catskill/Delaware programme: about $2.5B spent since 1997 on land buyouts and watershed protection avoided an estimated $6–10B filtration plant plus $250–300M a year to run it. No equivalent engineering study exists for this watershed, so no dollars-per-litre figure can be built — but it is the only organisation on this page whose work protects a municipal drinking-water supply directly.</p>
-        <ul class="org__links">
-          <li><a href="https://naturalandtrust.org/donate-now">Naturaland Trust →</a></li>
-          <li><a href="https://greenvillejournal.com/outdoors-recreation/naturaland-trust-leads-conservation-of-1100-acres-between-table-rock-caesars-head-saluda-bluffs/">Greenville Journal — Saluda Bluffs, 1,090 acres</a></li>
-          <li><a href="https://www2.nau.edu/~gaud/bio326/class/ecosyst/USFScarb.htm">USFS Southeast carbon storage</a></li>
-          <li><a href="https://naturalandtrust.org/enewsletter">Newsletter &amp; archive</a> <span class="note">(no newsroom published)</span></li>
-        </ul>
-      </article>
-      <article class="org">
-        <div class="org__h">
-          <h4>American Rivers</h4>
-          <span class="org__area">Rivers · dam removal</span>
-          <span class="chip">No purchasable tonne</span>
-        </div>
-        <p>Dam removal and river restoration. Reservoir surfaces are a large methane source — an estimated 0.8 (0.5–1.2) Pg CO2-eq a year globally, about 1.3% of all human emissions — and a CARB-hosted March 2026 report estimates the four removed Klamath River dams eliminated roughly 275,000 tonnes CO2e a year.</p>
-        <p class="note"><strong>On the price.</strong> Illustrative arithmetic only: the Klamath project&apos;s $450M total budget ÷ 5.5 Mt cumulative over 20 years ≈ $82/t; ÷ 27.5 Mt over 100 years ≈ $16/t. The horizon choice alone swings it 5×, and no registry standardises it.</p>
-        <p class="verdict">The methane avoidance is real and reasonably well quantified for specific dams. A donation still cannot be converted into tonnes: American Rivers is one policy, legal and technical partner among many funders on Klamath, not the payee of the $450M, and it sells no credit. Dam removal also creates a short-term emissions pulse from erosional carbon loss and sediment methane.</p>
-        <p class="update"><strong>Since the research was written.</strong> A 2024 BioScience review of river restoration says it in its own title: river restoration can increase carbon storage but is not yet a suitable basis for carbon credits.</p>
-        <ul class="org__links">
-          <li><a href="https://www.americanrivers.org/donate">American Rivers →</a></li>
-          <li><a href="https://ww2.arb.ca.gov/sites/default/files/2026-04/Attachment-2-Estimate-of-California-Dam-and-Reservoir-Methane-Emissions-3-25-2026_v2.pdf">CARB-hosted Klamath methane estimate (2026)</a></li>
-          <li><a href="https://academic.oup.com/bioscience/article/66/11/949/2754271">Deemer et al. 2016, BioScience — reservoir greenhouse gases</a></li>
-          <li><a href="https://www.americanrivers.org/media-center/">Media center</a></li>
-        </ul>
-      </article>
-      <article class="org">
-        <div class="org__h">
-          <h4>Congaree Land Trust</h4>
-          <span class="org__area">Wetlands &amp; swamp · COWASEE basin</span>
-          <span class="chip">No defensible number</span>
-        </div>
-        <p>Holds conservation easements across 25,398 acres in the COWASEE basin around Congaree National Park — the largest old-growth bottomland hardwood forest in the eastern United States. The easements are overwhelmingly donated rather than bought, so a gift funds legal, stewardship and monitoring work rather than land purchase.</p>
-        <p class="note"><strong>On the price.</strong> There is no market transaction to divide the carbon stock by. The stock itself is exceptional: floodplain forested wetlands hold 176.6 ± 84 MgC/ha in the top metre — about 262 tCO2e/acre in soil alone — plus roughly 80–90 tCO2e/acre of old-growth aboveground biomass. That is several times the upland figure, but it is a stock, not a flux.</p>
-        <p class="verdict">One of the highest carbon stocks of any protected forest type in North America, genuinely protected, with nothing to price it against. &apos;No defensible dollars per tonne&apos; is the honest answer here, not a knock on the ecology.</p>
-        <p class="update"><strong>Since the research was written.</strong> Open evidence gap: no Congaree-specific methane flux measurement was found. The wetland literature splits by hydrology — permanently inundated freshwater wetlands run high methane, while seasonally inundated types like this one tend to sequester more than they emit — but that is a general finding, not a measurement of this basin.</p>
-        <ul class="org__links">
-          <li><a href="https://congareelt.org/donate">Congaree Land Trust →</a></li>
-          <li><a href="https://www.frontiersin.org/journals/forests-and-global-change/articles/10.3389/ffgc.2025.1528440/full">Sapkota et al. 2025, Frontiers — freshwater forested wetland soil carbon</a></li>
-          <li><a href="https://congareelt.org/news">CLT news</a></li>
-        </ul>
-      </article>
-      <article class="org">
-        <div class="org__h">
-          <h4>Billion Oyster Project</h4>
-          <span class="org__area">Coasts &amp; estuaries · New York Harbor</span>
-          <span class="chip">No defensible number</span>
-        </div>
-        <p>Builds self-sustaining oyster reefs in New York Harbor — about 150 million oysters across 17 acres as of December 2025, at roughly $250,000 an acre — with a public-schools programme attached to the restoration work.</p>
-        <p class="note"><strong>On the price.</strong> Filtration is the real benefit and it is genuine: an acre of reef, around 750,000 oysters, can filter 15–40 million gallons a day. But that is cleaning water rather than creating it, and it is saline estuarine water — no bearing on a datacentre&apos;s freshwater draw.</p>
-        <p class="verdict">Not a carbon investment, and probably a net source. Fodrie et al. 2017 find restored reefs can bury organic carbon at rates comparable to mangroves and marshes, but on exposed sandflats — much of this footprint — inorganic carbon burial vents more CO2 than the organic burial takes down, leaving them slight net sources at about 0.5 ± 0.3 MgC per hectare per year. The result holds across a 100–4,000 year sediment-core dataset, so it is not a transient artefact.</p>
-        <p class="update"><strong>Since the research was written.</strong> Nitrogen cuts both ways too: the reefs remove reactive nitrogen through denitrification, a real water-quality benefit, but preliminary reef-scale work found nitrous-oxide production high enough that the researchers explicitly called for reevaluating the climate benefit of oyster-reef restoration. No BOP-specific carbon accounting exists in any BOP publication.</p>
-        <ul class="org__links">
-          <li><a href="https://www.billionoysterproject.org/donate">Billion Oyster Project →</a></li>
-          <li><a href="https://pubmed.ncbi.nlm.nih.gov/28747477/">Fodrie et al. 2017, Proc. R. Soc. B — oyster reefs as carbon sources and sinks</a></li>
-          <li><a href="https://www.bayjournal.com/news/fisheries/pumped-up-performance-oysters-filtering-feat-overstated/article_bbe67d38-8f09-11ea-a5ab-5fd7465dee21.html">Bay Journal — filtration figures overstated in field conditions</a></li>
-          <li><a href="https://www.billionoysterproject.org/blog">BOP stories</a></li>
-        </ul>
-      </article>
-      <article class="org">
-        <div class="org__h">
-          <h4>Coral Restoration Foundation</h4>
-          <span class="org__area">Oceans · Florida Keys</span>
-          <span class="chip">No defensible number</span>
-        </div>
-        <p>Propagates and outplants staghorn coral in the Florida Keys. One empirical Florida study found that CRF-style high-density Acropora cervicornis outplanting restores positive net carbonate accretion on reefs that had gone net-erosional — that is reef structure rebuilt, not atmospheric carbon removed.</p>
-        <p class="note"><strong>On the price.</strong> Florida&apos;s reefs carry a documented $1.8B flood-protection value, and the tourism and biodiversity case is strong. None of that converts into tonnes.</p>
-        <p class="verdict">No carbon benefit, defensible or otherwise. Net calcification lowers seawater alkalinity faster than dissolved inorganic carbon, producing a net CO2 flux to the atmosphere, and a search specifically for a CRF carbon claim found none at all — not even a marketing-level one. Fund it for the reef, the coastline and the biodiversity.</p>
-        <p class="update"><strong>Since the research was written.</strong> The direction of travel is counterintuitive: a 2025 PNAS study projects that the decline of coral calcification under warming and acidification will modestly increase ocean carbon uptake — up to 0.48 GtCO2 a year, median, by midcentury. That is the opposite of what a restoration donor might hope, and it is another reason to fund this for the reef rather than the ledger.</p>
-        <ul class="org__links">
-          <li><a href="https://coralrestoration.org/donate">Coral Restoration Foundation →</a></li>
-          <li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC11555216/">Florida reef carbonate-budget restoration study (2024)</a></li>
-          <li><a href="https://www.pnas.org/doi/10.1073/pnas.2501562122">PNAS 2025 — coral calcification decline and ocean carbon uptake</a></li>
-          <li><a href="https://coralrestoration.org/blog/">CRF blog</a></li>
-        </ul>
-      </article>
-    </div>
+<!--{{ORGS}}-->
     <div class="panel">
       <p class="note" style="margin:0"><strong>Ficus takes no cut and has no affiliate relationship
         with any organisation on this page.</strong> The links are plain links. Nothing is bundled,
@@ -632,7 +498,7 @@ cd ficus</code></pre>
       with the estimation, offset ledger, statusline and dashboard rebuilt on cited constants.</p>
     <p>Every figure on the linked dashboard is an estimate carrying the ±50% band described above.
       Nothing here is financial, tax or legal advice.</p>
-    <p class="note">Page built 2026-08-09 from the repository's own data files.
+    <p class="note">Page built {{GENERATED}} from the repository's own data files.
       <a href="https://github.com/signalblur/ficus">Source</a> ·
       <a href="https://github.com/signalblur/ficus/blob/main/METHODOLOGY.md">Methodology</a> ·
       <a href="https://github.com/signalblur/ficus/blob/main/NOTICE.md">Third-party notices</a></p>

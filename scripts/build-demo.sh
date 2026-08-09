@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
-# build-demo.sh — rebuild docs/index.html, the GitHub Pages demo dashboard.
+# build-demo.sh — rebuild docs/dashboard.html, the GitHub Pages demo dashboard.
+#
+# It lives at dashboard.html rather than at the site root because the root is
+# now the landing page (scripts/build-docs.sh): someone arriving at the project
+# needs to read what the numbers mean before being handed a statement of them.
 #
 # Everything here is fabricated: made-up sessions, made-up projects, made-up
 # purchases, a generated one-page receipt. No real ledger is read and no real
@@ -19,7 +23,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
 
 DEMO_TS="2026-08-07T09:00:00Z"
-OUT="${REPO_DIR}/docs/index.html"
+OUT="${REPO_DIR}/docs/dashboard.html"
 
 TMPROOT="$(mktemp -d "${TMPDIR:-/tmp}/carbon-ledger-demo.XXXXXX")"
 TMPROOT="$(cd "$TMPROOT" && pwd -P)"

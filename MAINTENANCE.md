@@ -30,6 +30,32 @@ There is no update checker by design. On an upstream release:
 in place — keep both in sync when adding a model family (vector
 `family-precedence-fable-over-opus` locks the precedence).
 
+## Published pages
+
+Two files under `docs/`, both generated and neither hand-edited:
+
+| Page | Built by | What it is |
+| --- | --- | --- |
+| `docs/index.html` | `scripts/build-docs.sh` | The landing page: install, provenance, the maths, the giving research. Rendered from `templates/docs-index.html` plus `data/factors.json`, `data/offset-constants.json` and `data/giving-shortlist.json`. |
+| `docs/dashboard.html` | `scripts/build-demo.sh` | The example dashboard, from fabricated sessions. |
+| `docs/dashboard.png` | headless render of `docs/dashboard.html` | The README screenshot. |
+
+Rebuild both after any change to a constant, to the giving shortlist or to the
+dashboard templates, and `tests/run-docs-tests.sh` will fail if the published
+page and `data/` have drifted apart.
+
+## Cache invalidation (the $160/$227 lesson)
+
+`~/.claude/carbon-ledger/factors.env` is a CACHE of `data/factors.json` and
+`data/offset-constants.json`, because the statusline render path may not run
+`jq`. When the removal price changed, every path that read the JSON directly
+picked it up and the statusline did not — the two figures on screen disagreed by
+thirty percent, with nothing failing. `lib/factors-env.sh` now carries
+`refresh_factors_env_if_stale`, called from the Stop hook, which compares mtimes
+numerically (never `-nt`, which is false for equal timestamps at one-second
+granularity). **Any new consumer of a `data/` constant must either read the file
+directly or go through that cache — never keep a third copy.**
+
 ## Constants provenance
 
 Every numeric constant lives in a data file with a `_source` and date; scripts
