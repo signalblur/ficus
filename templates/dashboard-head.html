@@ -213,8 +213,13 @@
 :root {
   color-scheme: light;
 
-  /* paper — a white sheet on a near-white neutral plane. Neither is tinted. */
-  --plane:     #f1f3f2;
+  /* paper — a white sheet on a near-white neutral plane. Neither is tinted.
+     The plane is deliberately close to the sheet: the cards are separated by a
+     mint hairline and a faint shadow, so the field behind them only has to be
+     distinguishable, not grey. Lightening it from #f1f3f2 also RAISES the
+     working mint's contrast against it, 3.43:1 to 3.61:1, so the SC 1.4.11
+     obligation on the rules gets easier rather than harder. */
+  --plane:     #f7f9f8;
   --surface:   #ffffff;
 
   /* the ruling — see THE TWO MINTS */
@@ -662,6 +667,12 @@ a:hover { text-decoration-thickness: 2px; }
    mint is a data ink on this page, and a saturated vertical running the whole
    stack reads as a fourth series rather than as the frame. */
 .grid--m { stroke: var(--axis); stroke-opacity: 0.55; }
+/* The day ruler. Three tick heights — day, week, month — so the scale can be
+   counted rather than merely sensed. Held lighter than the month rule and much
+   lighter than any lane: this is the frame the data is read against, and a
+   ruler that competes with its own measurements is a worse ruler. */
+.tick { stroke: var(--axis); stroke-width: 1; stroke-opacity: 0.4; }
+.tick--w { stroke-opacity: 0.72; }
 .area { stroke: none; }
 .ln { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .ln--carbon { stroke: var(--viz-carbon); }

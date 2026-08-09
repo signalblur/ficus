@@ -734,8 +734,10 @@ fi
 # draws the meaning-bearing rules (the header rule, the section-head rules, the
 # settled span, callout bars), which SC 1.4.11 Non-text Contrast requires to
 # reach 3:1 against the adjacent colour. #0f9563 measures 3.82:1 on the #ffffff
-# sheet and 3.43:1 on the #f1f3f2 plane. Pin it, so a later palette pass cannot
-# lighten it back under the threshold unnoticed.
+# sheet and 3.61:1 on the #f7f9f8 plane. Pin it, so a later palette pass cannot
+# lighten it back under the threshold unnoticed. (The plane was #f1f3f2, where
+# the same mint measured 3.43:1 — lightening the field raised the ratio, so the
+# obligation on the rules got easier rather than harder.)
 want "meaning-bearing mint pinned at its measured value" '\--mint:      #0f9563'
 want "decorative mint kept separate from the working mint" '\--mint-soft: #9cd8c2'
 # One mode, and it is light. A record that changes colour with the reader's OS
