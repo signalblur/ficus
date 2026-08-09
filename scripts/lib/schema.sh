@@ -35,6 +35,25 @@ ensure_schema() {
   sqlite3 "$db" "ALTER TABLE sessions ADD COLUMN energy_wh REAL;" 2>/dev/null || true
   sqlite3 "$db" "ALTER TABLE sessions ADD COLUMN water_ml REAL;" 2>/dev/null || true
   sqlite3 "$db" "ALTER TABLE sessions ADD COLUMN embodied_gco2e REAL;" 2>/dev/null || true
+  # One row per (session, calendar day the session actually spent tokens on).
+  # A session that ran past midnight has two. Written by the Stop hook from the
+  # transcript's own per-message timestamps, so this is a grouping of measured
+  # usage and not an apportionment — see lib/day-split.sh for why it matters.
+  # Sessions recorded before this table existed simply have no rows here, and
+  # every reader falls back to charging them to the day they began.
+  sqlite3 "$db" "CREATE TABLE IF NOT EXISTS session_days (
+    session_id TEXT NOT NULL,
+    day TEXT NOT NULL,
+    input_tokens INTEGER DEFAULT 0,
+    output_tokens INTEGER DEFAULT 0,
+    cache_read_tokens INTEGER DEFAULT 0,
+    cache_creation_tokens INTEGER DEFAULT 0,
+    co2_grams REAL DEFAULT 0,
+    energy_wh REAL DEFAULT 0,
+    water_ml REAL DEFAULT 0,
+    embodied_gco2e REAL DEFAULT 0,
+    PRIMARY KEY (session_id, day)
+  ); CREATE INDEX IF NOT EXISTS idx_session_days_day ON session_days(day);" 2>/dev/null || true
   sqlite3 "$db" "CREATE TABLE IF NOT EXISTS offsets (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     purchase_date TEXT NOT NULL,

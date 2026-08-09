@@ -68,7 +68,53 @@ for f in "$EQUIV" "$FACTORS" "$OFFSET_CONSTANTS" "$GIVING"; do
   }
 done
 
+# Migrate before reading. The series now joins session_days, and a ledger that
+# has not run a hook since that table was introduced would not have it — which
+# on the first upgrade means the dashboard fails outright instead of rendering
+# the history it already holds. ensure_schema is idempotent and silent.
+# shellcheck source=lib/schema.sh
+source "${SCRIPT_DIR}/lib/schema.sh"
+ensure_schema "$DB_PATH"
+
 Q() { sqlite3 -json "$DB_PATH" "$1"; }
+
+# --- the per-day basis every time series is built on --------------------------
+# One row per (session, day it actually spent tokens on), preferring the measured
+# split in session_days and falling back to charging a session to the day it
+# began. Both are needed at once: the split only exists for sessions recorded
+# since the Stop hook started writing it, and history cannot be recovered from a
+# transcript that has been pruned.
+#
+# The fallback is the thing worth being loud about. On a real 1,470-session
+# ledger only 80 sessions crossed midnight, and those 80 carried 88.7% of the
+# carbon — long sessions are the heavy ones and the long ones are what run past
+# midnight — so for pre-split history a daily figure is "everything this session
+# emitted, filed under the day it started", not "what was emitted that day".
+#
+# A split session is COUNTED ONCE, on the FIRST day it actually spent tokens, so
+# the per-bucket session counts still sum to the real number of sessions while
+# the physics lands on the right days.
+#
+# That first day comes from the split itself and NOT from started_at, which is
+# the trap here: the Stop hook stamps started_at when it first sees a session, so
+# for a session whose transcript predates the hook run — a resumed or re-read one
+# — started_at is not any of the days the session actually worked. Keyed on
+# started_at, such a session matched no day at all and dropped out of the counts
+# entirely while its carbon stayed on the chart.
+DAY_ROWS_CTE="day_rows AS (
+    SELECT sd.day AS d, COALESCE(sd.co2_grams,0) AS c, COALESCE(sd.energy_wh,0) AS e,
+           COALESCE(sd.water_ml,0) AS w,
+           CASE WHEN sd.day = (SELECT MIN(m.day) FROM session_days m
+                               WHERE m.session_id = sd.session_id) THEN 1 ELSE 0 END AS n
+    FROM session_days sd JOIN sessions s ON s.session_id = sd.session_id
+    WHERE COALESCE(s.excluded,0)=0
+    UNION ALL
+    SELECT date(s.started_at), COALESCE(s.co2_grams,0), COALESCE(s.energy_wh,0),
+           COALESCE(s.water_ml,0), 1
+    FROM sessions s
+    WHERE COALESCE(s.excluded,0)=0 AND s.started_at != ''
+      AND NOT EXISTS (SELECT 1 FROM session_days x WHERE x.session_id = s.session_id)
+  )"
 or_empty() {
   local v
   v="$(cat)"
@@ -85,12 +131,11 @@ TOTALS="$(Q "SELECT COALESCE(SUM(co2_grams),0) AS co2_g,
 # the time-series panel draws one lane per metric off this single series, and a
 # lane that had to be back-computed in the browser would be a second physics
 # model living in the template.
-MONTHLY="$(Q "SELECT substr(started_at,1,7) AS month,
-    ROUND(SUM(co2_grams),1) AS co2_g, ROUND(COALESCE(SUM(energy_wh),0),1) AS energy_wh,
-    ROUND(COALESCE(SUM(water_ml),0),1) AS water_ml,
-    COUNT(*) AS sessions
-  FROM sessions WHERE COALESCE(excluded,0)=0 AND started_at != ''
-  GROUP BY month ORDER BY month;" | or_empty)"
+MONTHLY="$(Q "WITH ${DAY_ROWS_CTE}
+  SELECT substr(d,1,7) AS month,
+    ROUND(SUM(c),1) AS co2_g, ROUND(SUM(e),1) AS energy_wh,
+    ROUND(SUM(w),1) AS water_ml, SUM(n) AS sessions
+  FROM day_rows GROUP BY month ORDER BY month;" | or_empty)"
 
 # --- time buckets ------------------------------------------------------------
 # One pre-computed series per granularity, so the page can switch without a
@@ -101,31 +146,44 @@ MONTHLY="$(Q "SELECT substr(started_at,1,7) AS month,
 # never happened.
 #
 # HOURLY IS NOT OFFERED, and the reason is a property of the ledger rather than
-# a budget: sessions are stored one row per session with a single start
-# timestamp, so an hourly bucket would charge a five-hour session entirely to
-# the hour it began. That is a real distortion at hourly resolution and a
-# negligible one at daily and coarser.
+# a budget: the finest timestamp kept per session is its start, so an hourly
+# bucket would charge a five-hour session entirely to the hour it began.
+#
+# That reasoning used to end "and a negligible one at daily and coarser", which
+# was wrong and is now fixed rather than repeated. Measured on a real
+# 1,470-session ledger, 80 sessions crossed midnight — 5% — but they carried
+# 88.7% of the carbon, because the long sessions are the heavy ones and the long
+# ones are what run past midnight. Sessions are therefore split across days at
+# write time now (lib/day-split.sh), from the timestamp each message already
+# carries. Only history predating that split still lands on its start day.
 bucket_series() { # bucket_series START_MODIFIERS STEP LABEL_FORMAT
   Q "WITH RECURSIVE
-      bounds AS (SELECT date(MIN(started_at)${1}) AS lo, date(MAX(started_at)${1}) AS hi
-                 FROM sessions WHERE COALESCE(excluded,0)=0 AND started_at != ''),
-      span(d) AS (SELECT lo FROM bounds
-                  UNION ALL SELECT date(d, '${2}') FROM span, bounds WHERE date(d, '${2}') <= hi),
-      agg AS (SELECT date(started_at${1}) AS b,
-                ROUND(SUM(co2_grams),1) AS c,
-                ROUND(COALESCE(SUM(energy_wh),0),1) AS e,
-                ROUND(COALESCE(SUM(water_ml),0),1) AS w,
-                COUNT(*) AS n
-              FROM sessions WHERE COALESCE(excluded,0)=0 AND started_at != '' GROUP BY b)
-    SELECT strftime('${3}', span.d) AS b,
+      ${DAY_ROWS_CTE},
+      bounds AS (SELECT date(MIN(d)${1}) AS lo, date(MAX(d)${1}) AS hi FROM day_rows),
+      span(x) AS (SELECT lo FROM bounds
+                  UNION ALL SELECT date(x, '${2}') FROM span, bounds WHERE date(x, '${2}') <= hi),
+      agg AS (SELECT date(d${1}) AS b,
+                ROUND(SUM(c),1) AS c, ROUND(SUM(e),1) AS e, ROUND(SUM(w),1) AS w, SUM(n) AS n
+              FROM day_rows GROUP BY b)
+    SELECT strftime('${3}', span.x) AS b,
            COALESCE(agg.c,0) AS co2_g, COALESCE(agg.e,0) AS energy_wh,
            COALESCE(agg.w,0) AS water_ml, COALESCE(agg.n,0) AS sessions
-    FROM span LEFT JOIN agg ON agg.b = span.d ORDER BY span.d;" | or_empty
+    FROM span LEFT JOIN agg ON agg.b = span.x ORDER BY span.x;" | or_empty
 }
 S_DAY="$(bucket_series ", 'start of day'" "+1 day" "%Y-%m-%d")"
 S_WEEK="$(bucket_series ", 'weekday 0', '-6 days'" "+7 days" "%Y-%m-%d")"
 S_MONTH="$(bucket_series ", 'start of month'" "+1 month" "%Y-%m")"
 S_YEAR="$(bucket_series ", 'start of year'" "+1 year" "%Y")"
+
+# How much of the ledger carries a measured per-day split, so the page can say
+# what a daily figure means for THIS ledger instead of asserting a general claim
+# about day accuracy that is only true of recent sessions.
+DAY_BASIS="$(Q "SELECT
+    (SELECT COUNT(*) FROM sessions WHERE COALESCE(excluded,0)=0 AND started_at != '') AS total,
+    (SELECT COUNT(DISTINCT session_id) FROM session_days) AS split,
+    (SELECT COUNT(*) FROM sessions s WHERE COALESCE(s.excluded,0)=0 AND s.ended_at != ''
+       AND date(s.started_at) != date(s.ended_at)
+       AND NOT EXISTS (SELECT 1 FROM session_days x WHERE x.session_id = s.session_id)) AS unsplit_crossing;" | or_empty)"
 
 BY_MODEL="$(Q "SELECT fam AS family, ROUND(SUM(co2_grams),1) AS co2_g,
     ROUND(COALESCE(SUM(energy_wh),0),1) AS energy_wh, COUNT(*) AS sessions
@@ -203,7 +261,7 @@ DATA="$(jq -cn --arg ts "$TS" \
   --argjson totals "$TOTALS" --argjson monthly "$MONTHLY" \
   --argjson by_model "$BY_MODEL" --argjson offset_state "$OFFSET_STATE" \
   --argjson offsets "$OFFSETS" --argjson donations "$DONATIONS" \
-  --argjson contrib "$CONTRIB" \
+  --argjson contrib "$CONTRIB" --argjson day_basis "$DAY_BASIS" \
   --argjson s_day "$S_DAY" --argjson s_week "$S_WEEK" \
   --argjson s_month "$S_MONTH" --argjson s_year "$S_YEAR" \
   --slurpfile equiv "$EQUIV" --slurpfile factors "$FACTORS" \
@@ -245,6 +303,11 @@ DATA="$(jq -cn --arg ts "$TS" \
     # than 3 buckets is not a series (a single yearly point is a dot, not a
     # trend), and more than 400 is a hairline comb nobody can read. The page
     # states the reason for anything it withholds rather than hiding the option.
+    # What a DAY on this page actually means, per session, for this ledger.
+    # unsplit_crossing is the honest number: sessions with no measured split that
+    # are known to have run past midnight, and are therefore filed whole under
+    # the day they began.
+    day_basis: (($day_basis[0] // {total:0, split:0, unsplit_crossing:0})),
     series: ({day: $s_day, week: $s_week, month: $s_month, year: $s_year}
       | with_entries(.value |= {rows: ., n: (. | length)})
       | with_entries(.value += {ok: (.value.n >= 3 and .value.n <= 400)})),

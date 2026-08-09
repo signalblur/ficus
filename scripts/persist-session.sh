@@ -28,6 +28,8 @@ source "${SCRIPT_DIR}/lib/model-family.sh" 2>/dev/null || exit 0
 source "${SCRIPT_DIR}/lib/segment-cache.sh" 2>/dev/null || exit 0
 # shellcheck source=lib/factors-env.sh
 source "${SCRIPT_DIR}/lib/factors-env.sh" 2>/dev/null || exit 0
+# shellcheck source=lib/day-split.sh
+source "${SCRIPT_DIR}/lib/day-split.sh" 2>/dev/null || exit 0
 
 # Migrate schema if needed (idempotent; no-ops once the columns exist)
 ensure_schema "$DB_PATH"
@@ -185,6 +187,35 @@ compute_co2() {
   echo "$total_input $cw $cr $out $co2 $cost"
 }
 
+# --- per-day attribution ------------------------------------------------------
+# Accumulates "day<TAB>in<TAB>cc<TAB>cr<TAB>out<TAB>co2" as each transcript is
+# read, using THAT FILE'S factors — the same ones compute_co2 just used for it —
+# so the per-day rows sum to exactly the session total rather than to a second,
+# subtly different estimate of it. Subagent files carry their own model, which is
+# why the factors are resolved per file here as they are there.
+DAY_ROWS=""
+collect_day_rows() { # collect_day_rows FILE MODEL
+  local file="$1" model="$2" family fin fout day din dcc dcr dout co2
+  is_excluded_model "$model" && return 0
+  family="$(resolve_family "$model")"
+  case "$family" in
+  fable) fin="$FACTOR_FABLE_IN" fout="$FACTOR_FABLE_OUT" ;;
+  opus) fin="$FACTOR_OPUS_IN" fout="$FACTOR_OPUS_OUT" ;;
+  haiku) fin="$FACTOR_HAIKU_IN" fout="$FACTOR_HAIKU_OUT" ;;
+  *) fin="$FACTOR_SONNET_IN" fout="$FACTOR_SONNET_OUT" ;;
+  esac
+  while IFS="$(printf '\t')" read -r day din dcc dcr dout; do
+    case "$day" in
+    [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]) ;;
+    *) continue ;;
+    esac
+    co2="$(echo "$din $dcc $dcr $dout $fin $fout $CACHE_READ_FACTOR" | LC_ALL=C awk \
+      '{printf "%.6f", (($1 + $2) * $5 + $3 * ($5 * $7) + $4 * $6) / 1000000}')"
+    DAY_ROWS="${DAY_ROWS}${day}	${din}	${dcc}	${dcr}	${dout}	${co2}
+"
+  done < <(day_split_jsonl "$file")
+}
+
 # Find the JSONL file: use transcript_path from hook, fallback to search by session_id
 JSONL_FILE=""
 if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
@@ -209,6 +240,7 @@ read -r INPUT_TOKENS CACHE_CREATION CACHE_READ OUTPUT_TOKENS CO2_G COST_USD <<< 
 
 # Extract model from JSONL (not available in Stop hook JSON)
 MODEL_RAW="$(echo "$MAIN_AGG" | jq -r '.models | if length == 0 then "claude-sonnet" else group_by(.) | sort_by(-length) | first | first end' 2>/dev/null)" || MODEL_RAW="claude-sonnet"
+collect_day_rows "$JSONL_FILE" "$MODEL_RAW"
 
 # Parse subagent JSONLs (each with its own model/factor)
 SUBAGENT_DIR="$(dirname "$JSONL_FILE")/${SESSION_ID}/subagents"
@@ -218,6 +250,7 @@ if [ -d "$SUBAGENT_DIR" ]; then
     SUB_AGG="$(aggregate_jsonl "$SUB_FILE")" || continue
 
     read -r SUB_IN SUB_CW SUB_CR SUB_OUT SUB_CO2 SUB_COST <<< "$(compute_co2 "$SUB_AGG")"
+    collect_day_rows "$SUB_FILE" "$(echo "$SUB_AGG" | jq -r '.models | if length == 0 then "claude-sonnet" else group_by(.) | sort_by(-length) | first | first end' 2>/dev/null)"
     INPUT_TOKENS="$(echo "$INPUT_TOKENS $SUB_IN" | LC_ALL=C awk '{printf "%d", $1 + $2}')"
     CACHE_CREATION="$(echo "$CACHE_CREATION $SUB_CW" | LC_ALL=C awk '{printf "%d", $1 + $2}')"
     CACHE_READ="$(echo "$CACHE_READ $SUB_CR" | LC_ALL=C awk '{printf "%d", $1 + $2}')"
@@ -250,6 +283,28 @@ NOW="${NOW//\'/\'\'}"
 
 # INSERT OR REPLACE into sessions (source='live', cost = theoretical API list price)
 sqlite3 "$DB_PATH" "INSERT OR REPLACE INTO sessions (session_id, project, model, input_tokens, output_tokens, cache_read_tokens, cache_creation_tokens, cost_usd, co2_grams, started_at, ended_at, source, methodology_version, excluded, energy_wh, water_ml, embodied_gco2e) VALUES ('${SESSION_ID}', '${PROJECT}', '${MODEL_RAW}', ${INPUT_TOKENS}, ${OUTPUT_TOKENS}, ${CACHE_READ}, ${CACHE_CREATION}, ${COST_USD}, ${CO2_G}, COALESCE((SELECT started_at FROM sessions WHERE session_id='${SESSION_ID}'), '${NOW}'), '${NOW}', 'live', ${METHODOLOGY_VERSION}, ${EXCLUDED}, ${ENERGY_WH}, ${WATER_ML}, ${EMBODIED_G});" 2>/dev/null || true
+
+# --- write the per-day rows ---------------------------------------------------
+# Rebuilt wholesale for this session rather than merged: a resumed session gains
+# days, and an UPSERT per day would leave yesterday's row behind after a
+# transcript is re-read. The derived columns come off co2 by the same CIF
+# identity the session row uses, so a day and a session are the same physics.
+# Wrapped so a failure here can never cost the session row that was just written.
+if [ -n "$DAY_ROWS" ]; then
+  {
+    echo "BEGIN;"
+    echo "DELETE FROM session_days WHERE session_id='${SESSION_ID}';"
+    printf '%s' "$DAY_ROWS" | while IFS="$(printf '\t')" read -r D IN CC CR OUT CO2; do
+      [ -n "$D" ] || continue
+      printf "INSERT INTO session_days (session_id, day, input_tokens, output_tokens, cache_read_tokens, cache_creation_tokens, co2_grams, energy_wh, water_ml, embodied_gco2e) VALUES ('%s','%s',%s,%s,%s,%s,%s,%s,%s,%s) ON CONFLICT(session_id, day) DO UPDATE SET input_tokens=input_tokens+excluded.input_tokens, output_tokens=output_tokens+excluded.output_tokens, cache_read_tokens=cache_read_tokens+excluded.cache_read_tokens, cache_creation_tokens=cache_creation_tokens+excluded.cache_creation_tokens, co2_grams=co2_grams+excluded.co2_grams, energy_wh=energy_wh+excluded.energy_wh, water_ml=water_ml+excluded.water_ml, embodied_gco2e=embodied_gco2e+excluded.embodied_gco2e;\n" \
+        "$SESSION_ID" "$D" "$IN" "$OUT" "$CR" "$CC" "$CO2" \
+        "$(echo "$CO2 $CIF_G_WH" | LC_ALL=C awk '{printf "%.6f", $1 / $2}')" \
+        "$(echo "$CO2 $CIF_G_WH $WUE_ON $PUE $WUE_OFF" | LC_ALL=C awk '{printf "%.6f", ($1 / $2) * ($3 / $4 + $5)}')" \
+        "$(echo "$CO2 $CIF_G_WH $EMB_G_KWH" | LC_ALL=C awk '{printf "%.6f", ($1 / $2) * $3 / 1000}')"
+    done
+    echo "COMMIT;"
+  } | sqlite3 "$DB_PATH" 2>/dev/null || true
+fi
 
 # Refresh the statusline balance cache (atomic; never fails this hook)
 refresh_segment_cache "$DB_PATH"
