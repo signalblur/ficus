@@ -48,7 +48,41 @@
   var GRANS = [["day", "Daily"], ["week", "Weekly"], ["month", "Monthly"], ["year", "Yearly"]];
   var granOK = GRANS.filter(function (g) { return (SERIES[g[0]] || {}).ok; });
   var curG = (SERIES.month || {}).ok ? "month" : (granOK.length ? granOK[granOK.length - 1][0] : "");
-  function chartRows() { return ((SERIES[curG] || {}).rows) || []; }
+  /* THE MONTH VIEW IS DRAWN AT DAILY RESOLUTION. A month total is the figure
+     people ask for, and it hides everything that produced it: one fourteen-hour
+     Tuesday and a quiet fortnight land in the same bin at the same height. So
+     the month view plots one point per DAY and marks each month START with a
+     rule and a label — the months are the structure, the days are the data. The
+     lane therefore scales to the biggest single DAY, and the figures table under
+     the chart still totals the months, so the monthly reading is not lost.
+
+     This is a RESOLUTION SWAP, not a second scale. Drawing daily points against
+     monthly totals in one lane would need two y-axes for one measure, and a
+     dual scale is the one thing this page refuses everywhere.
+
+     Past DAY_DETAIL_MAX days a day is narrower than the hairline drawn for it,
+     so the view falls back to month totals — with the reason printed on the
+     page rather than the detail quietly disappearing. */
+  var DAY_DETAIL_MAX = 1100;
+  function dayRows() { return ((SERIES.day || {}).rows) || []; }
+  function monthDetail() {
+    var d = dayRows().length;
+    return curG === "month" && d >= 3 && d <= DAY_DETAIL_MAX;
+  }
+  /* What the TRACE plots. */
+  function chartRows() { return monthDetail() ? dayRows() : bucketRows(); }
+  /* What the FIGURES TABLE lists: always the selected bucket, so "Monthly"
+     still hands over month totals however finely the trace is drawn. */
+  function bucketRows() { return ((SERIES[curG] || {}).rows) || []; }
+  /* Where each month opens inside a daily series: its index, and its key. */
+  function monthStarts(rows) {
+    var out = [], prev = "", i, k;
+    for (i = 0; i < rows.length; i++) {
+      k = String(rows[i].b).slice(0, 7);
+      if (k !== prev) { out.push({ i: i, key: k }); prev = k; }
+    }
+    return out;
+  }
   function granLabel(g) {
     for (var i = 0; i < GRANS.length; i++) if (GRANS[i][0] === g) return GRANS[i][1];
     return g;
@@ -378,30 +412,46 @@
     var plotW = Math.max(W - GUT - RPAD, 60);
     var rows = chartRows();
     var n = rows.length;
+    var detail = monthDetail();
+    var starts = detail ? monthStarts(rows) : [];
     var desc = [];
     var xAt = function (i) { return GUT + (n === 1 ? plotW / 2 : (i * plotW) / (n - 1)); };
+    var step = n > 1 ? plotW / (n - 1) : plotW;
 
-    /* One vertical hairline per month, drawn FIRST so every curve, fill and dot
-       sits over it. It runs the full height of the stack and down to the date
-       label, so a single line ties that month's carbon, electricity and water
-       readings to each other and to the date — which is also the shared axis
-       made visible, since the three lanes are the same measurement in three
-       units. Skipped once the months are packed tighter than 12px, where a line
-       per month stops helping and starts hatching the plot. */
+    /* The verticals, drawn FIRST so every curve, fill and dot sits over them.
+       Each runs the full height of the stack and down to the label, so one line
+       ties that period's carbon, electricity and water readings to each other
+       and to its date — the shared axis made visible, since the three lanes are
+       the same measurement in three units.
+
+       In the month view there is exactly ONE PER MONTH START, over a trace of
+       days. Everywhere else there is one per bucket, skipped once the buckets
+       pack tighter than 12px, where a line per bucket stops helping and starts
+       hatching the plot. */
     var vTop = LANE_TOP;
     var vBot = STREAMS.length * LANE_H + 4;
-    if (n && (n === 1 || plotW / (n - 1) >= 12)) {
-      rows.forEach(function (r, i) {
-        var vx = r2(xAt(i)) + 0.5;
-        cTrace.g.append(s("line", { class: "grid grid--v", x1: vx, y1: vTop, x2: vx, y2: vBot }));
-      });
+    function vline(i, cls) {
+      var vx = r2(xAt(i)) + 0.5;
+      cTrace.g.append(s("line", { class: cls, x1: vx, y1: vTop, x2: vx, y2: vBot }));
+    }
+    if (detail) {
+      if (starts.length === 1 || plotW / Math.max(starts.length - 1, 1) >= 12) {
+        starts.forEach(function (mo) { vline(mo.i, "grid grid--v grid--m"); });
+      }
+    } else if (n && (n === 1 || step >= 12)) {
+      rows.forEach(function (r, i) { vline(i, "grid grid--v"); });
     }
 
     STREAMS.forEach(function (m, li) {
       var top = li * LANE_H, plotTop = top + LANE_TOP, baseY = plotTop + PLOT_H;
       var vals = rows.map(function (r) { return (Number(r[m.key]) || 0) / m.div; });
       var max = Math.max.apply(null, vals.concat([0])) || 1;
+      /* An all-zero lane has no peak to find: max falls back to 1, which is not
+         in vals, and indexOf hands back -1. Left alone that indexes past the
+         end of the points array and takes the whole chart down, so the empty
+         lane points at its first period instead. */
       var peak = vals.indexOf(max);
+      if (peak < 0) peak = 0;
 
       /* A faint field, not a cage: three hairlines, no verticals, no box. */
       [0, 0.5, 1].forEach(function (f) {
@@ -424,8 +474,13 @@
       }
       if (line) cTrace.g.append(s("path", { class: "ln ln--" + m.id, d: line }));
 
-      /* The dots are the data; the curve between them is interpolation. */
+      /* The dots are the data; the curve between them is interpolation. Below
+         9px of spacing they fuse into a ribbon and stop distinguishing anything,
+         so at daily resolution only the PEAK keeps its dot — the one point a
+         reader wants to put a date to — and the curve carries the rest. */
+      var showDots = step >= 9;
       pts.forEach(function (p, i) {
+        if (!showDots && i !== peak) return;
         var c = s("circle", { class: "dot dot--" + m.id, cx: r2(p.x), cy: r2(p.y), r: "3" });
         c.append(s("title", {}, rows[i].b + " · " + m.name + " "
           + num(vals[i], m.dp) + " " + m.laneUnit));
@@ -438,21 +493,76 @@
       }
       cTrace.g.append(s("line", { class: "base", x1: GUT - 0.5, y1: baseY + 0.5,
         x2: GUT + plotW, y2: baseY + 0.5 }));
-      desc.push(m.name + " in " + m.laneUnit + ": " + rows.map(function (r, i) {
-        return r.b + " " + num(vals[i], m.dp); }).join(", "));
+      desc.push(laneDesc(m, rows, vals, detail, peak, max));
     });
 
     /* One time axis under the stack, shared by all three lanes. */
     var axY = STREAMS.length * LANE_H + 16;
-    var step = n > 1 ? plotW / (n - 1) : plotW;
-    rows.forEach(function (r, i) {
-      var label = step >= 58 ? fmtBucket(r.b, true) : step >= 26 ? fmtBucket(r.b, false) : "";
-      if (!label && i !== 0 && i !== n - 1) return;
-      if (!label) label = fmtBucket(r.b, false);
-      cTrace.g.append(s("text", { class: "ax", x: r2(xAt(i)), y: axY,
-        "text-anchor": i === 0 ? "start" : i === n - 1 ? "end" : "middle" }, label));
-    });
+    if (detail) {
+      /* Month labels. Each is anchored just right of the RULE that opens its
+         month, because a boundary mark reads as "August starts here" and not as
+         a value centred over a bin.
+
+         THE YEAR RIDES THE AXIS ONLY WHERE IT CHANGES. Repeating 2026- on every
+         tick spends the width that separates the months on the part that never
+         varies, and choosing one form for the whole axis by its narrowest span
+         drops the year entirely the moment a partial month lands at either end
+         — which is most of the time, since the last month is nearly always
+         still running. Stamping it at the first label and at each January says
+         more in less room and stays correct across a span of several years.
+
+         Where even the bare month cannot fit, months are labelled every kth
+         rather than overlapping. Every rule is still drawn, so the structure
+         survives the thinning even when the words do not. */
+      var spans = starts.map(function (mo, k) {
+        return (k + 1 < starts.length ? xAt(starts[k + 1].i) : GUT + plotW) - xAt(mo.i);
+      });
+      var narrowest = Math.min.apply(null, spans);
+      var everyK = narrowest >= 20 ? 1 : Math.ceil(22 / Math.max(narrowest, 1));
+      starts.forEach(function (mo, k) {
+        if (k % everyK !== 0) return;
+        var newYear = k === 0 || mo.key.slice(0, 4) !== starts[k - 1].key.slice(0, 4);
+        cTrace.g.append(s("text", { class: "ax", x: r2(xAt(mo.i) + 4), y: axY,
+          "text-anchor": "start" }, newYear && spans[k] >= 52 ? mo.key : mo.key.slice(5)));
+      });
+    } else {
+      rows.forEach(function (r, i) {
+        var label = step >= 58 ? fmtBucket(r.b, true) : step >= 26 ? fmtBucket(r.b, false) : "";
+        if (!label && i !== 0 && i !== n - 1) return;
+        if (!label) label = fmtBucket(r.b, false);
+        cTrace.g.append(s("text", { class: "ax", x: r2(xAt(i)), y: axY,
+          "text-anchor": i === 0 ? "start" : i === n - 1 ? "end" : "middle" }, label));
+      });
+    }
     cTrace.desc.textContent = desc.join(". ") + ".";
+  }
+
+  /* What the chart says out loud. A hundred and fifty daily numbers read in
+     sequence is not a description, it is the table recited badly — so past 40
+     points this summarises and points at the figures table, which carries every
+     row. In the month view the summary is the MONTH totals, because that is the
+     reading the view is organised around, plus the single busiest day. */
+  function laneDesc(m, rows, vals, detail, peak, max) {
+    var head = m.name + " in " + m.laneUnit + ": ";
+    if (rows.length <= 40) {
+      return head + rows.map(function (r, i) { return r.b + " " + num(vals[i], m.dp); }).join(", ");
+    }
+    var parts = [], mt = ((SERIES.month || {}).rows) || [];
+    if (detail) {
+      parts.push("one point per day from " + rows[0].b + " to " + rows[rows.length - 1].b);
+      if (mt.length) {
+        parts.push("month totals " + mt.map(function (r) {
+          return r.b + " " + num((Number(r[m.key]) || 0) / m.div, m.dp); }).join(", "));
+      }
+      parts.push("busiest day " + rows[peak].b + " at " + num(max, m.dp));
+    } else {
+      parts.push(rows.length + " periods from " + rows[0].b + " to " + rows[rows.length - 1].b);
+      parts.push("highest " + rows[peak].b + " at " + num(max, m.dp));
+      parts.push("most recent " + rows[rows.length - 1].b
+        + " at " + num(vals[vals.length - 1], m.dp));
+    }
+    parts.push("every figure is in the table below");
+    return head + parts.join("; ");
   }
 
   /* --- the measure ---------------------------------------------------------
@@ -623,12 +733,13 @@
     var host = doc.getElementById("trace-table");
     if (!host) return;
     host.textContent = "";
-    var rows = chartRows();
+    var rows = bucketRows();
     if (!rows.length) return;
     var per = granLabel(curG).toLowerCase().replace(/ly$/, "");
     host.append(h("details", {}, h("summary", {}, "Show the " + granLabel(curG).toLowerCase() + " figures"),
       table("Operational CO2e, energy, water and session count per " + per + ". "
-        + "A period with no sessions is a zero, not a gap.",
+        + "A period with no sessions is a zero, not a gap."
+        + (monthDetail() ? " The trace above resolves the same span to single days." : ""),
         [["Period"], [h("span", { class: "cs" }, "kg CO2e"), 1], ["kWh", 1], ["L", 1], ["Sessions", 1]],
         rows.map(function (r) {
           return h("tr", {}, h("th", { scope: "row" }, String(r.b)),
@@ -644,10 +755,25 @@
      button, the arrow keys move and check, and Space checks the focused button
      — all of which the platform gives for free here, with no ARIA to maintain
      and no roving tabindex to get wrong. */
+  /* The caption states which bucketing is in force, so a printed copy records
+     what was captured — including, in the month view, that the trace is drawn
+     at a finer resolution than the bucket the reader chose. */
+  function bucketNote() {
+    var d = dayRows().length;
+    return "Bucketed by " + granLabel(curG).toLowerCase().replace(/ly$/, "") + "."
+      + (monthDetail()
+        ? " The trace draws one point per day and rules every month start, so the days"
+          + " inside each month stay visible; the figures below total the months."
+        : "")
+      + (curG === "month" && !monthDetail() && d > DAY_DETAIL_MAX
+        ? " Daily detail inside each month is withheld past " + DAY_DETAIL_MAX
+          + " days on record, where one day is thinner than the line drawn for it."
+        : "");
+  }
   (function buildGran() {
     var host = doc.getElementById("gran-host");
     if (!host || granOK.length < 2) {
-      if (host && curG) host.append(h("p", { class: "gran__now" }, "Bucketed by " + granLabel(curG).toLowerCase().replace(/ly$/, "") + "."));
+      if (host && curG) host.append(h("p", { class: "gran__now" }, bucketNote()));
       return;
     }
     var fs = h("fieldset", { class: "gran" }, h("legend", { class: "gran__l" }, "Group by"));
@@ -668,7 +794,7 @@
     var now = h("p", { class: "gran__now" });
     host.append(now);
     function setNow() {
-      now.textContent = "Bucketed by " + granLabel(curG).toLowerCase().replace(/ly$/, "") + "."
+      now.textContent = bucketNote()
         + (SERIES.year && !SERIES.year.ok
           ? " Yearly needs at least three years on record."
           : "")

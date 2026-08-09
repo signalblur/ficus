@@ -655,6 +655,13 @@ a:hover { text-decoration-thickness: 2px; }
    hairlines and would read heavier at the same weight. Held back so the field
    stays subordinate to the data ink. */
 .grid--v { stroke-opacity: 0.7; }
+/* A month boundary inside a daily trace. It carries more ink than a bucket
+   hairline because it is STRUCTURE rather than a reading: in that view it is
+   the only vertical on the plot, and it is what turns a run of 150 days back
+   into months a reader can name. Deliberately NEUTRAL and not the brand mint —
+   mint is a data ink on this page, and a saturated vertical running the whole
+   stack reads as a fourth series rather than as the frame. */
+.grid--m { stroke: var(--axis); stroke-opacity: 0.55; }
 .area { stroke: none; }
 .ln { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .ln--carbon { stroke: var(--viz-carbon); }
@@ -1213,9 +1220,10 @@ td a { color: var(--accent); }
     <!-- 2. THE TRACE ---------------------------------------------------------->
     <section class="block" id="trace" aria-labelledby="h-trace">
       <div class="block__hd">
-        <span class="block__eyebrow">By month</span>
+        <span class="block__eyebrow">Day by day</span>
         <h2 class="block__t" id="h-trace">Usage over time</h2>
-        <p class="block__sub">The three streams on one shared time axis, so a period reads across all three at once.</p>
+        <p class="block__sub">The three streams on one shared time axis, so a period reads across all three at once.
+          Grouped by month, the trace still draws every single day and rules where each month begins.</p>
       </div>
       <div class="card"><div class="card__b">
         <div id="gran-host"></div>

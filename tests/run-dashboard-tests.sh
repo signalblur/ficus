@@ -118,22 +118,34 @@ grep -q '@font-face' "$OUT" && {
 # stray semicolon inside an object literal. Extract the script and parse it.
 # Containerised, and skipped rather than failed where no container runtime is
 # available, so this file still runs anywhere.
+#
+# A FAILED RUN IS NOT A FAILED PARSE. `container` on PATH says nothing about
+# whether its service is up: with the daemon stopped the run exits non-zero
+# having never reached node, and reporting that as a syntax error sends someone
+# hunting a bug in the renderer that is not there. So the verdict is taken from
+# what node actually said — a SyntaxError is a failure, anything else is a skip
+# with its reason printed.
 if command -v container >/dev/null 2>&1; then
   SCRIPT_JS="${TMPROOT}/embedded.js"
   awk '/^<script>$/{flag=1;next} /^<\/script>$/{flag=0} flag' "$OUT" >"$SCRIPT_JS"
   if [ ! -s "$SCRIPT_JS" ]; then
     echo "FAIL dashboard: could not extract the embedded script" >&2
     fail=1
-  elif container run --rm --platform linux/arm64 \
-    --mount "type=bind,source=${TMPROOT},target=/t" node:22-slim \
-    node --check /t/embedded.js >/dev/null 2>&1; then
-    echo "PASS dashboard: the embedded renderer parses"
   else
-    echo "FAIL dashboard: the embedded renderer has a syntax error" >&2
-    container run --rm --platform linux/arm64 \
+    chk_out="$(container run --rm --platform linux/arm64 \
       --mount "type=bind,source=${TMPROOT},target=/t" node:22-slim \
-      node --check /t/embedded.js 2>&1 | head -5 >&2
-    fail=1
+      node --check /t/embedded.js 2>&1)"
+    chk_rc=$?
+    if [ "$chk_rc" -eq 0 ]; then
+      echo "PASS dashboard: the embedded renderer parses"
+    elif printf '%s' "$chk_out" | grep -q 'SyntaxError'; then
+      echo "FAIL dashboard: the embedded renderer has a syntax error" >&2
+      printf '%s\n' "$chk_out" | head -5 >&2
+      fail=1
+    else
+      echo "SKIP dashboard: container runtime unavailable, embedded script not parsed"
+      printf '%s\n' "$chk_out" | grep -v '^\[[0-9]' | head -2
+    fi
   fi
 else
   echo "SKIP dashboard: no container runtime, embedded script not parsed"
@@ -490,6 +502,101 @@ want "the control is a native radio group" 'type: "radio"'
 want "grouped radios share a name" 'name: "gran"'
 want "the printed record states which bucketing was captured" 'Bucketed by '
 want "hourly is withheld with its reason" 'charge a long session entirely to the hour'
+
+# --- the month view is drawn at DAILY resolution -----------------------------
+# A month total hides what produced it: one long Tuesday and a quiet fortnight
+# land in the same bin at the same height. So the month view plots one point per
+# day and marks each month START with a rule and a label. These lock the three
+# things that make that honest rather than merely denser.
+want "the month view resolves to days" 'function monthDetail'
+want "the trace and the figures table draw from different rows" 'function bucketRows'
+want "month starts are found in the daily series" 'function monthStarts'
+want "a month boundary gets its own heavier rule" 'grid--m'
+want "the month rule is structure, not a reading" 'it is STRUCTURE rather than a reading'
+want "daily detail has a stated ceiling" 'DAY_DETAIL_MAX'
+want "the ceiling is printed, not silent" 'Daily detail inside each month is withheld past'
+want "the page says the trace resolves days inside months" 'rules every month start'
+want "the figures table still totals the months" 'The trace above resolves the same span to single days'
+# The resolution swap must not become a second y-scale: one measure, one axis
+# per lane, everywhere. Overlaying daily points on monthly totals would need two.
+want "the swap is documented as a resolution change, not a dual scale" 'RESOLUTION SWAP, not a second scale'
+# At daily spacing a dot per point fuses into a ribbon, so only the peak keeps
+# one. The peak is the point a reader wants to put a date to.
+want "dots thin out when the points pack too tightly" 'var showDots'
+want "the peak keeps its dot at any density" 'i !== peak'
+# An all-zero lane has no peak: indexOf returns -1, which used to index past the
+# end of the points array and take the whole render down.
+want "an all-zero lane cannot crash the render" 'if (peak < 0) peak = 0'
+# 150 daily numbers read aloud in sequence is the table recited badly.
+want "a dense trace summarises instead of reciting every point" 'function laneDesc'
+want "the summary points at the table that has every row" 'every figure is in the table below'
+
+# --- a ledger wide enough to exercise the month view -------------------------
+# The main fixture spans two months, so month is under the 3-bucket floor and is
+# correctly withheld — which means it never exercises the daily-detail path at
+# all. This render spans five months of real days so the DATA the month view
+# reads is checked for the conditions the view actually depends on, rather than
+# only for the source that would use them.
+WIDE_DB="${TMPROOT}/wide.db"
+ensure_schema "$WIDE_DB"
+sqlite3 "$WIDE_DB" "INSERT INTO sessions (session_id, project, model, input_tokens,
+    output_tokens, cost_usd, co2_grams, energy_wh, water_ml, embodied_gco2e, started_at,
+    ended_at, source, methodology_version, excluded) VALUES
+  ('11111111-1111-4111-8111-111111111111','p1','claude-opus-5',1,1,1.0,100.0,348.4,1835.0,15.4,
+   '2026-03-05T00:00:00Z','2026-03-05T01:00:00Z','backfill',2,0),
+  ('22222222-2222-4222-8222-222222222222','p1','claude-opus-5',1,1,1.0,900.0,3135.9,16519.0,138.3,
+   '2026-04-18T00:00:00Z','2026-04-18T01:00:00Z','backfill',2,0),
+  ('33333333-3333-4333-8333-333333333333','p1','claude-sonnet-5',1,1,1.0,300.0,1045.3,5506.0,46.1,
+   '2026-05-02T00:00:00Z','2026-05-02T01:00:00Z','backfill',2,0),
+  ('44444444-4444-4444-8444-444444444444','p1','claude-sonnet-5',1,1,1.0,500.0,1742.2,9177.0,76.8,
+   '2026-06-11T00:00:00Z','2026-06-11T01:00:00Z','backfill',2,0),
+  ('55555555-5555-4555-8555-555555555555','p1','claude-haiku-4-5',1,1,1.0,200.0,696.9,3671.0,30.7,
+   '2026-07-20T00:00:00Z','2026-07-20T01:00:00Z','backfill',2,0);"
+WIDE_OUT="${CARBON_LEDGER_DASHBOARD_DIR}/wide/carbon-2026-08-06T12-00-00Z.html"
+CARBON_LEDGER_DB="$WIDE_DB" \
+  CARBON_LEDGER_DASHBOARD_DIR="${CARBON_LEDGER_DASHBOARD_DIR}/wide" \
+  bash "${REPO_DIR}/scripts/generate-dashboard.sh" --no-open >/dev/null 2>&1
+if [ ! -f "$WIDE_OUT" ]; then
+  echo "FAIL dashboard: five-month render produced no file" >&2
+  fail=1
+else
+  sed -n 's/^const DATA = \(.*\);$/\1/p' "$WIDE_OUT" >"${TMPROOT}/wide.json"
+  # The month view needs BOTH of these true, so both are measured rather than
+  # assumed: the month bucket has to be offered at all, and the daily series it
+  # draws instead has to exist and sit under the stated ceiling.
+  wide_q() { jq -r "$1" "${TMPROOT}/wide.json" 2>/dev/null; }
+  if [ "$(wide_q '.series.month.ok')" = "true" ] && [ "$(wide_q '.series.month.n')" = "5" ]; then
+    echo "PASS dashboard (five months): the month bucket is offered, with five buckets"
+  else
+    echo "FAIL dashboard (five months): month bucket not offered (ok=$(wide_q '.series.month.ok') n=$(wide_q '.series.month.n'))" >&2
+    fail=1
+  fi
+  wide_days="$(wide_q '.series.day.n')"
+  # 2026-03-05 to 2026-07-20 inclusive is 138 days, every one of them emitted —
+  # the quiet ones as zeros, because a day with no sessions really did emit
+  # nothing and dropping it would compress the axis.
+  if [ "$wide_days" = "138" ]; then
+    echo "PASS dashboard (five months): every day in the span rides in, quiet ones as zeros"
+  else
+    echo "FAIL dashboard (five months): expected 138 daily buckets, got ${wide_days}" >&2
+    fail=1
+  fi
+  if [ -n "$wide_days" ] && [ "$wide_days" -ge 3 ] && [ "$wide_days" -le 1100 ]; then
+    echo "PASS dashboard (five months): the daily series is inside the detail ceiling"
+  else
+    echo "FAIL dashboard (five months): daily series outside the detail ceiling (${wide_days})" >&2
+    fail=1
+  fi
+  # Five months of days must still resolve to five month starts, which is what
+  # the rules and the axis labels are drawn from.
+  wide_starts="$(wide_q '[.series.day.rows[].b | .[0:7]] | unique | length')"
+  if [ "$wide_starts" = "5" ]; then
+    echo "PASS dashboard (five months): the daily series carries five month starts to rule"
+  else
+    echo "FAIL dashboard (five months): expected 5 month starts in the daily series, got ${wide_starts}" >&2
+    fail=1
+  fi
+fi
 
 # --- station-record idiom ----------------------------------------------------
 # The page is a station record: three streams, each with the same trio of
