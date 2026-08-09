@@ -22,12 +22,12 @@ read the fork rules before touching `scripts/`.
 ## Tests
 
 ```bash
-bash tests/run-tests.sh           # all eleven suites
+bash tests/run-tests.sh           # all twelve suites
 bash tests/run-offset-tests.sh    # or one concern at a time
 ```
 
 `run-tests.sh` globs `tests/run-*.sh`, so a new suite is picked up with no edit
-to the runner. The eleven:
+to the runner. The twelve:
 
 | Suite | What it holds |
 | --- | --- |
@@ -41,6 +41,7 @@ to the runner. The eleven:
 | `run-dashboard-tests.sh` | Determinism and offline safety |
 | `run-hygiene.sh` | Zero network call sites, no legacy naming |
 | `run-lint.sh` | shellcheck and shfmt |
+| `run-day-split-tests.sh` | Per-day attribution ties out to the session row, and the calendar the day ruler is drawn from (leap February included) |
 | `run-docs-tests.sh` | The published landing page: determinism, offline safety, and that it still agrees with `data/` |
 
 Every suite runs in its own sandbox: `CARBON_LEDGER_DB` points at a temp file

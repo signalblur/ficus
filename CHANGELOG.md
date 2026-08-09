@@ -3,6 +3,63 @@
 Entries below 1.2.0 are upstream `claude-carbon`'s, kept as they were so
 cherry-picks stay clean. Fork releases are added above them.
 
+## 1.3.0 — 2026-08-09
+
+### A session is now split across the days it actually ran
+
+The ledger kept one row per session with a single `started_at`, so every daily
+figure charged a whole session to the day it began. Defensible while the chart
+bucketed by month; not defensible once it draws days. The numbers say how much
+not: on a real 1,470-session ledger only 80 sessions cross midnight — five
+percent — but those 80 carry **88.7% of the carbon**, because the long sessions
+are the heavy ones and the long ones are what run past midnight.
+
+Nothing is apportioned. Every assistant message already carries its own
+timestamp beside its own token usage, so the Stop hook groups those measurements
+by date into a new `session_days` table. On a real midnight-crossing session that
+splits 59.331 g into 53.828 g and 5.503 g — the following day had been carrying
+9.3% of that session and being shown none of it. The per-day rows sum to exactly
+the session row and a test asserts it; if they ever stop tying out, something has
+started being modelled instead of counted.
+
+History cannot be recovered, because a pruned transcript cannot be split. So
+every reader falls back to the start day for sessions with no split, and the page
+counts the ones it knows crossed midnight and says so instead of claiming an
+accuracy the older half of the ledger cannot support. The previous comment
+promising this distortion was "negligible at daily and coarser" was wrong and is
+corrected rather than repeated.
+
+### The x-axis is a ruler now
+
+A minor tick per day, taller ones on the 8th, 15th, 22nd and 29th, and the month
+rule continuing down through the band as the major tick. The tall marks come from
+the date each row carries rather than from counting seven rows along — the first
+month on record almost always starts mid-month, and stepping in sevens from
+whatever day that happened to be would put the weekly marks on different dates in
+the first month than in every month after it.
+
+The count is right by construction: ticks are drawn one per row of the daily
+series, and those rows come from stepping real dates, so February gets 28 — or 29
+in a leap year — because February did. Both are asserted. Below 3.5px per day
+only the weekly marks are kept; below 5px the month rules carry the axis alone.
+
+### Lighter paper
+
+The plane behind the cards moves from `#f1f3f2` to `#f7f9f8`. It also raises the
+working mint's contrast against it from 3.43:1 to 3.61:1, so the SC 1.4.11
+obligation on the rules got easier rather than harder.
+
+### fix: two ways a session could vanish or a page could fail
+
+A split session was counted on `date(started_at)`, but the hook stamps that when
+it first sees a session — so a resumed or re-read session matched none of its own
+days and dropped out of the session counts entirely while its carbon stayed on
+the chart. It is now counted on the first day it actually spent tokens.
+
+And `generate-dashboard.sh` did not migrate before reading. The first run after
+this change against an existing ledger failed outright on a missing table instead
+of rendering the history it already held.
+
 ## 1.2.0 — 2026-08-09
 
 ### The month view now draws every day

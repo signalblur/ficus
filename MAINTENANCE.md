@@ -44,6 +44,30 @@ Rebuild both after any change to a constant, to the giving shortlist or to the
 dashboard templates, and `tests/run-docs-tests.sh` will fail if the published
 page and `data/` have drifted apart.
 
+## Per-day attribution
+
+`sessions` holds one row per session; `session_days` holds one row per (session,
+day it actually spent tokens), written by the Stop hook from the timestamp each
+transcript message already carries. It is a **grouping of measurements, never an
+apportionment** — the per-day rows sum to exactly the session row, and
+`run-day-split-tests.sh` asserts that tie-out on tokens and on carbon. Anything
+that breaks it means something started being modelled.
+
+Why it exists: measured on a 1,470-session ledger, 80 sessions crossed midnight
+(5%) but carried **88.7% of the carbon**. Charging a session to its start day is
+not a rounding error once the chart draws days.
+
+Rules for anything that reads time series:
+
+- Build on the `DAY_ROWS_CTE` in `generate-dashboard.sh`, which prefers
+  `session_days` and falls back to `date(started_at)` for sessions with no
+  split. Both paths are needed — a pruned transcript can never be split.
+- Count a split session **once, on its earliest split day**. Not on
+  `date(started_at)`: the hook stamps that when it first sees a session, so a
+  resumed or re-read session matches none of its own days.
+- `aggregate_jsonl` stays byte-close to upstream. The day split is a separate
+  function in `lib/day-split.sh` for exactly that reason.
+
 ## Cache invalidation (the $160/$227 lesson)
 
 `~/.claude/carbon-ledger/factors.env` is a CACHE of `data/factors.json` and
