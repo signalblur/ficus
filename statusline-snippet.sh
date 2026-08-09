@@ -30,12 +30,21 @@ case "$MODEL_ID" in
 *) FIN=0 FOUT=0 ;;
 esac
 
-# One awk: session readings + session offset cost (co2 x removal $/t)
+# One awk: session readings + session offset cost (co2 x removal $/t).
+#
+# THE SESSION COST CARRIES ITS OWN UNIT, and below a dollar that unit is cents.
+# At $227 a tonne a whole cent is 44 g of CO2e, so a dollars-and-cents session
+# figure reads $0.00 through the opening stretch of every session and then
+# jumps — which is indistinguishable from a figure that has stopped updating.
+# The same session in cents opens at 0.04¢ and climbs continuously, so a reader
+# can see at a glance that it is live.
 IFS="$(printf '\t')" read -r SEG SESS_COST <<EOF
 $(echo "$IN_TOK $OUT_TOK $FIN $FOUT $CL_CIF $CL_WATER_PER_WH ${CL_REMOVAL_USD_PER_T:-227}" | LC_ALL=C awk \
   '{co2 = ($1 * $3 + $2 * $4) / 1000000
     e = (co2 > 0) ? co2 / $5 : 0
-    printf "⚡ %.2fWh 💧 %.1fmL 💨 %.2fg\t%.2f", e, e * $6, co2, co2 * $7 / 1000000}')
+    c = co2 * $7 / 1000000
+    printf "⚡ %.2fWh 💧 %.1fmL 💨 %.2fg\t%s", e, e * $6, co2,
+      (c < 1) ? sprintf("%.2f¢", c * 100) : sprintf("$%.2f", c)}')
 EOF
 
 # Cache: line 1 = all-time ∑ readings; line 2 = owed/overall cost pair (USD
@@ -45,15 +54,19 @@ ALL=""
 TOTAL_COST=""
 BAL=""
 if [ -f "${STATE_DIR}/segment-cache" ]; then
-  ALL=" $(sed -n 1p "${STATE_DIR}/segment-cache")"
+  ALL="$(sed -n 1p "${STATE_DIR}/segment-cache")"
   TOTAL_COST="$(sed -n 2p "${STATE_DIR}/segment-cache")"
   BAL="$(sed -n 3p "${STATE_DIR}/segment-cache")"
 fi
 
-# Readings, then a separator, then the totals: paid-off/emitted + offset costs
-printf '%s%s\n' "$SEG" "$ALL"
+# SESSION FIGURES TOGETHER, TOTALS TOGETHER, and the rule between them means
+# what it says. The session cost used to sit in the totals cluster beside the
+# lifetime dollar pair, which put a figure about the last twenty minutes inside
+# a row about every session ever recorded — two different denominators reading
+# as one line. It now rides with the ⚡/💧/💨 it was computed from.
+printf '%s · ▲ %s session\n' "$SEG" "$SESS_COST"
 printf '────────────────────────────────\n'
-TOTALS="▲ \$${SESS_COST} session"
-[ -n "$TOTAL_COST" ] && TOTALS="${TOTALS} · \$${TOTAL_COST} total"
-[ -n "$BAL" ] && TOTALS="${BAL} · ${TOTALS}"
+TOTALS="$ALL"
+[ -n "$BAL" ] && TOTALS="${TOTALS:+${TOTALS} · }${BAL}"
+[ -n "$TOTAL_COST" ] && TOTALS="${TOTALS:+${TOTALS} · }\$${TOTAL_COST} total"
 printf '%s' "$TOTALS"

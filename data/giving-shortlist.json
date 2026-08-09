@@ -31,8 +31,8 @@
       "sub": "biochar CORCs",
       "url": "https://www.removecarbontoday.com/collections",
       "does": "Sells ex-post biochar carbon-removal certificates issued under the Puro Standard: the biochar is independently weighed and sampled, third-party audited, and the certificate is retired in your name on the public registry. Puro does not sell direct, so a reseller is the small-buyer route; the minimum here is 1 kg.",
-      "price": "≈ $160 / tonne",
-      "price_note": "Best estimate, ±40%. The Nasdaq CORCCHAR biochar index clustered around $125–145/t through late 2025 into 2026; broader spot and institutional quotes run $200–400/t.",
+      "price": "€198 / tonne · ≈ $227",
+      "price_note": "First-party retail, fetched 2026-08-08: the vendor sells one tonne of ex-post biochar removal at EUR 198 with Puro registry retirement proof, priced as its average CORC acquisition cost plus a 10% operating margin. Converted at the ledger's own dated FX constant (ECB 0.8729 EUR/USD): 198 / 0.8729 = 226.83, stored as 227 in data/offset-constants.json and used for every cost-to-clear figure. This replaces the ≈$160 shown here previously, which was the Nasdaq CORCCHAR wholesale index — what institutions clear at, not a price a small buyer can transact, and below this supplier's own ask. FX-sensitive: it moves with both the CORC market and the euro.",
       "verdict": "The only pathway on this page that settles the balance above — verified removal, already delivered rather than promised.",
       "update": "Live durability revision: a 2025 peer-reviewed paper (Petersen & Sanei, GCB Bioenergy) found the H:Corg ratio biochar certification rests on can both under- and over-predict true stability, and field decay rates across six isotope-labelled experiments run from 0.8% to 7.0% a year. Puro responded by downgrading its top durability claim from a de facto millennial framing to a new CORC200+ class — several centuries, not millennia. Biochar still delivered 91% of all durable-removal volume in 2025.",
       "evidence": [
@@ -61,7 +61,8 @@
           "license": "Public domain — work of the U.S. federal government (17 U.S.C. 105)",
           "license_url": "https://www.copyright.gov/title17/92chap1.html#105"
         }
-      }
+      },
+      "_price_source": "data/offset-constants.json ._removal (2026-08-08 price pass); research/offset-cost-methodology-evidence-2026-08.md"
     },
     {
       "tier": "prevents",

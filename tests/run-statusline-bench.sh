@@ -47,6 +47,53 @@ emit_factors_env "${REPO_DIR}/data/factors.json" "$STATE" || {
   exit 1
 }
 printf '∑ ⚡ 2173.2kWh 💧 11448L 💨 0.62t\n99.79/99.79\n💨 0.00t/0.62t' >"${STATE}/segment-cache"
+
+# --- factors.env is a cache, and a cache needs invalidating ------------------
+# This is a regression test for a bug that shipped: the removal price moved from
+# $160 to $227 a tonne in data/offset-constants.json, every path reading that
+# file picked it up, and the statusline — which reads only factors.env — went on
+# pricing sessions at the old rate. Nothing failed and no test went red; the two
+# figures on screen just disagreed by thirty percent. So the mtimes decide.
+STALE_DATA="${TMPROOT}/data"
+STALE_STATE="${TMPROOT}/stale-state"
+mkdir -p "$STALE_DATA" "$STALE_STATE"
+cp "${REPO_DIR}/data/factors.json" "$STALE_DATA/"
+jq '.removal_usd_per_tonne = 160' "${REPO_DIR}/data/offset-constants.json" >"${STALE_DATA}/offset-constants.json"
+emit_factors_env "${STALE_DATA}/factors.json" "$STALE_STATE" >/dev/null
+stale_rate() { sed -n 's/^CL_REMOVAL_USD_PER_T=//p' "${STALE_STATE}/factors.env"; }
+if [ "$(stale_rate)" = "160" ]; then
+  echo "PASS statusline: the cache starts at the old price"
+else
+  echo "FAIL statusline: expected a 160 cache to start from, got '$(stale_rate)'" >&2
+  fail=1
+fi
+# The price changes in data/, and nothing has rebuilt the cache yet.
+jq '.removal_usd_per_tonne = 227' "${REPO_DIR}/data/offset-constants.json" >"${STALE_DATA}/offset-constants.json"
+touch "${STALE_DATA}/offset-constants.json"
+refresh_factors_env_if_stale "${STALE_DATA}/factors.json" "$STALE_STATE"
+if [ "$(stale_rate)" = "227" ]; then
+  echo "PASS statusline: a changed constant invalidates the cache"
+else
+  echo "FAIL statusline: constant changed but the cache still reads '$(stale_rate)'" >&2
+  fail=1
+fi
+# And once it has settled, an unchanged tree must NOT rewrite it — the guard
+# runs on every Stop hook, so rebuilding every time would be a write amplifier
+# for nothing. "Settled" needs a second to pass first: a rebuild landing in the
+# same second as the edit that triggered it is not strictly newer than its
+# source, which costs exactly one more rebuild by design.
+sleep 1
+refresh_factors_env_if_stale "${STALE_DATA}/factors.json" "$STALE_STATE"
+before="$(stat -f %m "${STALE_STATE}/factors.env" 2>/dev/null || stat -c %Y "${STALE_STATE}/factors.env")"
+sleep 1
+refresh_factors_env_if_stale "${STALE_DATA}/factors.json" "$STALE_STATE"
+after="$(stat -f %m "${STALE_STATE}/factors.env" 2>/dev/null || stat -c %Y "${STALE_STATE}/factors.env")"
+if [ "$before" = "$after" ]; then
+  echo "PASS statusline: an unchanged tree leaves the cache alone"
+else
+  echo "FAIL statusline: the cache was rewritten with nothing to rebuild from" >&2
+  fail=1
+fi
 REMOVAL_RATE="$(jq -er '.removal_usd_per_tonne' "${REPO_DIR}/data/offset-constants.json")"
 SEP_LINE="────────────────────────────────"
 
@@ -67,9 +114,15 @@ check_vector() {
   exp_e="$(jq -r --arg v "$vid" '.vectors[] | select(.id == $v) | .expected_energy_wh' "${SCRIPT_DIR}/methodology-vectors.json")"
   got="$(run_snippet "$model" "$in" "$out")"
   exp_fmt="$(echo "$exp_e $exp_co2" | LC_ALL=C awk '{printf "⚡ %.2fWh 💧 %.1fmL 💨 %.2fg", $1, $1 * 5.2678947368, $2}')"
-  exp_cost="$(echo "$exp_co2 $REMOVAL_RATE" | LC_ALL=C awk '{printf "%.2f", $1 * $2 / 1000000}')"
-  want="$(printf '%s ∑ ⚡ 2173.2kWh 💧 11448L 💨 0.62t\n%s\n💨 0.00t/0.62t · ▲ $%s session · $99.79/99.79 total' \
-    "$exp_fmt" "$SEP_LINE" "$exp_cost")"
+  # Cents below a dollar, dollars above — the same branch the snippet takes, so
+  # the expectation is derived rather than transcribed.
+  exp_cost="$(echo "$exp_co2 $REMOVAL_RATE" | LC_ALL=C awk \
+    '{c = $1 * $2 / 1000000; printf (c < 1) ? "%.2f¢" : "$%.2f", (c < 1) ? c * 100 : c}')"
+  # SESSION FIGURES ABOVE THE RULE, TOTALS BELOW IT. The session cost sits with
+  # the session readings it was computed from; the totals line carries only
+  # all-time figures.
+  want="$(printf '%s · ▲ %s session\n%s\n∑ ⚡ 2173.2kWh 💧 11448L 💨 0.62t · 💨 0.00t/0.62t · $99.79/99.79 total' \
+    "$exp_fmt" "$exp_cost" "$SEP_LINE")"
   if [ "$got" = "$want" ]; then
     echo "PASS statusline math: ${vid}"
   else

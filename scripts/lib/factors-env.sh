@@ -57,3 +57,48 @@ emit_factors_env() {
     echo "CL_REMOVAL_USD_PER_T=${removal_rate}"
   } >"$tmp" && mv -f "$tmp" "$dest"
 }
+
+# refresh_factors_env_if_stale FACTORS_JSON DEST_DIR
+#
+# factors.env is a CACHE of two JSON files, and a cache with no invalidation is
+# a slow-acting bug. It happened: the removal price moved from $160 to $227 a
+# tonne in data/offset-constants.json, every path that reads that file directly
+# picked the new figure up, and the statusline — which reads only this cache —
+# went on pricing each session at the old rate for days. Nothing failed, no test
+# went red, and the two figures on screen simply disagreed by thirty percent.
+#
+# So the mtimes decide, compared as NUMBERS and not with -nt. `-nt` is false when
+# two files share a timestamp, and filesystem mtimes here have one-second
+# granularity — so an edit landing in the same second as the last rebuild is
+# exactly the case the operator would least expect to be missed. The cache is
+# treated as stale unless it is strictly newer than every source, which at worst
+# costs one redundant rebuild and never skips a real one.
+#
+# A rebuild is a handful of jq calls off the render path (this runs in the Stop
+# hook, never in the statusline), and it cannot fail the caller: emit_factors_env
+# already refuses to write anything non-numeric, and a stale-but-valid cache
+# beats no cache at all.
+_cl_mtime() { # portable mtime in epoch seconds; 0 when the file is absent
+  stat -f %m "$1" 2>/dev/null || stat -c %Y "$1" 2>/dev/null || echo 0
+}
+
+refresh_factors_env_if_stale() {
+  local factors="$1" dest_dir="$2"
+  local dest constants newest m
+  dest="${dest_dir}/factors.env"
+  constants="$(dirname "$factors")/offset-constants.json"
+
+  [ -f "$factors" ] || return 0
+  if [ -f "$dest" ]; then
+    newest=0
+    for m in "$factors" "$constants"; do
+      [ -f "$m" ] || continue
+      m="$(_cl_mtime "$m")"
+      [ "${m:-0}" -gt "$newest" ] 2>/dev/null && newest="$m"
+    done
+    if [ "$(_cl_mtime "$dest")" -gt "$newest" ] 2>/dev/null; then
+      return 0
+    fi
+  fi
+  emit_factors_env "$factors" "$dest_dir" || return 0
+}

@@ -26,9 +26,16 @@ source "${SCRIPT_DIR}/lib/schema.sh" 2>/dev/null || exit 0
 source "${SCRIPT_DIR}/lib/model-family.sh" 2>/dev/null || exit 0
 # shellcheck source=lib/segment-cache.sh
 source "${SCRIPT_DIR}/lib/segment-cache.sh" 2>/dev/null || exit 0
+# shellcheck source=lib/factors-env.sh
+source "${SCRIPT_DIR}/lib/factors-env.sh" 2>/dev/null || exit 0
 
 # Migrate schema if needed (idempotent; no-ops once the columns exist)
 ensure_schema "$DB_PATH"
+
+# The statusline reads its constants from factors.env and nothing else, so a
+# constant edited in data/ has to reach that cache or the two disagree in
+# silence. Rebuilt here, at the end of a session, rather than on the render path.
+refresh_factors_env_if_stale "$FACTORS_FILE" "$(dirname "$DB_PATH")"
 
 # Load emission factors once
 FACTOR_FABLE_IN="$(jq -r '.models.fable.input // 156' "$FACTORS_FILE" 2>/dev/null)" || FACTOR_FABLE_IN="156"
