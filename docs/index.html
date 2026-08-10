@@ -56,6 +56,15 @@ body {
   border: 2px solid var(--rule-key); border-radius: var(--r-sm);
 }
 .skip:focus { left: 1rem; top: 1rem; }
+/* The sticky masthead would otherwise park itself over whatever just took
+   focus — WCAG 2.2 SC 2.4.11 Focus Not Obscured (Minimum), failure technique
+   F110. scroll-padding-top insets the scrollport so that the strip behind the
+   bar no longer counts as visible and focus moving into it forces a scroll;
+   scroll-margin-top then reserves the same height at each target, including
+   every tab stop, since a link inherits no scroll-margin from its section. */
+html { scroll-padding-top: 4.5rem; }
+main, section, .panel, .org,
+a[href], button, summary, input, label, [tabindex] { scroll-margin-top: 4.5rem; }
 .wrap { max-width: 62rem; margin: 0 auto; padding: 0 1.25rem 5rem; }
 a { color: var(--accent); text-underline-offset: 2px; }
 a:hover { color: var(--ink-1); }
@@ -200,8 +209,8 @@ figure.shot img {
 }
 figure.shot figcaption { margin-top: 0.5rem; font-size: 0.8125rem; color: var(--ink-3); }
 
-footer { margin-top: 3.5rem; padding-top: 1.4rem; border-top: 2px solid var(--rule-key); font-size: 0.875rem; color: var(--ink-2); }
-footer p { margin: 0.4rem 0; }
+footer.wrap { padding-top: 1.4rem; border-top: 2px solid var(--rule-key); font-size: 0.875rem; color: var(--ink-2); }
+footer p { margin: 0.4rem 0; max-width: 62rem; }
 
 @media print {
   .bar, .skip { position: static; }
@@ -243,7 +252,7 @@ footer p { margin: 0.4rem 0; }
   </div>
 </header>
 
-<main class="wrap" id="main">
+<main class="wrap" id="main" tabindex="-1">
 
   <div class="hero">
     <h1>What your Claude Code habit costs the atmosphere</h1>
@@ -283,28 +292,28 @@ footer p { margin: 0.4rem 0; }
     <ol class="steps">
       <li>
         <h4>Clone it</h4>
-<pre><code>git clone https://github.com/signalblur/ficus.git
+<pre tabindex="0"><code>git clone https://github.com/signalblur/ficus.git
 cd ficus</code></pre>
       </li>
       <li>
         <h4>Create the ledger</h4>
         <p class="note"><code>setup.sh</code> creates the SQLite database and writes
           <code>factors.env</code>, the small constants file the statusline reads.</p>
-<pre><code>bash scripts/setup.sh</code></pre>
+<pre tabindex="0"><code>bash scripts/setup.sh</code></pre>
       </li>
       <li>
         <h4>Backfill your history</h4>
         <p class="note">Claude Code keeps session transcripts on disk. This reads them, deduplicates
           the token counts and records one row per session — so the ledger starts with everything you
           have already done rather than from zero.</p>
-<pre><code>bash scripts/backfill.sh</code></pre>
+<pre tabindex="0"><code>bash scripts/backfill.sh</code></pre>
       </li>
       <li>
         <h4>Wire the hooks and the statusline</h4>
         <p class="note">A <code>Stop</code> hook records each session as it ends; a
           <code>SessionStart</code> hook re-runs the safety scan. Add to
           <code>~/.claude/settings.json</code>:</p>
-<pre><code>{
+<pre tabindex="0"><code>{
   "hooks": {
     "Stop": [{ "hooks": [{ "type": "command",
       "command": "bash /path/to/ficus/scripts/persist-session.sh" }] }],
@@ -322,7 +331,7 @@ cd ficus</code></pre>
 
     <div class="panel">
       <h3 style="margin-top:0">What you get</h3>
-      <div class="tw">
+      <div class="tw" tabindex="0">
         <table>
           <caption>Everything Ficus adds, and where it lives.</caption>
           <thead><tr><th>Command</th><th>What it does</th></tr></thead>
@@ -377,7 +386,7 @@ cd ficus</code></pre>
     <p class="note">These are the exact values in <code>data/factors.json</code> as this page was
       built. Each one carries a <code>_source</code> field naming the publication and the date it was
       recorded, and this table is generated from that file rather than typed out here.</p>
-    <div class="tw">
+    <div class="tw" tabindex="0">
       <table>
         <caption>Physical constants used to derive electricity, water and embodied carbon.</caption>
         <thead><tr><th>Constant</th><th class="n">Value</th><th>Source</th></tr></thead>
@@ -626,7 +635,13 @@ cd ficus</code></pre>
     </figure>
   </section>
 
-  <footer>
+</main>
+
+<!-- OUTSIDE <main> on purpose. A <footer> that is a descendant of main maps to
+     role=generic rather than role=contentinfo, so a screen-reader user
+     navigating by landmark would never find the licence, the methodology or the
+     third-party notices. -->
+  <footer class="wrap">
     <p><strong>Ficus</strong> — MIT licensed, a fork of
       <a href="https://github.com/gwittebolle/claude-carbon">claude-carbon</a> by Guillaume Wittebolle,
       with the estimation, offset ledger, statusline and dashboard rebuilt on cited constants.</p>
@@ -637,6 +652,5 @@ cd ficus</code></pre>
       <a href="https://github.com/signalblur/ficus/blob/main/METHODOLOGY.md">Methodology</a> ·
       <a href="https://github.com/signalblur/ficus/blob/main/NOTICE.md">Third-party notices</a></p>
   </footer>
-</main>
 </body>
 </html>

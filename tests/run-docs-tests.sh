@@ -60,7 +60,7 @@ fi
 scrub() {
   awk '
     { line = $0 }
-    /<pre>/ { inpre = 1 }
+    /<pre[ >]/ { inpre = 1 }
     inpre { line = "" }
     /<\/pre>/ { inpre = 0 }
     { gsub(/href="https:\/\/[^"]*"/, "", line)
@@ -68,9 +68,10 @@ scrub() {
       print line }
   ' "$1"
 }
-if scrub "$OUT" | grep -qE 'https?://|<link|src="http|@import|url\(http'; then
+offline_hits="$(scrub "$OUT" | grep -nE 'https?://|<link|src="http|@import|url\(http' || true)"
+if [ -n "$offline_hits" ]; then
   echo "FAIL docs: an external loaded reference reached the page" >&2
-  scrub "$OUT" | grep -nE 'https?://|<link|@import' | head -3 >&2
+  printf '%s\n' "$offline_hits" | head -3 >&2
   fail=1
 else
   echo "PASS docs: no external loaded references"
@@ -101,6 +102,25 @@ want "the example is linked from the nav" '<a href="dashboard.html">Example</a>'
 want "the caveat is on the page, not buried" '±50%'
 # The same ficus the dashboard carries, so the two pages are visibly one project.
 want "the masthead carries the ficus mark" 'aria-label="Ficus"'
+# --- WCAG 2.2 AA findings, locked --------------------------------------------
+# SC 2.4.11 Focus Not Obscured (Minimum) / F110 — this page has the same sticky
+# masthead as the dashboard and originally had none of the mitigation.
+want "the scrollport is inset for the sticky masthead" 'scroll-padding-top: 4.5rem'
+want "tab stops reserve the masthead height" 'a\[href\], button, summary, input, label, \[tabindex\] { scroll-margin-top'
+# SC 2.1.1 Keyboard, Level A. The settings.json snippet is 528px wide against
+# 255px of visible width at a 320px viewport — without a tab stop, half the
+# install instructions are unreachable without a pointer.
+want "code blocks are keyboard-scrollable" '<pre tabindex="0">'
+want "table wrappers are keyboard-scrollable" '<div class="tw" tabindex="0">'
+# A <footer> inside <main> maps to role=generic, so the licence, methodology and
+# notices were unreachable by landmark navigation.
+if grep -q '</main>' "$OUT" && [ "$(grep -n '</main>' "$OUT" | head -1 | cut -d: -f1)" -lt "$(grep -n '<footer' "$OUT" | head -1 | cut -d: -f1)" ]; then
+  echo "PASS docs: the footer is a contentinfo landmark, not buried in main"
+else
+  echo "FAIL docs: <footer> is inside <main> — it maps to role=generic there" >&2
+  fail=1
+fi
+want "the skip target can take focus" '<main class="wrap" id="main" tabindex="-1">'
 want "the mark is the plant, not a chart glyph" 'The same potted ficus'
 want "the page says the example data is fabricated" 'fabricated'
 

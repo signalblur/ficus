@@ -3,6 +3,64 @@
 Entries below 1.2.0 are upstream `claude-carbon`'s, kept as they were so
 cherry-picks stay clean. Fork releases are added above them.
 
+## 1.3.1 — 2026-08-09
+
+An external WCAG 2.2 AA audit of both published pages. Four findings, all fixed;
+the rest of the audit came back clean, including every text and non-text
+contrast ratio, the chart text alternatives, the native radio group, text
+spacing, reflow at 320 px and the deliberate light-only palette.
+
+### fix: the offline guard could never fail (found while fixing the rest)
+
+`build-docs.sh` and `build-demo.sh` both piped into `grep -q` under
+`set -o pipefail`. `grep -q` closes the pipe the instant it matches, the upstream
+process dies of SIGPIPE with status 141, and the pipeline reports 141 — so the
+`if` went FALSE exactly when a violation was found. **These guards reported
+success on every page, including ones that had a bare URL in them.** Both now
+capture the matches into a variable and test that, and both are mutation-tested:
+inject a URL into prose or a `<link>` into the head and the build stops.
+
+The docs scrubber had also stopped recognising `<pre>` the moment those blocks
+gained a `tabindex`, which is what surfaced the SIGPIPE bug.
+
+### fix: focus could hide entirely behind the sticky header — SC 2.4.11 / F110
+
+Tabbing backwards scrolls upward and parks the target at the top edge, i.e.
+under the bar. Six elements were affected on the dashboard, five hidden
+completely; the landing page had no mitigation at all. `scroll-margin-top` alone
+was not enough — it only applies when the browser decides to scroll, and an
+element already in the scrollport but under a sticky overlay counts as visible.
+`scroll-padding-top` on the scrollport is the load-bearing half. Verified 0
+obscured on both pages, with disclosures collapsed and expanded.
+
+### fix: scroll regions no keyboard could reach — SC 2.1.1, Level A
+
+`overflow-x: auto` makes a region a mouse can scroll and a keyboard cannot. The
+table wrappers already carried a tab stop; the formula boxes, the copyable
+command and every code block on the landing page did not. At a 320 px viewport
+the widest formula is 605 px against 251 px of visible width, and the
+`settings.json` install snippet is 528 px against 255 px — half the install
+instructions were unreachable without a pointer, and for anyone at 400% zoom.
+
+### fix: 33 px of horizontal page scroll at 320 px — SC 1.4.10
+
+The colophon had no styling at all, so one credit carrying a 32-character hex
+filename pushed the whole document sideways. Also the printed state, since the
+print guard force-opens every disclosure.
+
+### The day ruler is now visible to the people it was added for
+
+Audited at 1.56:1 — technically exempt as a graphical object, and useless to
+anyone with reduced contrast sensitivity, which makes the comment claiming it
+lets a reader "find the eleventh" a claim the mark could not keep. Day ticks
+raised to about 2.2:1, weekly marks and the month rule past 3:1.
+
+Also: evidence links spaced to clear the 24 px target-spacing circle they missed
+by 0.3 px (SC 2.5.8); a clipped separator so a two-part heading stops computing
+as "Remove Carbon Todaybiochar CORCs"; the landing page's `<footer>` moved out of
+`<main>` so it maps to `contentinfo` rather than `generic`; its skip target made
+focusable; and printed disclosures keep their own headings.
+
 ## 1.3.0 — 2026-08-09
 
 ### A session is now split across the days it actually ran

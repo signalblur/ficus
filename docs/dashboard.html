@@ -318,8 +318,25 @@ a:hover { text-decoration-thickness: 2px; }
 }
 /* A sticky header parks itself over whatever you just jumped or tabbed to,
    which turns the skip link into a link that appears to do nothing.
-   scroll-margin-top reserves its height at every scroll target. */
-#report, .block, .card { scroll-margin-top: 5.5rem; }
+   scroll-margin-top reserves its height at every scroll target.
+   EVERY TAB STOP IS A SCROLL TARGET, not just the jump anchors. The browser
+   honours the scroll-margin of the element receiving focus, and a link inherits
+   none from its section — so with only #report/.block/.card listed here, tabbing
+   BACKWARDS through the page (which scrolls upward and parks the target at the
+   top edge) put focus completely behind the bar. Measured before this line was
+   widened: six elements obscured, five of them entirely, all in the giving
+   section. That is WCAG 2.2 SC 2.4.11 Focus Not Obscured (Minimum), failure
+   technique F110 — a sticky header completely hiding a focused element.
+   scroll-padding-top is the load-bearing half and scroll-margin-top is the
+   belt. scroll-margin only helps when the browser DECIDES to scroll: an element
+   already inside the scrollport but sitting underneath a sticky overlay counts
+   as visible, so nothing scrolls and the margin never applies. Insetting the
+   scrollport itself takes that area out of "visible", so focus moving into it
+   forces a scroll. Measured: with margin alone, four giving links were still
+   entirely behind the bar; with both, none are. */
+html { scroll-padding-top: 5.5rem; }
+#report, .block, .card,
+a[href], button, summary, input, label, [tabindex] { scroll-margin-top: 5.5rem; }
 /* At 400% zoom (SC 1.4.10 Reflow) a stuck header is lost height, so past the
    point where it costs a meaningful share of the viewport it scrolls away. */
 @media (max-height: 26rem) {
@@ -666,13 +683,24 @@ a:hover { text-decoration-thickness: 2px; }
    into months a reader can name. Deliberately NEUTRAL and not the brand mint —
    mint is a data ink on this page, and a saturated vertical running the whole
    stack reads as a fourth series rather than as the frame. */
-.grid--m { stroke: var(--axis); stroke-opacity: 0.55; }
+/* 0.85, not 0.55. When the months pack tightly the labels thin out, and an
+   unlabelled month boundary is then carried by this rule ALONE — at 0.55 it
+   flattened to roughly 1.9:1 on the sheet, which is a fact delivered only to
+   readers with good contrast sensitivity. Raised to about 3:1, where a reader
+   who needs it can actually find it. */
+.grid--m { stroke: var(--axis); stroke-opacity: 0.85; }
 /* The day ruler. Three tick heights — day, week, month — so the scale can be
    counted rather than merely sensed. Held lighter than the month rule and much
    lighter than any lane: this is the frame the data is read against, and a
-   ruler that competes with its own measurements is a worse ruler. */
-.tick { stroke: var(--axis); stroke-width: 1; stroke-opacity: 0.4; }
-.tick--w { stroke-opacity: 0.72; }
+   ruler that competes with its own measurements is a worse ruler.
+   The opacities are the audited ones, not the first ones that looked right. At
+   0.40 the day tick flattened to about 1.6:1 on the sheet — visible to me,
+   invisible to the reader this ruler was added for, which makes the sentence
+   above a claim the mark could not keep. Raised until the day tick is roughly
+   2.2:1 and the weekly mark clears 3:1, and no further: past that the frame
+   starts arguing with the curves. */
+.tick { stroke: var(--axis); stroke-width: 1; stroke-opacity: 0.62; }
+.tick--w { stroke-opacity: 1; }
 .area { stroke: none; }
 .ln { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .ln--carbon { stroke: var(--viz-carbon); }
@@ -1027,6 +1055,19 @@ td a { color: var(--accent); }
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
+/* Visually hidden, still in the accessibility tree. CLIPPED and never
+   display:none or visibility:hidden — either of those removes the node from the
+   tree, and therefore from the accessible-name computation, which is the one
+   job this class has. */
+.vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 .org__n { margin: 0.2rem 0 0; font: 600 1.0625rem/1.25 var(--sans); letter-spacing: -0.01em; }
 .org__n small { display: block; margin-top: 0.1rem; color: var(--ink-3); font: 400 0.75rem/1.4 var(--sans); }
 /* The price signal is the single most decision-relevant fact about an
@@ -1070,7 +1111,13 @@ td a { color: var(--accent); }
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
-.org__links { margin: 0.9rem 0 0; padding: 0.75rem 0 0; border-top: 1px solid var(--rule); list-style: none; display: grid; gap: 0.35rem; }
+/* 0.5rem, not 0.35rem. Two stacked 15px-tall links at the smaller gap sit 23.7px
+   centre to centre, and SC 2.5.8 Target Size (Minimum) asks that undersized
+   targets be spaced so a 24px circle centred on each does not intersect its
+   neighbour's. Missing by 0.3px is still missing; the Inline exception arguably
+   covers the first item in each list, which begins mid-sentence after "Evidence",
+   but it does not obviously cover the ones that are nothing but a link. */
+.org__links { margin: 0.9rem 0 0; padding: 0.75rem 0 0; border-top: 1px solid var(--rule); list-style: none; display: grid; gap: 0.5rem; }
 .org__links li { font-size: 0.75rem; line-height: 1.5; }
 .org__links b {
   color: var(--ink-head);
@@ -1120,7 +1167,23 @@ td a { color: var(--accent); }
 .row > *, .streams > *, .pairs > *, .meta > *, .meth > *, .orgs > *,
 .flag > *, .crow > *, .memo__item > *, .bar__in > *, .trio > * { min-width: 0; }
 .tw, .chart, .meth__f { max-width: 100%; }
-.measure__eq, .badge__why, .org a, .org__verdict, .foot, .brand__t { overflow-wrap: anywhere; }
+.measure__eq, .badge__why, .org a, .org__verdict, .foot, .brand__t,
+.credits__list a { overflow-wrap: anywhere; }
+/* The colophon had no styling at all, so it rendered with the UA list indent and
+   default wrapping — and one Wikimedia credit carries a 32-character hex id with
+   no break opportunity in it, which pushed the whole page to 353px at a 320px
+   viewport. That is SC 1.4.10 Reflow: scrolling in two dimensions, on every line
+   of the document, because of one filename. It is also the printed state, since
+   the print guard force-opens every disclosure. */
+.credits__list {
+  margin: 0.6rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
 
 @media (max-width: 34rem) {
   .bar__in { padding: 0.7rem 0.9rem; }
@@ -1169,7 +1232,20 @@ td a { color: var(--accent); }
   .org__banner { max-height: 4cm; }
   .skip { display: none; }
   details { display: block; }
-  details > summary { display: none; }
+  /* The summary is PRINTED, not hidden. Every disclosure is force-opened for
+     print, so hiding the summary stripped the heading off its own content and
+     left the derivation sitting under nothing. On a page whose purpose is to be
+     filed and read back later, the label is the part you need most. */
+  details > summary {
+    display: block;
+    list-style: none;
+    margin-bottom: 0.4rem;
+    color: var(--ink-head);
+    font: 700 0.625rem/1.6 var(--mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  details > summary::-webkit-details-marker { display: none; }
   .block, .card, .org, .stream, tr { break-inside: avoid; }
   #audit { break-before: page; }
   /* A printed audit trail has to carry its evidence: expand every link. */
@@ -1608,7 +1684,13 @@ const DATA = {"generated_at":"2026-08-07T09:00:00Z","caveat":"No vendor publishe
     var d = h("details", { class: "calc" }, h("summary", {}, "How this is calculated"));
     var b = h("div", { class: "calc__b" });
     b.append(h("p", { class: "calc__lead" }, r.lead));
-    b.append(h("code", { class: "calc__f" }, String(r.formula || "")));
+    /* tabindex on the formula box for the same reason the table wrappers carry
+       it: `overflow-x: auto` makes a region a mouse can scroll and a keyboard
+       cannot, which is SC 2.1.1 Keyboard — a Level A failure, not a nicety. At a
+       320px viewport the widest of these formulae is 605px against 251px of
+       visible width, so without a tab stop well over half of it is unreachable
+       for anyone without a pointer, and for every sighted reader at 400% zoom. */
+    b.append(h("code", { class: "calc__f", tabindex: "0" }, String(r.formula || "")));
     var dl = h("dl", { class: "calc__c" });
     r.consts.forEach(function (c) {
       dl.append(h("dt", {}, c[0] + " = ", h("b", {}, String(c[1]))));
@@ -1617,7 +1699,7 @@ const DATA = {"generated_at":"2026-08-07T09:00:00Z","caveat":"No vendor publishe
     b.append(dl);
     if (r.also) {
       b.append(h("p", { class: "calc__lead" }, r.also[0]));
-      b.append(h("code", { class: "calc__f" }, String(r.also[1] || "")));
+      b.append(h("code", { class: "calc__f", tabindex: "0" }, String(r.also[1] || "")));
       b.append(h("dl", { class: "calc__c" },
         h("dt", {}, r.also[2][0] + " = ", h("b", {}, String(r.also[2][1]))),
         h("dd", {}, String(r.also[2][2] || "No source recorded."))));
@@ -2362,7 +2444,7 @@ const DATA = {"generated_at":"2026-08-07T09:00:00Z","caveat":"No vendor publishe
     steps.forEach(function (st) {
       ol.append(h("li", {}, h("div", {},
         h("p", { class: "start__what" }, st[0]),
-        h("code", { class: "cmd" }, st[1]))));
+        h("code", { class: "cmd", tabindex: "0" }, st[1]))));
     });
     d.append(h("div", { class: "calc__b" }, ol, h("p", { class: "start__note" }, note)));
     p.append(d);
@@ -2632,8 +2714,16 @@ const DATA = {"generated_at":"2026-08-07T09:00:00Z","caveat":"No vendor publishe
       }
       var body = h("div", { class: "org__b" });
       body.append(h("span", { class: "org__area" }, String(o.area || "")));
+      /* A CLIPPED separator, not a visible one and not CSS. The name and its
+         qualifier are two elements inside one heading, and with nothing between
+         them the computed accessible name runs together as
+         "Remove Carbon Todaybiochar CORCs" — the <small> is display:block, so it
+         looks right and reads wrong. A visible separator would leave a dangling
+         middot at the end of the name line, and a ::before would not enter the
+         name computation at all. */
       body.append(h("h4", { class: "org__n" },
         h("a", { href: String(o.url || "") }, String(o.name || "")),
+        o.sub ? h("span", { class: "vh" }, " · ") : null,
         o.sub ? h("small", {}, String(o.sub)) : null));
       if (o.price) body.append(h("p", {}, h("span", { class: "org__price" }, String(o.price))));
       card.append(body);
@@ -2689,7 +2779,7 @@ const DATA = {"generated_at":"2026-08-07T09:00:00Z","caveat":"No vendor publishe
   ].forEach(function (m) {
     meth.append(h("div", {},
       h("dt", { class: "meth__t" }, m[0]),
-      h("dd", { class: "meth__d" }, m[1], m[2] ? h("span", { class: "meth__f" }, m[2]) : null)));
+      h("dd", { class: "meth__d" }, m[1], m[2] ? h("span", { class: "meth__f", tabindex: "0" }, m[2]) : null)));
   });
 
   /* --- colophon: where an illustration's licence can actually be checked ----

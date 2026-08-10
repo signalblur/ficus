@@ -150,9 +150,15 @@ BUILT="${CARBON_LEDGER_DASHBOARD_DIR}/carbon-$(printf '%s' "$DEMO_TS" | tr ':' '
 # equivalence citation URLs, and the giving shortlist's link values. All three
 # only ever reach the page through setAttribute("href").
 STRIP='s/href="https:\/\/[^"]*"//g; s/"[a-z_]*url":"https:\/\/[^"]*"//g'
-if sed "$STRIP" "$BUILT" |
-  grep -qE 'https?://|<link|src="http|src='"'"'http|@import|url\(http'; then
+# Captured rather than piped into `grep -q`: under `set -o pipefail` a matching
+# `grep -q` closes the pipe, sed dies of SIGPIPE, and the pipeline reports
+# failure — so the `if` went FALSE precisely when a violation existed and this
+# guard could never fire. Found while auditing the sibling guard in build-docs.sh.
+OFFLINE_HITS="$(sed "$STRIP" "$BUILT" |
+  grep -nE 'https?://|<link|src="http|src='"'"'http|@import|url\(http' || true)"
+if [ -n "$OFFLINE_HITS" ]; then
   echo "build-demo: refusing to publish — external loaded references found" >&2
+  printf '%s\n' "$OFFLINE_HITS" | head -5 >&2
   exit 1
 fi
 

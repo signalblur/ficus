@@ -202,7 +202,13 @@
     var d = h("details", { class: "calc" }, h("summary", {}, "How this is calculated"));
     var b = h("div", { class: "calc__b" });
     b.append(h("p", { class: "calc__lead" }, r.lead));
-    b.append(h("code", { class: "calc__f" }, String(r.formula || "")));
+    /* tabindex on the formula box for the same reason the table wrappers carry
+       it: `overflow-x: auto` makes a region a mouse can scroll and a keyboard
+       cannot, which is SC 2.1.1 Keyboard — a Level A failure, not a nicety. At a
+       320px viewport the widest of these formulae is 605px against 251px of
+       visible width, so without a tab stop well over half of it is unreachable
+       for anyone without a pointer, and for every sighted reader at 400% zoom. */
+    b.append(h("code", { class: "calc__f", tabindex: "0" }, String(r.formula || "")));
     var dl = h("dl", { class: "calc__c" });
     r.consts.forEach(function (c) {
       dl.append(h("dt", {}, c[0] + " = ", h("b", {}, String(c[1]))));
@@ -211,7 +217,7 @@
     b.append(dl);
     if (r.also) {
       b.append(h("p", { class: "calc__lead" }, r.also[0]));
-      b.append(h("code", { class: "calc__f" }, String(r.also[1] || "")));
+      b.append(h("code", { class: "calc__f", tabindex: "0" }, String(r.also[1] || "")));
       b.append(h("dl", { class: "calc__c" },
         h("dt", {}, r.also[2][0] + " = ", h("b", {}, String(r.also[2][1]))),
         h("dd", {}, String(r.also[2][2] || "No source recorded."))));
@@ -956,7 +962,7 @@
     steps.forEach(function (st) {
       ol.append(h("li", {}, h("div", {},
         h("p", { class: "start__what" }, st[0]),
-        h("code", { class: "cmd" }, st[1]))));
+        h("code", { class: "cmd", tabindex: "0" }, st[1]))));
     });
     d.append(h("div", { class: "calc__b" }, ol, h("p", { class: "start__note" }, note)));
     p.append(d);
@@ -1226,8 +1232,16 @@
       }
       var body = h("div", { class: "org__b" });
       body.append(h("span", { class: "org__area" }, String(o.area || "")));
+      /* A CLIPPED separator, not a visible one and not CSS. The name and its
+         qualifier are two elements inside one heading, and with nothing between
+         them the computed accessible name runs together as
+         "Remove Carbon Todaybiochar CORCs" — the <small> is display:block, so it
+         looks right and reads wrong. A visible separator would leave a dangling
+         middot at the end of the name line, and a ::before would not enter the
+         name computation at all. */
       body.append(h("h4", { class: "org__n" },
         h("a", { href: String(o.url || "") }, String(o.name || "")),
+        o.sub ? h("span", { class: "vh" }, " · ") : null,
         o.sub ? h("small", {}, String(o.sub)) : null));
       if (o.price) body.append(h("p", {}, h("span", { class: "org__price" }, String(o.price))));
       card.append(body);
@@ -1283,7 +1297,7 @@
   ].forEach(function (m) {
     meth.append(h("div", {},
       h("dt", { class: "meth__t" }, m[0]),
-      h("dd", { class: "meth__d" }, m[1], m[2] ? h("span", { class: "meth__f" }, m[2]) : null)));
+      h("dd", { class: "meth__d" }, m[1], m[2] ? h("span", { class: "meth__f", tabindex: "0" }, m[2]) : null)));
   });
 
   /* --- colophon: where an illustration's licence can actually be checked ----

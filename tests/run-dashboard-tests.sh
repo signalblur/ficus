@@ -703,6 +703,35 @@ want "honest carbon verdict on reef restoration" 'Not a carbon investment'
 
 # --- quality floor: the page's own accessibility scaffolding ------------------
 want "reduced motion honoured" 'prefers-reduced-motion'
+# --- findings from the WCAG 2.2 AA audit, locked so they cannot come back ----
+# SC 2.4.11 Focus Not Obscured (Minimum) / F110. scroll-padding is the
+# load-bearing half: scroll-margin only applies when the browser decides to
+# scroll, and an element already in the scrollport but under a sticky overlay
+# counts as visible, so nothing scrolls. Measured before: six elements behind the
+# bar, five entirely. After: none, collapsed or expanded.
+want "the scrollport is inset for the sticky header" 'scroll-padding-top: 5.5rem'
+want "every tab stop reserves the header height, not just jump anchors" 'a\[href\], button, summary, input, label, \[tabindex\] { scroll-margin-top'
+# SC 2.1.1 Keyboard, Level A. overflow-x:auto makes a region a mouse can scroll
+# and a keyboard cannot. The table wrappers always had this; the formula boxes
+# did not, and at 320px the widest is 605px against 251px of visible width.
+want "the formula box is keyboard-scrollable" 'class: "calc__f", tabindex: "0"'
+want "the methodology formula is keyboard-scrollable" 'class: "meth__f", tabindex: "0"'
+want "the copyable command is keyboard-scrollable" 'class: "cmd", tabindex: "0"'
+# SC 1.4.10 Reflow: one unstyled colophon link carrying a 32-character hex id
+# pushed the whole page to 353px at a 320px viewport.
+want "the colophon can break a long filename" '\.credits__list a { overflow-wrap: anywhere'
+want "the colophon is styled at all" '\.credits__list {'
+# SC 2.5.8 Target Size (Minimum): 0.35rem put two 15px links 23.7px apart,
+# missing the 24px spacing circle by 0.3px.
+want "evidence links clear the 24px spacing circle" 'gap: 0.5rem; }'
+# The accessible name of a heading built from two elements needs a separator in
+# the tree, not one on screen — and never display:none, which would remove it.
+want "a clipped separator class exists" '\.vh {'
+want "the separator is clipped, not hidden" 'clip-path: inset(50%)'
+want "the org heading uses it" 'class: "vh" }, " · "'
+# A printed disclosure with its summary hidden is content with its heading
+# removed — on a page whose purpose is to be filed.
+want "the print stylesheet keeps disclosure headings" 'details > summary {'
 want "print stylesheet present" '@media print'
 want "visible keyboard focus" ':focus-visible'
 # FOUR chart slots, because the page draws four things: the three streams and

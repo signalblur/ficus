@@ -220,9 +220,12 @@ fi
 # What survives the scrub is checked strictly, so a URL that wanders into an
 # attribute or into ordinary prose still stops the build.
 scrub() {
+  # `<pre` and not `<pre>`: the blocks carry a tabindex so a keyboard can scroll
+  # them, and matching the bare tag silently stopped scrubbing the moment that
+  # attribute was added.
   awk '
     { line = $0 }
-    /<pre>/ { inpre = 1 }
+    /<pre[ >]/ { inpre = 1 }
     inpre { line = "" }
     /<\/pre>/ { inpre = 0 }
     {
@@ -232,11 +235,16 @@ scrub() {
     }
   ' "$1"
 }
-if scrub "${TMPROOT}/index.html" |
-  grep -qE 'https?://|<link|src="http|src='"'"'http|@import|url\(http'; then
+# CAPTURED, NOT PIPED INTO `grep -q`. Under `set -o pipefail`, `grep -q` closes
+# the pipe the instant it matches, awk dies of SIGPIPE with status 141, and the
+# pipeline reports 141 — so the `if` was FALSE exactly when a violation was
+# found. This guard could not fail. It reported success on a page that had a
+# bare URL in it, which is the worst way for a safety check to be wrong.
+OFFLINE_HITS="$(scrub "${TMPROOT}/index.html" |
+  grep -nE 'https?://|<link|src="http|src='"'"'http|@import|url\(http' || true)"
+if [ -n "$OFFLINE_HITS" ]; then
   echo "build-docs: refusing to publish — external loaded references found" >&2
-  scrub "${TMPROOT}/index.html" |
-    grep -nE 'https?://|<link|src="http|@import|url\(http' | head -5 >&2
+  printf '%s\n' "$OFFLINE_HITS" | head -5 >&2
   exit 1
 fi
 
